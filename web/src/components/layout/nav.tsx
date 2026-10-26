@@ -27,6 +27,10 @@ export function buildNav(isAdmin: boolean): NavGroup[] {
       ],
     },
   ];
+  groups.push({
+    title: 'Tentang',
+    items: [{ to: '/metodologi', label: 'Metodologi', icon: 'buku' }],
+  });
   if (isAdmin) {
     groups.push({
       title: 'Admin',
@@ -59,7 +63,7 @@ export function NavList({ groups, dark }: { groups: NavGroup[]; dark: boolean })
                       dark ? 'text-white hover:bg-white/10' : 'text-ink hover:bg-active',
                       isActive &&
                         dark &&
-                        'bg-ink/40 font-bold hover:bg-ink/40 before:absolute before:top-2.5 before:bottom-2.5 before:-left-3.5 before:w-1 before:rounded-r before:bg-hijau-terang',
+                        'bg-ink/40 font-bold hover:bg-ink/40 before:absolute before:top-2.5 before:bottom-2.5 before:-left-3.5 before:w-1 before:rounded-r before:bg-hijau-terang before:animate-[anim-bar_240ms_cubic-bezier(0.23,1,0.32,1)_backwards]',
                       isActive && !dark && 'bg-active font-bold',
                     )
                   }
@@ -125,7 +129,7 @@ export function UserRow({ dark }: { dark: boolean }) {
   };
 
   const actionClass = cn(
-    'inline-flex h-9 flex-none items-center rounded-full px-4 text-[13px] font-bold transition-[transform,background-color] duration-150 ease-out active:scale-[0.96] disabled:opacity-60',
+    'inline-flex h-9 flex-none items-center rounded-full px-4 text-[13px] font-bold transition-[scale,background-color] duration-150 ease-out active:scale-[0.96] disabled:opacity-60',
     dark ? 'bg-white text-ink hover:bg-ground' : 'bg-ink text-white hover:bg-ink-tekan',
   );
 

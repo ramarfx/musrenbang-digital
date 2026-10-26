@@ -12,6 +12,9 @@ export function Footer() {
           <Link to="/bandingkan" className="hover:text-ink">
             Gap Warga-APBD
           </Link>
+          <Link to="/metodologi" className="hover:text-ink">
+            Metodologi
+          </Link>
         </nav>
       </div>
     </footer>

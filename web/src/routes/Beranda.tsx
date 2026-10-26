@@ -56,7 +56,7 @@ export default function Beranda() {
         }
       />
 
-      <section className="grid gap-3 sm:grid-cols-3" aria-label="Ringkasan partisipasi">
+      <section className="stagger grid gap-3 sm:grid-cols-3" aria-label="Ringkasan partisipasi">
         <Card>
           <p className="text-sm text-stone-500">Usulan warga</p>
           <p className="text-2xl font-bold tabular-nums">{formatAngka(proposals.length)}</p>
@@ -84,7 +84,15 @@ export default function Beranda() {
           </Link>
         </div>
         {proposalsQuery.isPending ? (
-          <div className="h-96 animate-pulse rounded-xl bg-stone-200" />
+          <div className="load-late h-96 animate-pulse rounded-3xl bg-stone-200" />
+        ) : proposalsQuery.isError ? (
+          <ErrorState
+            title="Peta usulan gagal dimuat"
+            message={proposalsQuery.error.message}
+            onRetry={() => {
+              void proposalsQuery.refetch();
+            }}
+          />
         ) : jumlahBerlokasi === 0 ? (
           <EmptyState
             title="Belum ada usulan berlokasi di peta"
@@ -143,7 +151,7 @@ export default function Beranda() {
         )}
 
         {filtered.length > 0 && (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="stagger grid gap-4 md:grid-cols-2">
             {filtered.map((proposal) => (
               <ProposalCard key={proposal.id} proposal={proposal} />
             ))}
