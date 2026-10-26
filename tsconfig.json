@@ -1,12 +1,11 @@
 {
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "noEmit": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "target": "ESNext",
-    "types": ["bun"]
+    "types": ["bun"],
+    "baseUrl": ".",
+    "paths": {
+      "@musrenbang/shared": ["packages/shared/src/index.ts"]
+    }
   },
-  "include": ["src"]
+  "include": ["scripts", "packages/shared/src"]
 }

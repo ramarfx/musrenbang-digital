@@ -2,16 +2,27 @@
   "name": "musrenbang-digital",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "web",
+    "packages/*"
+  ],
   "type": "module",
   "scripts": {
-    "format": "oxfmt",
-    "format:check": "oxfmt --check",
-    "lint": "oxlint",
-    "seed": "bun run src/seed.ts",
-    "typecheck": "tsc --noEmit"
+    "dev": "bun run --cwd web dev",
+    "build": "bun run --cwd web build",
+    "preview": "bun run --cwd web preview",
+    "seed": "bun run scripts/seed.ts",
+    "typecheck": "bun run --cwd packages/shared typecheck && bun run --cwd web typecheck && tsc --noEmit -p tsconfig.json",
+    "lint": "oxlint .",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "test": "bun test",
+    "check": "bun run format:check && bun run lint && bun run typecheck && bun test"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.0.0"
+    "@musrenbang/shared": "workspace:*",
+    "@supabase/supabase-js": "^2.0.0",
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "@types/bun": "latest",
