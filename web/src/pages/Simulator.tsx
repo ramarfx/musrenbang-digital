@@ -23,12 +23,27 @@ export default function Simulator() {
   const [alokasi, setAlokasi] = useState<Record<string, number>>({});
   const [pesan, setPesan] = useState('');
 
+  const userId = user?.id ?? null;
+
+  // Ganti akun (atau keluar) selalu mulai dari kosong, supaya pilihan akun
+  // sebelumnya tidak terbawa ke akun berikutnya di perangkat yang sama.
   useEffect(() => {
-    if (!user) return;
-    ambilAlokasiSaya(user.id)
-      .then((tersimpan) => setAlokasi((prev) => ({ ...prev, ...tersimpan })))
-      .catch(() => {});
-  }, [user]);
+    setAlokasi({});
+    setPesan('');
+    if (!userId) return;
+    let batal = false;
+    ambilAlokasiSaya(userId)
+      .then((tersimpan) => {
+        if (!batal) setAlokasi(tersimpan);
+      })
+      .catch((e: unknown) => {
+        if (!batal)
+          setPesan(`Pilihan tersimpanmu gagal dimuat: ${e instanceof Error ? e.message : e}`);
+      });
+    return () => {
+      batal = true;
+    };
+  }, [userId]);
 
   if (memuat) return <Memuat apa="simulator" />;
   if (galat || !data) return <Gagal apa="simulator" pesan={galat ?? ''} ulangi={ulangi} />;
@@ -37,10 +52,12 @@ export default function Simulator() {
   const total = kategori.reduce((s, k) => s + (alokasi[k] ?? 0), 0);
   const sisa = anggaran - total;
 
-  // Slider tidak bisa melewati sisa dana: nilai dipotong ke batas yang tersedia.
+  // Slider tidak bisa melewati sisa dana: nilai dipotong ke batas yang tersedia,
+  // dan tidak pernah di bawah 0 (mis. alokasi lama lebih besar dari anggaran baru).
   const ubah = (kat: string, nilai: number) => {
     const lainnya = total - (alokasi[kat] ?? 0);
-    setAlokasi((prev) => ({ ...prev, [kat]: Math.min(nilai, anggaran - lainnya) }));
+    const batas = Math.max(0, anggaran - lainnya);
+    setAlokasi((prev) => ({ ...prev, [kat]: Math.max(0, Math.min(nilai, batas)) }));
     setPesan('');
   };
 
@@ -123,7 +140,9 @@ export default function Simulator() {
             {pesan ||
               (sisa === 0
                 ? 'Siap dikirim. Satu akun, satu pilihan; bisa diubah kapan saja.'
-                : 'Sisa dana harus Rp0 sebelum pilihan bisa dikirim.')}
+                : sisa < 0
+                  ? 'Pilihan tersimpanmu melebihi anggaran saat ini. Kurangi alokasi sampai sisa dana Rp0.'
+                  : 'Sisa dana harus Rp0 sebelum pilihan bisa dikirim.')}
           </p>
         </div>
       </div>

@@ -34,13 +34,17 @@ export default function Admin() {
 
   const ubahStatus = async (usulan: Proposal, statusBaru: string) => {
     if (statusBaru === usulan.status) return;
-    const { error } = await ubahStatusUsulan(usulan, statusBaru, user.id);
+    const { error, galatRiwayat } = await ubahStatusUsulan(usulan, statusBaru, user.id);
+    if (error) {
+      setPesan(`Gagal mengubah status: ${error}`);
+      return;
+    }
     setPesan(
-      error
-        ? `Gagal mengubah status: ${error}`
+      galatRiwayat
+        ? `Status "${usulan.judul}" sudah diubah menjadi ${statusBaru}, tetapi riwayatnya gagal dicatat: ${galatRiwayat}`
         : `Status "${usulan.judul}" diubah menjadi ${statusBaru}.`,
     );
-    if (!error) ulangi();
+    ulangi();
   };
 
   return (

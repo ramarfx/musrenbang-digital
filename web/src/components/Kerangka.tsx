@@ -190,13 +190,31 @@ function SidebarHijau({ grup }: { grup: GrupNav[] }) {
 }
 
 /** Bar atas dan menu layar penuh untuk HP dan tablet. */
-function TopbarHp({ grup }: { grup: GrupNav[] }) {
-  const [buka, setBuka] = useState(false);
+function TopbarHp({
+  grup,
+  buka,
+  setBuka,
+}: {
+  grup: GrupNav[];
+  buka: boolean;
+  setBuka: (b: boolean | ((b: boolean) => boolean)) => void;
+}) {
   const lokasi = useLocation();
   const panelRef = useRef<HTMLDivElement>(null);
   const tombolRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => setBuka(false), [lokasi.pathname]);
+  useEffect(() => setBuka(false), [lokasi.pathname, setBuka]);
+
+  // Menu hanya ada di bawah 1024px. Kalau layar dilebarkan saat menu terbuka,
+  // tutup menu supaya kunci scroll dan inert ikut dilepas.
+  useEffect(() => {
+    const lebar = window.matchMedia('(min-width: 1024px)');
+    const cek = () => {
+      if (lebar.matches) setBuka(false);
+    };
+    lebar.addEventListener('change', cek);
+    return () => lebar.removeEventListener('change', cek);
+  }, [setBuka]);
 
   useEffect(() => {
     if (!buka) return;
@@ -213,7 +231,7 @@ function TopbarHp({ grup }: { grup: GrupNav[] }) {
       document.body.style.overflow = '';
       window.removeEventListener('keydown', tekan);
     };
-  }, [buka]);
+  }, [buka, setBuka]);
 
   return (
     <div className="lg:hidden">
@@ -253,18 +271,26 @@ function TopbarHp({ grup }: { grup: GrupNav[] }) {
 export default function Kerangka({ children }: { children: ReactNode }) {
   const { profile } = useAuth();
   const grup = susunNav(profile?.peran === 'admin');
+  // Saat menu HP terbuka, isi halaman di belakangnya dibuat inert supaya
+  // Tab dan pembaca layar tidak masuk ke konten yang tertutup panel.
+  const [menuBuka, setMenuBuka] = useState(false);
 
   return (
     <div className="min-h-dvh lg:flex">
       <a
+        inert={menuBuka}
         href="#isi"
         className="sr-only z-50 rounded-full bg-ink px-4 py-2 text-ground focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
       >
         Lewati ke isi
       </a>
-      <TopbarHp grup={grup} />
+      <TopbarHp grup={grup} buka={menuBuka} setBuka={setMenuBuka} />
       <SidebarHijau grup={grup} />
-      <main id="isi" className="min-w-0 flex-1 px-4 pt-5 pb-10 sm:px-6 lg:px-10 lg:pt-8 lg:pb-14">
+      <main
+        inert={menuBuka}
+        id="isi"
+        className="min-w-0 flex-1 px-4 pt-5 pb-10 sm:px-6 lg:px-10 lg:pt-8 lg:pb-14"
+      >
         <div className="mx-auto max-w-[1160px]">
           {modeContoh && (
             <p className="mb-6 rounded-2xl bg-mustard-pucat px-4 py-3 text-sm text-mustard-tua">

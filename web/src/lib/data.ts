@@ -240,10 +240,10 @@ export async function ubahStatusUsulan(
   usulan: Proposal,
   statusBaru: string,
   adminId: string,
-): Promise<HasilTulis> {
-  if (modeContoh) return { error: PESAN_MODE_CONTOH };
+): Promise<HasilTulis & { galatRiwayat: string | null }> {
+  if (modeContoh) return { error: PESAN_MODE_CONTOH, galatRiwayat: null };
   const { error } = await db().from('proposals').update({ status: statusBaru }).eq('id', usulan.id);
-  if (error) return { error: error.message };
+  if (error) return { error: error.message, galatRiwayat: null };
   // Catatan backend: sebaiknya riwayat ditulis trigger database, bukan dari sini.
   const riwayat = await db().from('proposal_status_history').insert({
     proposal_id: usulan.id,
@@ -251,5 +251,6 @@ export async function ubahStatusUsulan(
     status_baru: statusBaru,
     diubah_oleh: adminId,
   });
-  return { error: riwayat.error?.message ?? null };
+  // Status sudah berubah walau riwayat gagal, jadi kegagalan riwayat dilaporkan terpisah.
+  return { error: null, galatRiwayat: riwayat.error?.message ?? null };
 }

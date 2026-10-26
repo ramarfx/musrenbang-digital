@@ -33,16 +33,33 @@ export default function UsulanDetail() {
   const [komentar, setKomentar] = useState<Komentar[]>([]);
   const [isiKomentar, setIsiKomentar] = useState('');
   const [pesan, setPesan] = useState('');
+  const [galatInteraksi, setGalatInteraksi] = useState<string | null>(null);
+  const [mengirimSuara, setMengirimSuara] = useState(false);
+  const [mengirimKomentar, setMengirimKomentar] = useState(false);
 
+  // Tiga query ini saling lepas, jadi dijalankan bersamaan.
   const muatInteraksi = useCallback(async () => {
-    setJumlahSuara(await hitungSuara(proposalId));
-    setMemilih(user ? await sudahMemilih(proposalId, user.id) : false);
-    setKomentar(await ambilKomentar(proposalId));
+    try {
+      const [jumlah, sudah, daftar] = await Promise.all([
+        hitungSuara(proposalId),
+        user ? sudahMemilih(proposalId, user.id) : Promise.resolve(false),
+        ambilKomentar(proposalId),
+      ]);
+      setJumlahSuara(jumlah);
+      setMemilih(sudah);
+      setKomentar(daftar);
+      setGalatInteraksi(null);
+    } catch (e) {
+      setGalatInteraksi(e instanceof Error ? e.message : String(e));
+    }
   }, [proposalId, user]);
 
   useEffect(() => {
-    if (usulan) muatInteraksi().catch(() => {});
+    if (usulan) muatInteraksi();
   }, [usulan, muatInteraksi]);
+
+  // Saat jumlah dukungan gagal dimuat, tampilkan tanda strip, bukan angka 0 yang menyesatkan.
+  const teksSuara = galatInteraksi ? '-' : jumlahSuara.toLocaleString('id-ID');
 
   if (memuat) return <Memuat apa="usulan" />;
   if (galat) return <Gagal apa="usulan" pesan={galat} ulangi={ulangi} />;
@@ -58,21 +75,25 @@ export default function UsulanDetail() {
   }
 
   const toggleSuara = async () => {
-    if (!user) return;
+    if (!user || mengirimSuara) return;
+    setMengirimSuara(true);
     const { error } = await ubahSuara(usulan.id, user.id, !memilih);
     setPesan(error ?? '');
-    if (!error) muatInteraksi();
+    if (!error) await muatInteraksi();
+    setMengirimSuara(false);
   };
 
   const kirim = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !isiKomentar.trim()) return;
+    if (!user || !isiKomentar.trim() || mengirimKomentar) return;
+    setMengirimKomentar(true);
     const { error } = await kirimKomentar(usulan.id, user.id, isiKomentar.trim());
     setPesan(error ?? '');
     if (!error) {
       setIsiKomentar('');
-      muatInteraksi();
+      await muatInteraksi();
     }
+    setMengirimKomentar(false);
   };
 
   return (
@@ -92,18 +113,24 @@ export default function UsulanDetail() {
         {user ? (
           <Tombol
             onClick={toggleSuara}
+            disabled={mengirimSuara || galatInteraksi !== null}
             aria-pressed={memilih}
             className={memilih ? 'border-transparent bg-[#d5ede3] text-[#0b4a36]' : ''}
           >
-            {jumlahSuara.toLocaleString('id-ID')} mendukung
+            {teksSuara} mendukung
           </Tombol>
         ) : (
           <Link to="/login" className="text-sm font-semibold text-warga underline">
-            Masuk untuk mendukung ({jumlahSuara.toLocaleString('id-ID')} mendukung)
+            Masuk untuk mendukung ({teksSuara} mendukung)
           </Link>
         )}
       </div>
       {pesan && <p className="mb-4 text-sm text-mustard-tua">{pesan}</p>}
+      {galatInteraksi && (
+        <div className="mb-6">
+          <Gagal apa="dukungan dan komentar" pesan={galatInteraksi} ulangi={muatInteraksi} />
+        </div>
+      )}
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex flex-col gap-6">
@@ -141,7 +168,12 @@ export default function UsulanDetail() {
                   rows={3}
                   className="w-full rounded-2xl border border-border bg-surface px-3.5 py-2.5"
                 />
-                <Tombol type="submit" varian="utama" className="self-start">
+                <Tombol
+                  type="submit"
+                  varian="utama"
+                  disabled={mengirimKomentar}
+                  className="self-start"
+                >
                   Kirim komentar
                 </Tombol>
               </form>

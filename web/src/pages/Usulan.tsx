@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Gagal, JudulHalaman, Memuat } from '../components/Halaman';
 import { Kartu } from '../components/Kartu';
 import { NamaKategori, StatusPill } from '../components/Label';
@@ -12,7 +12,6 @@ import { useMuat } from '../lib/useMuat';
 const FILTER = ['Semua', ...TAHAP];
 
 export default function Usulan() {
-  const navigate = useNavigate();
   const { data, memuat, galat, ulangi } = useMuat(ambilUsulan);
   const [filter, setFilter] = useState('Semua');
   const usulan = (data ?? []).filter((u) => filter === 'Semua' || u.status === filter);
@@ -79,13 +78,17 @@ export default function Usulan() {
                 </tr>
               ) : (
                 usulan.map((u) => (
+                  // Seluruh baris bisa diklik lewat satu link (after:inset-0), tanpa onClick
+                  // tambahan, jadi tidak ada navigasi ganda.
                   <tr
                     key={u.id}
-                    onClick={() => navigate(`/usulan/${u.id}`)}
-                    className="cursor-pointer border-b border-rule last:border-b-0 hover:bg-ground"
+                    className="relative border-b border-rule last:border-b-0 hover:bg-ground"
                   >
                     <td className="py-3.5 pr-3">
-                      <Link to={`/usulan/${u.id}`} className="font-semibold">
+                      <Link
+                        to={`/usulan/${u.id}`}
+                        className="font-semibold after:absolute after:inset-0 after:content-['']"
+                      >
                         {u.judul}
                       </Link>
                       <span className="block text-[13px] text-muted">

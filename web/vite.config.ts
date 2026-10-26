@@ -7,6 +7,7 @@ export default defineConfig({
   server: {
     port: 5173,
     // Mode data contoh membaca berkas seed di ../db/seeds (hanya dibaca, tidak diubah).
-    fs: { allow: ['..'] },
+    // Izin dibatasi ke folder web dan folder seed saja, bukan seluruh repo.
+    fs: { allow: ['.', '../db/seeds'] },
   },
 });
