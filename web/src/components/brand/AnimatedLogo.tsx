@@ -1,3 +1,5 @@
+import { LOGO_B_PATH, LOGO_M_PATH, LOGO_STEM_PATH } from './logo-paths';
+
 /**
  * Logo bertumpuk beranimasi, disalin dari paket logo final
  * (musrenbang-logo-final/animasi/mb-logo-animasi.svg), bukan digambar ulang.
@@ -21,20 +23,10 @@ export function AnimatedLogo({ className }: { className?: string }) {
   return (
     <svg viewBox="-107 -9 472 401" className={className} role="img" aria-label="Musrenbang Digital">
       <g fill="var(--ink)" fillRule="evenodd">
-        <path
-          className="logo-anim-m"
-          d="M123 103.75A41.99 41.99 0 0 0 84 111.83A42 42 0 0 0 39.68 105.74A42 42 0 0 0 15 144L15 219L45 219L45 144.13A12 12 0 0 1 57 132A12 12 0 0 1 69 144.13L69 219L99 219L99 144.13A12 12 0 0 1 111 132A12 12 0 0 1 123 144.13L123 219L124 219L124 100L123 100L123 103.75Z"
-        />
-        <path
-          className="logo-anim-b"
-          d="M153 213.96A60 60 0 0 0 212.57 214.21A60 60 0 0 0 243 162A60 60 0 0 0 212.57 109.79A60 60 0 0 0 153 110.04L153 100L152 100L152 219L153 219L153 213.96ZM212.77 165.67A30 30 0 0 1 179.33 191.77A30 30 0 0 1 153.23 158.33A30 30 0 0 1 186.67 132.23A30 30 0 0 1 212.77 165.67Z"
-        />
+        <path className="logo-anim-m" d={LOGO_M_PATH} />
+        <path className="logo-anim-b" d={LOGO_B_PATH} />
       </g>
-      <path
-        className="logo-anim-stem"
-        fill="var(--warga)"
-        d="M123 27L123 219L153 219L153 27L123 27Z"
-      />
+      <path className="logo-anim-stem" fill="var(--warga)" d={LOGO_STEM_PATH} />
       <g fill="var(--ink)" fillRule="evenodd">
         {LETTERS.map((d, i) => (
           <path

@@ -17,7 +17,7 @@ const variants: Record<ButtonVariant, string> = {
 };
 
 const base =
-  'inline-flex items-center justify-center gap-2 rounded-full font-semibold whitespace-nowrap transition-[transform,background-color] duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100';
+  'inline-flex items-center justify-center gap-2 rounded-full font-semibold whitespace-nowrap transition-[scale,background-color] duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100';
 
 const sizes: Record<ButtonSize, string> = {
   sm: 'h-9 px-3.5 text-[13px]',

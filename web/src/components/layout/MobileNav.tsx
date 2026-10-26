@@ -58,7 +58,7 @@ export function MobileNav({ open, setOpen }: MobileNavProps) {
           aria-expanded={open}
           aria-controls="menu-hp"
           onClick={() => setOpen((value) => !value)}
-          className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-surface px-4 text-sm font-semibold transition-transform duration-150 ease-out active:scale-[0.97]"
+          className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-surface px-4 text-sm font-semibold transition-[scale] duration-150 ease-out active:scale-[0.97]"
         >
           <Icon name={open ? 'tutup' : 'menu'} />
           {open ? 'Tutup' : 'Menu'}
@@ -68,7 +68,7 @@ export function MobileNav({ open, setOpen }: MobileNavProps) {
         <div
           ref={panelRef}
           id="menu-hp"
-          className="fixed inset-x-0 top-14 bottom-0 z-20 flex flex-col gap-4 overflow-y-auto bg-ground px-4 pt-4 pb-6"
+          className="anim-menu fixed inset-x-0 top-14 bottom-0 z-20 flex flex-col gap-4 overflow-y-auto bg-ground px-4 pt-4 pb-6"
         >
           <RegionBox dark={false} />
           <NavList groups={buildNav(isAdmin)} dark={false} />

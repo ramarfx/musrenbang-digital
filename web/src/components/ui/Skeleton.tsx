@@ -1,12 +1,13 @@
 import { cn } from '@/lib/cn';
 
+// `load-late`: tak terlihat 400ms pertama, jadi saat data datang cepat (mis. refresh) kotak abu tidak berkedip.
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn('animate-pulse rounded-lg bg-stone-200/80', className)} />;
+  return <div className={cn('load-late animate-pulse rounded-lg bg-stone-200/80', className)} />;
 }
 
 export function ListSkeleton({ rows = 4 }: { rows?: number }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="load-late grid gap-4 md:grid-cols-2">
       {Array.from({ length: rows }, (_, index) => (
         <div key={index} className="rounded-3xl border border-border bg-surface p-5">
           <Skeleton className="h-5 w-2/3" />

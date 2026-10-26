@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
+import { DecorRings } from './DecorRings';
 
 type CardProps = {
   children: ReactNode;
@@ -13,5 +14,20 @@ export function Card({ children, className, as: Tag = 'section' }: CardProps) {
     <Tag className={cn('rounded-3xl border border-border bg-surface p-5 sm:p-6', className)}>
       {children}
     </Tag>
+  );
+}
+
+/** Kartu hijau polos untuk temuan utama, dengan lingkaran dekorasi di pojok. Tanpa gradasi. */
+export function HeroCard({ children, className }: Omit<CardProps, 'as'>) {
+  return (
+    <section
+      className={cn(
+        'group relative overflow-hidden rounded-3xl bg-hijau p-5 text-white sm:p-6',
+        className,
+      )}
+    >
+      <DecorRings className="-right-16 -bottom-16 size-44 transition-transform duration-[400ms] ease-out group-hover:scale-110" />
+      <div className="relative">{children}</div>
+    </section>
   );
 }

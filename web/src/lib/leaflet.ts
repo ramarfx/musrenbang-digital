@@ -7,7 +7,7 @@ import L from 'leaflet';
  */
 L.Marker.prototype.options.icon = L.divIcon({
   className: '',
-  html: '<span style="display:block;width:18px;height:18px;border-radius:9999px;background:#047857;border:3px solid #fff;box-shadow:0 0 0 1px rgb(20 34 43 / 0.25)"></span>',
+  html: '<span class="peta-titik" style="display:block;width:18px;height:18px;border-radius:9999px;background:#047857;border:3px solid #fff;box-shadow:0 0 0 1px rgb(20 34 43 / 0.25)"></span>',
   iconSize: [18, 18],
   iconAnchor: [9, 9],
   popupAnchor: [0, -10],

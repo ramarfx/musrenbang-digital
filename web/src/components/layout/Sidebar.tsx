@@ -1,18 +1,9 @@
 import { Link } from 'react-router-dom';
 import iconInk from '@/assets/logo/mb-ikon-app.svg';
 import wordmarkWhite from '@/assets/logo/musrenbang-wordmark-putih.svg';
+import { DecorRings } from '@/components/ui/DecorRings';
 import { useAuth } from '@/features/auth';
 import { buildNav, NavList, RegionBox, UserRow } from './nav';
-
-/** Tiga cincin konsentris tipis putih transparan, motif Desain 1. Murni hiasan. */
-export function DecorRings({ className }: { className: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={`pointer-events-none absolute rounded-full border border-white/15 ${className}`}
-    />
-  );
-}
 
 /** Sidebar hijau melayang untuk layar lebar (1024px ke atas). */
 export function Sidebar() {
@@ -30,8 +21,8 @@ export function Sidebar() {
           aria-label="Musrenbang Digital, ke beranda"
           className="mb-5 flex items-center gap-2.5 self-start rounded-xl px-1.5 py-1"
         >
-          <img src={iconInk} alt="" className="size-10" />
-          <img src={wordmarkWhite} alt="" className="h-[21px] w-auto" />
+          <img src={iconInk} alt="" className="size-11" />
+          <img src={wordmarkWhite} alt="" className="h-[29px] w-auto" />
         </Link>
         <RegionBox dark />
         <div className="mt-1 min-h-0 flex-1 overflow-y-auto">
