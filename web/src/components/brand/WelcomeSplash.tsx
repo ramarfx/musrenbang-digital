@@ -1,9 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { AnimatedLogo } from './AnimatedLogo';
+import { LoadingDots } from './LogoLoader';
 
 /**
- * Layar sambutan: animasi logo resmi dan bar loading. Muncul dua kali:
+ * Layar sambutan: animasi logo resmi dan tiga titik loading. Muncul dua kali:
  * 1. saat web pertama dibuka di tab itu (sekali per tab, jadi pindah
  *    halaman atau refresh tidak mengulangnya, tab baru memutarnya lagi);
  * 2. setelah login atau daftar berhasil.
@@ -109,12 +110,7 @@ export function WelcomeSplashProvider({ children }: { children: ReactNode }) {
         >
           <div className="flex flex-col items-center gap-7 text-center">
             <AnimatedLogo className="block h-auto w-[min(380px,72vw)]" />
-            <div
-              aria-hidden="true"
-              className="h-1 w-[min(220px,50vw)] overflow-hidden rounded-full bg-track"
-            >
-              <i className="logo-anim-bar block h-full w-2/5 rounded-full bg-warga" />
-            </div>
+            <LoadingDots />
             {/* Hanya untuk pembaca layar; tidak tampil di layar. */}
             <p role="status" className="sr-only">
               Memuat

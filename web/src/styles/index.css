@@ -201,9 +201,6 @@ html::-webkit-scrollbar,
 .logo-anim-letter {
   animation: logo-naik 0.5s ease-out backwards;
 }
-.logo-anim-bar {
-  animation: logo-geser 1.6s ease-in-out infinite;
-}
 
 @keyframes logo-masuk-kiri {
   from {
@@ -228,24 +225,12 @@ html::-webkit-scrollbar,
     transform: translateY(14px);
   }
 }
-@keyframes logo-geser {
-  0% {
-    transform: translateX(-110%);
-  }
-  100% {
-    transform: translateX(260%);
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   .logo-anim-m,
   .logo-anim-b,
   .logo-anim-stem,
-  .logo-anim-letter,
-  .logo-anim-bar {
+  .logo-anim-letter {
     animation: none !important;
-  }
-  .logo-anim-bar {
-    width: 100%;
   }
 }
 
@@ -425,10 +410,6 @@ html::-webkit-scrollbar,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .load-dot {
-    animation: none !important;
-    opacity: 1;
-  }
   .load-dot {
     animation: none !important;
     opacity: 1;
