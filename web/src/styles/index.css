@@ -121,6 +121,73 @@ button {
   color: var(--ink);
 }
 
+/*
+ * Animasi logo layar sambutan (components/brand). Nilai dari paket logo final
+ * (animasi/loading-screen.html): m dan b masuk dari samping, batang tumbuh
+ * dengan sedikit pantulan, huruf naik bergiliran. Hanya transform dan opacity.
+ */
+.logo-anim-m {
+  animation: logo-masuk-kiri 0.85s 0.1s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.logo-anim-b {
+  animation: logo-masuk-kanan 0.85s 0.1s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.logo-anim-stem {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: logo-tumbuh 0.6s 0.75s cubic-bezier(0.3, 1.45, 0.5, 1) backwards;
+}
+.logo-anim-letter {
+  animation: logo-naik 0.5s ease-out backwards;
+}
+.logo-anim-bar {
+  animation: logo-geser 1.6s ease-in-out infinite;
+}
+
+@keyframes logo-masuk-kiri {
+  from {
+    opacity: 0;
+    transform: translateX(-46px);
+  }
+}
+@keyframes logo-masuk-kanan {
+  from {
+    opacity: 0;
+    transform: translateX(46px);
+  }
+}
+@keyframes logo-tumbuh {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes logo-naik {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+@keyframes logo-geser {
+  0% {
+    transform: translateX(-110%);
+  }
+  100% {
+    transform: translateX(260%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .logo-anim-m,
+  .logo-anim-b,
+  .logo-anim-stem,
+  .logo-anim-letter,
+  .logo-anim-bar {
+    animation: none !important;
+  }
+  .logo-anim-bar {
+    width: 100%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

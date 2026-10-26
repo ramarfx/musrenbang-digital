@@ -3,6 +3,7 @@ import { registerSchema, type RegisterInput } from '@musrenbang/shared';
 import { useForm } from 'react-hook-form';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useWelcomeSplash } from '@/components/brand/WelcomeSplash';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Field } from '@/components/ui/Field';
@@ -16,6 +17,7 @@ export function RegisterForm({ onNeedsLogin }: { onNeedsLogin: () => void }) {
   const location = useLocation();
   const from = (location.state as LoginLocationState)?.from ?? '/';
   const mutation = useSignUpMutation();
+  const splash = useWelcomeSplash();
   const form = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
     defaultValues: { nama: '', email: '', password: '' },
@@ -25,6 +27,7 @@ export function RegisterForm({ onNeedsLogin }: { onNeedsLogin: () => void }) {
     mutation.mutate(values, {
       onSuccess: (data) => {
         if (data.session) {
+          splash.play();
           toast.success('Akun dibuat. Selamat bergabung!');
           navigate(from, { replace: true });
           return;
