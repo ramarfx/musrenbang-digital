@@ -1,0 +1,202 @@
+[
+  {
+    "deskripsi": "Menambal dan mengaspal ulang ruas jalan berlubang di Jl. Raya Bogor, Kramat Jati, yang sering menyebabkan kecelakaan pengendara motor.",
+    "estimasi_biaya": 450000000,
+    "judul": "Perbaikan Jalan Berlubang Jl. Raya Bogor",
+    "kategori": "Infrastruktur dan Jalan",
+    "latitude": -6.2847,
+    "lokasi": "Jl. Raya Bogor, Kramat Jati",
+    "longitude": 106.864,
+    "status": "Diajukan"
+  },
+  {
+    "deskripsi": "Perbaikan atap bocor, pengecatan ulang, dan pengadaan meja kursi baru untuk 6 ruang kelas.",
+    "estimasi_biaya": 1250000000,
+    "judul": "Rehabilitasi SDN 05 Pagi Tebet",
+    "kategori": "Pendidikan",
+    "latitude": -6.231,
+    "lokasi": "Tebet, Jakarta Selatan",
+    "longitude": 106.848,
+    "status": "Diverifikasi"
+  },
+  {
+    "deskripsi": "Layanan posyandu keliling bulanan untuk balita dan lansia di RW 04, termasuk timbangan bayi dan vitamin.",
+    "estimasi_biaya": 320000000,
+    "judul": "Posyandu Keliling RW 04 Kelapa Gading",
+    "kategori": "Kesehatan",
+    "latitude": -6.158,
+    "lokasi": "Kelapa Gading, Jakarta Utara",
+    "longitude": 106.905,
+    "status": "Diajukan"
+  },
+  {
+    "deskripsi": "Pembangunan bank sampah terpadu dengan mesin pencacah plastik dan pelatihan pemilahan untuk 200 KK.",
+    "estimasi_biaya": 780000000,
+    "judul": "Bank Sampah Terpadu Cengkareng",
+    "kategori": "Lingkungan dan Sampah",
+    "latitude": -6.142,
+    "lokasi": "Cengkareng, Jakarta Barat",
+    "longitude": 106.735,
+    "status": "Masuk APBD"
+  },
+  {
+    "deskripsi": "Pengerukan dan pelebaran saluran air sepanjang 1,2 km untuk mengurangi genangan saat hujan deras.",
+    "estimasi_biaya": 2100000000,
+    "judul": "Normalisasi Saluran Air Jl. Kemang Raya",
+    "kategori": "Air Bersih dan Drainase",
+    "latitude": -6.26,
+    "lokasi": "Jl. Kemang Raya, Jakarta Selatan",
+    "longitude": 106.81,
+    "status": "Dikerjakan"
+  },
+  {
+    "deskripsi": "Penambahan halte di titik kepadatan penumpang koridor 13 untuk memecah antrean jam sibuk.",
+    "estimasi_biaya": 1500000000,
+    "judul": "Halte Transjakarta Baru Koridor 13",
+    "kategori": "Transportasi Publik",
+    "latitude": -6.23,
+    "lokasi": "Koridor 13, Jakarta Selatan",
+    "longitude": 106.79,
+    "status": "Diverifikasi"
+  },
+  {
+    "deskripsi": "Pemasangan 40 titik lampu jalan tenaga surya di gang-gang Kampung Melayu yang masih gelap.",
+    "estimasi_biaya": 540000000,
+    "judul": "Lampu Jalan Tenaga Surya Kampung Melayu",
+    "kategori": "Keamanan dan Penerangan",
+    "latitude": -6.214,
+    "lokasi": "Kampung Melayu, Jakarta Timur",
+    "longitude": 106.867,
+    "status": "Diajukan"
+  },
+  {
+    "deskripsi": "Pelatihan foto produk, live selling, dan ongkir bersama untuk 150 pedagang UMKM Tanah Abang.",
+    "estimasi_biaya": 890000000,
+    "judul": "Pasar UMKM Digital Tanah Abang",
+    "kategori": "Ekonomi dan UMKM",
+    "latitude": -6.186,
+    "lokasi": "Tanah Abang, Jakarta Pusat",
+    "longitude": 106.81,
+    "status": "Diajukan"
+  },
+  {
+    "deskripsi": "Paket sembako bulanan dan layanan antar obat untuk 300 lansia dan penyandang disabilitas di Rusun Marunda.",
+    "estimasi_biaya": 640000000,
+    "judul": "Bantuan Lansia dan Disabilitas Rusun Marunda",
+    "kategori": "Sosial dan Budaya",
+    "latitude": -6.11,
+    "lokasi": "Rusun Marunda, Jakarta Utara",
+    "longitude": 106.96,
+    "status": "Masuk APBD"
+  },
+  {
+    "deskripsi": "Pemasangan WiFi publik gratis di Taman Menteng untuk pelajar dan warga yang belajar daring.",
+    "estimasi_biaya": 410000000,
+    "judul": "WiFi Publik Gratis Taman Menteng",
+    "kategori": "Teknologi dan Layanan Digital",
+    "latitude": -6.191,
+    "lokasi": "Taman Menteng, Jakarta Pusat",
+    "longitude": 106.825,
+    "status": "Diajukan"
+  },
+  {
+    "deskripsi": "Perbaikan trotoar dengan guiding block dan ramp kursi roda di sepanjang Jl. Sudirman.",
+    "estimasi_biaya": 1750000000,
+    "judul": "Trotoar Ramah Disabilitas Jl. Sudirman",
+    "kategori": "Infrastruktur dan Jalan",
+    "latitude": -6.208,
+    "lokasi": "Jl. Sudirman, Jakarta Pusat",
+    "longitude": 106.818,
+    "status": "Dikerjakan"
+  },
+  {
+    "deskripsi": "Beasiswa SPP dan perlengkapan sekolah untuk 500 pelajar kurang mampu di Jakarta Timur.",
+    "estimasi_biaya": 2400000000,
+    "judul": "Beasiswa Pelajar Kurang Mampu Jakarta Timur",
+    "kategori": "Pendidikan",
+    "latitude": -6.22,
+    "lokasi": "Jakarta Timur",
+    "longitude": 106.9,
+    "status": "Selesai"
+  },
+  {
+    "deskripsi": "Pembangunan puskesmas pembantu dengan poli gigi dan laboratorium sederhana di Palmerah.",
+    "estimasi_biaya": 3100000000,
+    "judul": "Puskesmas Pembantu Palmerah",
+    "kategori": "Kesehatan",
+    "latitude": -6.19,
+    "lokasi": "Palmerah, Jakarta Barat",
+    "longitude": 106.8,
+    "status": "Diverifikasi"
+  },
+  {
+    "deskripsi": "Tempat pengolahan sampah reduce, reuse, recycle untuk 3 RW di Jatinegara.",
+    "estimasi_biaya": 920000000,
+    "judul": "TPS 3R Jatinegara",
+    "kategori": "Lingkungan dan Sampah",
+    "latitude": -6.21,
+    "lokasi": "Jatinegara, Jakarta Timur",
+    "longitude": 106.87,
+    "status": "Diajukan"
+  },
+  {
+    "deskripsi": "Pengadaan 2 unit pompa air mobile untuk antisipasi banjir rob di Pluit.",
+    "estimasi_biaya": 2800000000,
+    "judul": "Pompa Air Antisipasi Banjir Pluit",
+    "kategori": "Air Bersih dan Drainase",
+    "latitude": -6.12,
+    "lokasi": "Pluit, Jakarta Utara",
+    "longitude": 106.79,
+    "status": "Masuk APBD"
+  },
+  {
+    "deskripsi": "Penambahan 2 armada bus sekolah untuk rute Cibubur - sekolah negeri terdekat.",
+    "estimasi_biaya": 670000000,
+    "judul": "Bus Sekolah Rute Cibubur",
+    "kategori": "Transportasi Publik",
+    "latitude": -6.24,
+    "lokasi": "Cibubur, Jakarta Timur",
+    "longitude": 106.88,
+    "status": "Diajukan"
+  },
+  {
+    "deskripsi": "Pemasangan 12 kamera CCTV di titik rawan pencurian di RW 09 Duren Sawit.",
+    "estimasi_biaya": 380000000,
+    "judul": "CCTV Lingkungan RW 09 Duren Sawit",
+    "kategori": "Keamanan dan Penerangan",
+    "latitude": -6.23,
+    "lokasi": "Duren Sawit, Jakarta Timur",
+    "longitude": 106.92,
+    "status": "Diverifikasi"
+  },
+  {
+    "deskripsi": "Pelatihan barista 2 minggu plus magang di kafe lokal untuk 40 pemuda Karang Taruna.",
+    "estimasi_biaya": 290000000,
+    "judul": "Pelatihan Barista untuk Pemuda Karang Taruna",
+    "kategori": "Ekonomi dan UMKM",
+    "latitude": -6.17,
+    "lokasi": "Jakarta Barat",
+    "longitude": 106.79,
+    "status": "Selesai"
+  },
+  {
+    "deskripsi": "Festival tahunan lenong, ondel-ondel, dan kuliner Betawi di Setu Babakan.",
+    "estimasi_biaya": 510000000,
+    "judul": "Festival Budaya Betawi Setu Babakan",
+    "kategori": "Sosial dan Budaya",
+    "latitude": -6.28,
+    "lokasi": "Setu Babakan, Jakarta Selatan",
+    "longitude": 106.81,
+    "status": "Dikerjakan"
+  },
+  {
+    "deskripsi": "Aplikasi pelaporan jalan rusak berbasis foto dan lokasi untuk diteruskan ke dinas terkait.",
+    "estimasi_biaya": 730000000,
+    "judul": "Aplikasi Lapor Jalan Rusak Warga",
+    "kategori": "Teknologi dan Layanan Digital",
+    "latitude": -6.2,
+    "lokasi": "DKI Jakarta",
+    "longitude": 106.84,
+    "status": "Diajukan"
+  }
+]

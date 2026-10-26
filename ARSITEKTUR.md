@@ -72,9 +72,12 @@ admin. Validasi yang tidak bisa diwakili RLS (mis. total alokasi tidak melebihi
 anggaran virtual) menjadi fungsi database (RPC) pada langkah implementasi berikutnya,
 dan dicatat di migrasi saat ditambahkan.
 
-Frontend (rencana, belum dibangun di scaffold ini): aplikasi React + Vite dengan
+Frontend (sudah dibangun di `project/web/`): aplikasi React + Vite dengan
 Leaflet untuk peta usulan, Recharts untuk grafik gap, dan Tailwind untuk styling.
-Aplikasi memanggil Supabase langsung, tanpa server API buatan sendiri.
+Aplikasi memanggil Supabase langsung, tanpa server API buatan sendiri. Halaman:
+Beranda (peta + daftar usulan), Bandingkan, APBD, Simulator Anggaran, Buat Usulan
+(dengan pilih titik di peta), Detail Usulan (voting + komentar), Login/Daftar,
+dan Admin (ubah status usulan).
 
 ## 4. Modul
 
@@ -220,13 +223,17 @@ diunduh dari dashboard bila perlu.
 
 ## 12. Urutan implementasi
 
-1. Fondasi: buat proyek Supabase, jalankan migrasi, seed APBD, baca view gap
-   (sudah ada di scaffold; seed menunggu proyek Supabase dibuat).
-2. Proposal dan halaman publik: daftar, detail, peta, riwayat status.
-3. Voting dan komentar.
-4. Simulator alokasi dan halaman Bandingkan lengkap dengan teks otomatis.
-5. Admin: verifikasi, perubahan status, kelola APBD, seed 20 usulan contoh.
-6. Frontend React + Vite dan polish demo (loop 2 sampai 3 menit tanpa error).
+1. Fondasi: buat proyek Supabase, jalankan migrasi, seed APBD dan 20 usulan
+   contoh, baca view gap (sudah ada di scaffold; seed menunggu proyek Supabase
+   dibuat).
+2. Proposal dan halaman publik: daftar, detail, peta, riwayat status (halaman
+   sudah ada di `web/`, tinggal uji dengan data asli).
+3. Voting dan komentar (halaman sudah ada di `web/`).
+4. Simulator alokasi dan halaman Bandingkan lengkap dengan teks otomatis
+   (halaman sudah ada di `web/`).
+5. Admin: verifikasi, perubahan status, kelola APBD (halaman ubah status sudah
+   ada di `web/`; kelola APBD menyusul).
+6. Polish demo (loop 2 sampai 3 menit tanpa error) dan uji demo ke warga.
 
 ## 13. Keputusan terbuka dan risiko
 
@@ -236,7 +243,9 @@ diunduh dari dashboard bila perlu.
 - 2 kategori APBD masih kosong: lengkapi dari Lampiran Pergub 44/2025
   (Ringkasan Penjabaran per SKPD/urusan) sebelum rilis demo, atau tampilkan
   sebagai "data menyusul" dengan jujur.
-- Seed 20 usulan contoh belum dibuat.
+- Seed 20 usulan contoh sudah disiapkan sebagai berkas
+  (`db/seeds/proposals-contoh.json`), tinggal dijalankan setelah proyek Supabase
+  dibuat.
 - Akun ganda tanpa verifikasi KTP: risiko integritas agregat, dicatat di PRD Bab 15.
 - Posisi produk yang jujur: prototipe kanal pra-musrenbang untuk warga, bukan
   pengganti musrenbang resmi dan bukan sistem pemerintah. Platform e-musrenbang

@@ -123,4 +123,21 @@ if (configError) {
   process.exit(1);
 }
 
-console.log(`Seed selesai: ${categories.length} kategori, ${items.length} apbd_items.`);
+// Usulan contoh: hanya yang tanpa pengusul (pengusul_id null) yang dihapus dan
+// dimuat ulang, supaya usulan warga asli tidak ikut terhapus saat seed diulang.
+const proposalsPath = join(import.meta.dir, '..', 'db', 'seeds', 'proposals-contoh.json');
+const proposals = JSON.parse(readFileSync(proposalsPath, 'utf-8')) as Record<string, unknown>[];
+const { error: delPropError } = await supabase.from('proposals').delete().is('pengusul_id', null);
+if (delPropError) {
+  console.error('Gagal membersihkan usulan contoh:', delPropError.message);
+  process.exit(1);
+}
+const { error: propError } = await supabase.from('proposals').insert(proposals);
+if (propError) {
+  console.error('Gagal seed proposals:', propError.message);
+  process.exit(1);
+}
+
+console.log(
+  `Seed selesai: ${categories.length} kategori, ${items.length} apbd_items, ${proposals.length} usulan contoh.`,
+);
