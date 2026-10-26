@@ -24,12 +24,20 @@ type SplashContextValue = { play: () => void };
 const SplashContext = createContext<SplashContextValue | null>(null);
 
 // Cadangan kalau sessionStorage tidak bertahan saat refresh (pengaturan browser atau
-// ekstensi): refresh dalam jendela ini dianggap muatan ulang, bukan kunjungan baru.
+// ekstensi). Hanya berlaku untuk refresh; tab baru selalu memutar sambutan.
 const RELOAD_WINDOW_MS = 60 * 1000;
+
+function isReload(): boolean {
+  const nav = performance.getEntriesByType('navigation')[0] as
+    | PerformanceNavigationTiming
+    | undefined;
+  return nav?.type === 'reload';
+}
 
 function alreadySeen(): boolean {
   try {
     if (window.sessionStorage.getItem(SEEN_KEY) === '1') return true;
+    if (!isReload()) return false;
     const at = Number(window.localStorage.getItem(SEEN_KEY));
     return at > 0 && Date.now() - at < RELOAD_WINDOW_MS;
   } catch {
@@ -110,7 +118,7 @@ export function WelcomeSplashProvider({ children }: { children: ReactNode }) {
         >
           <div className="flex flex-col items-center gap-7 text-center">
             <AnimatedLogo className="block h-auto w-[min(380px,72vw)]" />
-            <LoadingDots />
+            <LoadingDots size="lg" />
             {/* Hanya untuk pembaca layar; tidak tampil di layar. */}
             <p role="status" className="sr-only">
               Memuat

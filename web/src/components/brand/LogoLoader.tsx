@@ -7,18 +7,24 @@ import { LogoMark } from './LogoMark';
  */
 export function LoadingDots({
   tone = 'brand',
+  size = 'md',
   className,
 }: {
   tone?: 'brand' | 'current';
+  size?: 'md' | 'lg';
   className?: string;
 }) {
   return (
-    <span aria-hidden="true" className={cn('inline-flex gap-1.5', className)}>
+    <span
+      aria-hidden="true"
+      className={cn('inline-flex', size === 'lg' ? 'gap-3' : 'gap-1.5', className)}
+    >
       {[0, 1, 2].map((i) => (
         <i
           key={i}
           className={cn(
-            'load-dot block size-2 rounded-full',
+            'load-dot block rounded-full',
+            size === 'lg' ? 'size-4' : 'size-2',
             tone === 'current' ? 'bg-current' : 'bg-warga',
           )}
           style={{ animationDelay: `${i * 160}ms` }}
