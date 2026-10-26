@@ -36,7 +36,7 @@ export default function Usulan() {
             type="button"
             aria-pressed={filter === f}
             onClick={() => setFilter(f)}
-            className="h-9 rounded-full border border-border bg-surface px-3.5 text-[13px] font-medium transition-transform duration-150 ease-out active:scale-[0.97] aria-pressed:border-hijau aria-pressed:bg-hijau aria-pressed:text-white"
+            className="h-9 rounded-full border border-border bg-surface px-3.5 text-[13px] font-medium transition-transform duration-150 ease-out active:scale-[0.97] aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-white"
           >
             {f}
           </button>

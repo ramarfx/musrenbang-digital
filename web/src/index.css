@@ -10,12 +10,14 @@
   --surface: #ffffff;
   --border: #e6e0d6;
   --rule: #efeae1;
+  /* Tinta: warna ikon logo. Dipakai untuk aksi (tombol utama, pilihan aktif). */
   --ink: #14222b;
+  --ink-tekan: #26363f;
   --muted: #5e6a70;
   --active: #ece7dd;
   --track: #e9e4da;
 
-  /* Hijau sidebar, kartu hero, dan tombol utama. */
+  /* Hijau sidebar dan kartu hero. */
   --hijau: #0b6e55;
   --hijau-tekan: #0a5e49;
   /* Hijau data: porsi warga. Sama dengan batang logo. */
@@ -23,6 +25,8 @@
   /* Porsi APBD memakai tinta, bukan abu kebiruan prototipe. */
   --apbd: #14222b;
 
+  /* Hijau Terang logo: aksen di atas tinta. */
+  --hijau-terang: #4fc79c;
   --mint: #a7f3d0;
   --mint-pucat: #d1fae5;
   --mint-tua: #065f46;
@@ -45,6 +49,8 @@
   --color-border: var(--border);
   --color-rule: var(--rule);
   --color-ink: var(--ink);
+  --color-ink-tekan: var(--ink-tekan);
+  --color-hijau-terang: var(--hijau-terang);
   --color-muted: var(--muted);
   --color-active: var(--active);
   --color-track: var(--track);

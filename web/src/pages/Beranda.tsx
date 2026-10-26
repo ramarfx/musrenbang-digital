@@ -52,7 +52,7 @@ export default function Beranda() {
             dibandingkan dengan APBD.
           </p>
           <div className="mt-6 flex flex-col gap-3">
-            <TombolLink to="/simulator" className="bg-white text-[#0a5a47] hover:bg-ground">
+            <TombolLink to="/simulator" className="bg-white text-ink hover:bg-ground">
               Buka simulator
             </TombolLink>
             <TombolLink

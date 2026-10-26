@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
-import logoPutih from '../assets/logo/mb-lockup-horizontal-putih.svg';
+import ikonTinta from '../assets/logo/mb-ikon-app.svg';
 import logoWarna from '../assets/logo/mb-lockup-horizontal-warna.svg';
+import tulisanPutih from '../assets/logo/musrenbang-wordmark-putih.svg';
 import { ambilConfig, keluar } from '../lib/data';
 import { modeContoh } from '../lib/supabase';
 import { Ikon, type NamaIkon } from './Ikon';
@@ -58,7 +59,7 @@ function DaftarNav({ grup, gelap }: { grup: GrupNav[]; gelap: boolean }) {
     if (gelap) {
       return `${dasar} text-white ${
         isActive
-          ? 'bg-white/20 font-bold before:absolute before:top-2.5 before:bottom-2.5 before:-left-3.5 before:w-1 before:rounded-r before:bg-mint'
+          ? 'bg-ink/40 font-bold before:absolute before:top-2.5 before:bottom-2.5 before:-left-3.5 before:w-1 before:rounded-r before:bg-hijau-terang'
           : 'font-medium hover:bg-white/10'
       }`;
     }
@@ -98,9 +99,7 @@ function KotakWilayah({ gelap }: { gelap: boolean }) {
       }`}
     >
       <span
-        className={`grid size-9 flex-none place-items-center rounded-[11px] ${
-          gelap ? 'bg-white/20' : 'bg-[#d5ede3] text-[#0b4a36]'
-        }`}
+        className={`grid size-9 flex-none place-items-center rounded-[11px] ${'bg-ink text-hijau-terang'}`}
       >
         <Ikon nama="lokasi" />
       </span>
@@ -118,21 +117,19 @@ function BarisPengguna({ gelap }: { gelap: boolean }) {
   const navigate = useNavigate();
   const nama = profile?.nama ?? user?.email ?? 'Warga';
   const tombol = gelap
-    ? 'bg-white text-[#0a5a47] hover:bg-ground'
-    : 'bg-hijau text-white hover:bg-hijau-tekan';
+    ? 'bg-white text-ink hover:bg-ground'
+    : 'bg-ink text-white hover:bg-ink-tekan';
   const kelasTombol = `inline-flex h-9 flex-none items-center rounded-full px-4 text-[13px] font-bold transition-[transform,background-color] duration-150 ease-out active:scale-[0.96] ${tombol}`;
 
   return (
     <div
       className={`flex items-center gap-2.5 rounded-[18px] px-2 py-2.5 ${
-        gelap ? 'bg-black/20' : 'border border-border bg-surface'
+        gelap ? 'bg-ink/40' : 'border border-border bg-surface'
       }`}
     >
       <span
         aria-hidden="true"
-        className={`grid size-8 flex-none place-items-center rounded-full text-xs font-bold ${
-          gelap ? 'bg-white/20 text-white' : 'bg-[#d5ede3] text-[#0b4a36]'
-        }`}
+        className="grid size-8 flex-none place-items-center rounded-full bg-ink text-xs font-bold text-hijau-terang"
       >
         {user ? inisial(nama) : 'W'}
       </span>
@@ -168,9 +165,17 @@ function SidebarHijau({ grup }: { grup: GrupNav[] }) {
     <aside className="sticky top-4 m-4 mr-0 hidden h-[calc(100dvh-32px)] w-[272px] flex-none flex-col overflow-hidden rounded-[30px] border border-white/15 bg-hijau px-3.5 pt-5 pb-4 text-white lg:flex">
       <LingkaranDekorasi className="-right-[70px] bottom-[120px] size-[200px] shadow-[0_0_0_38px_rgb(255_255_255/0.05),0_0_0_78px_rgb(255_255_255/0.03)]" />
       <div className="relative flex min-h-0 flex-1 flex-col">
-        <Link to="/" className="mb-5 self-start rounded-lg px-2.5 py-1">
-          {/* Di latar hijau, panduan logo meminta versi satu warna (putih). */}
-          <img src={logoPutih} alt="Musrenbang Digital, ke beranda" className="h-[34px] w-auto" />
+        {/*
+          Logo warna tidak boleh langsung di latar hijau (panduan logo), jadi
+          dipakai ikon resmi berlatar tinta ditambah tulisan versi putih.
+        */}
+        <Link
+          to="/"
+          aria-label="Musrenbang Digital, ke beranda"
+          className="mb-5 flex items-center gap-2.5 self-start rounded-xl px-1.5 py-1"
+        >
+          <img src={ikonTinta} alt="" className="size-10" />
+          <img src={tulisanPutih} alt="" className="h-[21px] w-auto" />
         </Link>
         <KotakWilayah gelap />
         <div className="mt-1 min-h-0 flex-1 overflow-y-auto">

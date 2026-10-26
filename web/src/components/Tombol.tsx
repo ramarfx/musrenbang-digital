@@ -3,14 +3,14 @@ import { Link, type LinkProps } from 'react-router-dom';
 
 type Varian = 'utama' | 'biasa';
 
-// Tombol bulat penuh seperti Desain 1. Utama = hijau, biasa = putih bergaris.
+// Tombol bulat penuh seperti Desain 1. Utama = tinta (warna ikon logo), biasa = putih bergaris.
 // Tekan: skala 0,97 dalam 160ms supaya terasa merespons.
 const DASAR =
   'inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold whitespace-nowrap transition-[transform,background-color] duration-150 ease-out active:scale-[0.97] disabled:cursor-not-allowed disabled:active:scale-100';
 
 const VARIAN: Record<Varian, string> = {
   utama:
-    'bg-hijau text-white hover:bg-hijau-tekan disabled:bg-mati disabled:text-muted disabled:hover:bg-mati',
+    'bg-ink text-white hover:bg-ink-tekan disabled:bg-mati disabled:text-muted disabled:hover:bg-mati',
   biasa: 'border border-border bg-surface text-ink hover:bg-active disabled:opacity-50',
 };
 
