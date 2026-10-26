@@ -40,7 +40,7 @@ type ProfileInsert = {
 
 type ProposalInsert = {
   judul: string;
-  deskripsi?: string;
+  deskripsi: string;
   kategori: string;
   lokasi?: string | null;
   latitude?: number | null;
@@ -48,6 +48,10 @@ type ProposalInsert = {
   estimasi_biaya?: number;
   pengusul_id?: string | null;
   status?: ProposalRow['status'];
+  moderasi?: ProposalRow['moderasi'];
+  catatan_moderasi?: string | null;
+  dimoderasi_oleh?: string | null;
+  dimoderasi_pada?: string | null;
 };
 
 type ProposalUpdate = Partial<ProposalInsert>;
@@ -110,6 +114,10 @@ export type Database = {
       v_proposal_status_history: ViewDefinition<StatusHistory>;
     };
     Functions: {
+      moderate_proposal: FunctionDefinition<
+        { p_proposal_id: number; p_moderasi: string; p_catatan?: string | null },
+        undefined
+      >;
       save_allocations: FunctionDefinition<{ p_rows: Json }, undefined>;
       change_proposal_status: FunctionDefinition<
         { p_proposal_id: number; p_status: string },

@@ -71,6 +71,12 @@ SQL Editor:
    `v_comments`, `v_proposal_status_history`, `v_gap`
 4. `supabase/migrations/20261026090300_rpc.sql` — RPC `save_allocations` dan
    `change_proposal_status`
+5. `supabase/migrations/20261026195414_foundation_security.sql`: moderasi, batas akses
+   tabel/view, provisioning profil, dan jalur tulis alokasi melalui RPC.
+
+Migration kelima memberi moderasi `Menunggu` pada seluruh usulan lama. Data tidak
+dihapus, tetapi belum tampil publik sebelum admin menyetujuinya. Seed usulan juga
+memakai default ini; jangan menyetujui data lama secara otomatis.
 
 Alternatif: gunakan Supabase CLI (`supabase link`, lalu `supabase db push`) bila
 proyek sudah dihubungkan. Jalur SQL Editor adalah jalur yang paling sederhana untuk
@@ -203,9 +209,10 @@ Urutan sebelum commit: `bun run format`, lalu `bun run check`.
 
 ## Status
 
-Fondasi aplikasi, migrasi, seed, dan seluruh halaman utama sudah ada. Yang belum
-dilakukan hanyalah menyiapkan proyek Supabase nyata, menjalankan migrasi, mengisi
-`.env`, dan memuat seed. Setelah itu aplikasi langsung menampilkan data asli.
+Fondasi aplikasi, migrasi, seed, dan halaman utama tersedia. Migration keamanan
+Tahap 1 telah diuji pada PostgreSQL Supabase lokal, tetapi belum diterapkan ke remote.
+Kesiapan MVP juga bergantung pada pekerjaan PRD berikutnya, termasuk provenance APBD
+dan definisi agregasi. Tersedianya kode bukan bukti seluruh kriteria PRD telah lulus.
 
 Catatan jujur untuk demo:
 
@@ -217,3 +224,37 @@ Catatan jujur untuk demo:
 - Read model memakai `security_invoker = false` secara sadar agar agregat dan nama
   penulis bisa dibaca publik; view hanya mengekspos kolom aman dan tabel dasar tetap
   dilindungi RLS. Detail ada di `ARSITEKTUR.md`.
+
+## Pengujian backend lokal dengan RAM terbatas
+
+`supabase/tests/foundation_security.sql` berisi SQL assertion biasa, bukan pgTAP.
+Jalankan memakai `psql` dengan `ON_ERROR_STOP`, bukan `supabase test db`.
+Prasyarat: Docker Engine aktif, Bun, Supabase CLI, PowerShell 7, dan `psql`.
+
+Siapkan proyek lokal terisolasi tanpa menjalankan seed repository:
+
+```powershell
+New-Item -ItemType Directory -Force .tmp/foundation-local
+bunx --bun supabase --workdir .tmp/foundation-local init
+bunx --bun supabase --workdir .tmp/foundation-local start --exclude gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+pwsh -File scripts/test-backend.ps1
+```
+
+Hanya database Supabase yang diperlukan. Auth HTTP, Studio, Realtime, Storage, dan
+layanan lain tidak dijalankan. Schema Auth dan role database disiapkan Supabase CLI.
+Bootstrap pertama dapat mengunduh image tambahan untuk migration schema internal;
+image tersebut tidak berarti layanan HTTP terkait dijalankan terus-menerus.
+`init` cukup sekali; jangan memakai `--force` untuk menimpa konfigurasi yang ada.
+
+Runner menerima host lokal saja, menjalankan semua migration berurutan beserta tes
+dalam satu koneksi dan transaksi, lalu `ROLLBACK`. Jika ada error SQL, `psql` keluar
+dengan kode gagal dan penutupan koneksi membatalkan transaksi. Log dan payload ada
+di `.tmp/backend-tests/`. Tidak ada `db push` atau perubahan remote.
+Gunakan `-PsqlPath` bila `psql` tidak ada di PATH. Runner juga mendeteksi instalasi
+Windows PostgreSQL 18 pada lokasi standar.
+
+Setelah selesai, hentikan container proyek tes agar tidak memakai RAM:
+
+```powershell
+bunx --bun supabase --workdir .tmp/foundation-local stop
+```

@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'bun:test';
-import { proposalInputSchema, proposalStatusSchema } from './proposal';
+import {
+  proposalInputSchema,
+  proposalModerationInputSchema,
+  proposalModerationSchema,
+  proposalStatusSchema,
+} from './proposal';
 
 const usulanValid = {
   judul: 'Perbaikan trotoar Jl. Melati',
@@ -49,5 +54,44 @@ describe('proposalStatusSchema', () => {
   test('hanya menerima lima tahap resmi', () => {
     expect(proposalStatusSchema.safeParse('Diverifikasi').success).toBe(true);
     expect(proposalStatusSchema.safeParse('Dibatalkan').success).toBe(false);
+  });
+});
+
+describe('moderasi usulan', () => {
+  test('moderasi terpisah dari tahapan kemajuan', () => {
+    for (const moderasi of ['Menunggu', 'Disetujui', 'Ditolak']) {
+      expect(proposalModerationSchema.safeParse(moderasi).success).toBe(true);
+      expect(proposalStatusSchema.safeParse(moderasi).success).toBe(false);
+    }
+    expect(proposalModerationSchema.safeParse('Selesai').success).toBe(false);
+  });
+
+  test('penolakan memerlukan alasan yang bukan spasi', () => {
+    for (const catatan of [undefined, null, '', '   ']) {
+      expect(
+        proposalModerationInputSchema.safeParse({ proposalId: 1, moderasi: 'Ditolak', catatan })
+          .success,
+      ).toBe(false);
+    }
+    expect(
+      proposalModerationInputSchema.parse({
+        proposalId: 1,
+        moderasi: 'Ditolak',
+        catatan: '  Usulan duplikat.  ',
+      }).catatan,
+    ).toBe('Usulan duplikat.');
+  });
+
+  test('persetujuan tidak wajib catatan dan menolak catatan terlalu panjang', () => {
+    expect(
+      proposalModerationInputSchema.safeParse({ proposalId: 1, moderasi: 'Disetujui' }).success,
+    ).toBe(true);
+    expect(
+      proposalModerationInputSchema.safeParse({
+        proposalId: 1,
+        moderasi: 'Disetujui',
+        catatan: 'a'.repeat(2_001),
+      }).success,
+    ).toBe(false);
   });
 });

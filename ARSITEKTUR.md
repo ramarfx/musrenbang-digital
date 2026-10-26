@@ -241,6 +241,8 @@ Migrasi harus dijalankan berurutan karena saling bergantung:
 2. **`rls`** — mengaktifkan RLS, membuat policy, dan memberi GRANT ke peran API.
 3. **`views`** — read model yang dipakai frontend.
 4. **`rpc`** — fungsi transaksional untuk invariant lintas baris.
+5. **`foundation_security`**: moderasi terpisah, pembatasan visibilitas lintas tabel/view,
+   provisioning profil tepercaya, dan pengamanan jalur tulis alokasi.
 
 Semua migrasi ditulis idempoten (`CREATE TABLE IF NOT EXISTS`, `DROP POLICY IF EXISTS`,
 `CREATE OR REPLACE`) agar aman diulang saat pengembangan.
@@ -539,11 +541,12 @@ Catatan deployment:
 - Kontrak Zod shared, tipe `Database`, dan helper gap.
 - Frontend feature-based: seluruh halaman, form, tabel admin, peta, grafik, auth.
 - Seed tervalidasi Zod untuk APBD + 20 usulan.
-- Test unit untuk skema dan logika gap; lint, format, typecheck, build, test lulus.
+- Test unit untuk skema dan logika gap. Hasil unit test tidak membuktikan RLS aman.
 
 ### Belum / menunggu
 
-- Proyek Supabase nyata belum dibuat; migrasi dan seed belum dijalankan.
+- Migration Tahap 1 belum dipasang permanen pada remote. Pengujian SQL memakai
+  database Supabase lokal terisolasi; lihat prosedur pengujian di README.
 - 2 kategori APBD masih kosong; lengkapi dari Lampiran Pergub 44/2025 atau tampilkan
   “data menyusul” secara jujur.
 - Halaman kelola APBD untuk admin belum ada; pengelolaan masih lewat SQL/dashboard.
@@ -555,8 +558,41 @@ Catatan deployment:
 
 ### Langkah berikutnya
 
-1. Buat proyek Supabase dan jalankan empat migrasi berurutan.
+1. Verifikasi lima migration berurutan pada database pengujian sebelum penerapan remote.
 2. Isi `.env` dan `web/.env`, lalu `bun run seed`.
 3. Daftar akun, jadikan admin lewat SQL, uji loop demo 2–3 menit tanpa error.
 4. Lengkapi dua kategori APBD yang kosong bila sumber resmi tersedia.
 5. Polish kecil: pagination daftar, pengelolaan APBD di UI, dan uji ke pengguna.
+
+## 16. Aturan keamanan Tahap 1
+
+Bagian ini memperbarui matriks akses awal di atas setelah migration
+`20261026195414_foundation_security.sql` dijalankan. Moderasi `Menunggu`, `Disetujui`,
+dan `Ditolak` terpisah dari lima tahap kemajuan. Data lama mendapat `Menunggu` tanpa
+penghapusan atau persetujuan otomatis.
+
+- Publik hanya membaca usulan `Disetujui`. Pemilik membaca seluruh usulan sendiri;
+  admin membaca seluruh usulan. Tabel dan view memakai batas visibilitas yang sama,
+  termasuk komentar dan riwayat status.
+- Warga membuat usulan dengan status `Diajukan` dan moderasi `Menunggu`. Edit hanya
+  diizinkan untuk isi usulan sendiri saat `Menunggu`; identitas, pemilik, waktu
+  pembuatan, status, dan metadata moderasi dilindungi trigger.
+- RPC `moderate_proposal` hanya untuk admin. Penolakan wajib beralasan, sementara
+  identitas dan waktu pemeriksa ditentukan sistem. Persetujuan moderasi tidak
+  otomatis mengubah tahap kemajuan.
+- Profil dibuat oleh trigger Auth dengan role `warga`; role dari user metadata
+  diabaikan. Akun lama tanpa profil mendapat backfill tanpa menimpa profil yang ada.
+  API hanya dapat mengubah nama profil sendiri, termasuk ketika akun berperan admin.
+  Pemberian role admin tetap melalui pengelola SQL.
+- API tidak memiliki hak tulis langsung pada `allocations`. RPC publik mengunci
+  profil pengguna lalu memanggil validator lama dalam schema `private`. Penguncian
+  juga berlaku ketika pengguna belum memiliki baris alokasi.
+- Hak bawaan tabel/view dicabut dan diberikan kembali secara terbatas. Fungsi
+  trigger dan validator internal tidak dapat dipanggil role API. Schema `private`
+  tidak boleh dimasukkan ke exposed schemas Data API.
+- Definisi perhitungan `v_gap` dan metodologi APBD tidak berubah pada tahap ini.
+
+Tes SQL menggunakan role PostgreSQL `anon` dan `authenticated` dengan claims warga
+A, warga B, dan admin. Ini menguji RLS, constraint, trigger, view, dan RPC pada
+PostgreSQL asli. Layanan login HTTP dan PostgREST tidak dijalankan dalam mode tes
+ringan, sehingga cakupan tersebut tidak dinyatakan lulus oleh tes SQL ini.
