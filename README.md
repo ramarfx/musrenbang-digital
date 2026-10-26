@@ -258,3 +258,44 @@ Setelah selesai, hentikan container proyek tes agar tidak memakai RAM:
 ```powershell
 bunx --bun supabase --workdir .tmp/foundation-local stop
 ```
+
+## Pengujian integrasi Auth, REST, dan concurrency
+
+```powershell
+pwsh -NoProfile -File scripts/test-integration.ps1
+```
+
+Runner ini membuat proyek lokal `musrenbang-integration` di `.tmp/integration-local`
+dari `supabase/integration/config.toml`. API memakai port 55421, PostgreSQL 55422,
+dan Mailpit 55424. Hanya database, Auth, PostgREST, Kong, serta Mailpit dijalankan.
+Tidak ada fallback remote. Semua URL database dibatasi ke alamat integration lokal.
+
+Lima migration diterapkan persisten pada database lokal dan dicatat oleh Supabase
+CLI. Berbeda dari tes SQL Tahap 1, request HTTP dan dua koneksi concurrency memakai
+transaksi masing-masing. Database tetap tersedia sepanjang tes, kemudian container
+dihentikan dengan backup lokal. Gunakan `-KeepRunning` jika perlu inspeksi setelah tes.
+Untuk menghentikannya secara manual:
+
+```powershell
+bunx --bun supabase --workdir .tmp/integration-local stop --project-id musrenbang-integration
+```
+
+Fixture dibuat melalui signup Auth, dikonfirmasi memakai email Mailpit, lalu login
+untuk memperoleh JWT asli. Password diacak setiap run dan hanya disimpan dalam
+memori. Peran admin diberikan lewat SQL lokal; request otorisasi tetap memakai anon
+key dan JWT pengguna, tanpa service-role client. Fixture usulan, akun, serta email
+run tersebut dibersihkan setelah tes, termasuk ketika assertion gagal.
+
+Hasil aman disimpan sebagai JSON di `.tmp/integration-results/`, berisi nama
+assertion, jumlah lulus/gagal, dan kode error tanpa body Auth, password, atau token.
+Untuk mengulang hanya tes concurrency:
+
+```powershell
+pwsh -NoProfile -File scripts/test-integration.ps1 -ConcurrencyOnly
+```
+
+Concurrency memakai dua koneksi PostgreSQL yang berbeda dengan role authenticated
+dan UID akun hasil Auth. Tes mengamati `pg_blocking_pids`, bukan hanya menunggu
+durasi arbitrer. Skenario meliputi set kosong, set lama, serta transaksi kedua yang
+melebihi budget. Logout diverifikasi dengan penolakan refresh token; access JWT
+stateless dapat tetap berlaku sampai kedaluwarsa dan tidak diklaim langsung dicabut.

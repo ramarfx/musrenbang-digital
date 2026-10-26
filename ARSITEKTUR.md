@@ -596,3 +596,22 @@ Tes SQL menggunakan role PostgreSQL `anon` dan `authenticated` dengan claims war
 A, warga B, dan admin. Ini menguji RLS, constraint, trigger, view, dan RPC pada
 PostgreSQL asli. Layanan login HTTP dan PostgREST tidak dijalankan dalam mode tes
 ringan, sehingga cakupan tersebut tidak dinyatakan lulus oleh tes SQL ini.
+
+## 17. Integrasi lokal Tahap 1C
+
+`scripts/test-integration.ps1` menyiapkan proyek Supabase lokal terpisah dan
+menjalankan `scripts/integration/run.ts`. Konfigurasi minimal ada pada
+`supabase/integration/config.toml`. Lima migration yang sama dipasang secara
+persisten hanya pada proyek lokal, dengan migration history standar CLI.
+
+Tes memakai signup, konfirmasi email Mailpit, login, refresh, dan logout Auth.
+JWT hasil Auth dipakai langsung pada PostgREST untuk memeriksa akses tabel, view,
+moderasi, suara, komentar, riwayat, serta alokasi. Tes concurrency mengamati lock
+profil dari dua koneksi berbeda dan memeriksa set akhir beserta batas budget.
+
+Runner tidak mencetak kredensial atau body Auth. Laporan hanya berisi label
+assertion dan kode diagnostik. Data fixture dibersihkan berdasarkan ID run,
+sedangkan schema dan migration history lokal tetap tersedia untuk pengulangan.
+Tidak ada deployment frontend, perubahan rumus Gap, atau penerapan remote dalam
+Tahap 1C. Keberhasilan tes lokal tidak menggantikan smoke test konfigurasi remote
+setelah pemasangan development yang disetujui secara terpisah.
