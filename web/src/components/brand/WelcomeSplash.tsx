@@ -4,8 +4,8 @@ import { AnimatedLogo } from './AnimatedLogo';
 
 /**
  * Layar sambutan: animasi logo resmi dan bar loading. Muncul dua kali:
- * 1. saat web pertama dibuka di tab itu (sekali per sesi tab, jadi pindah
- *    halaman atau refresh tidak mengulangnya);
+ * 1. saat web pertama dibuka di tab itu (sekali per tab, jadi pindah
+ *    halaman atau refresh tidak mengulangnya, tab baru memutarnya lagi);
  * 2. setelah login atau daftar berhasil.
  * Tampil minimal 2,4 detik (huruf terakhir selesai sekitar 2,35 detik) dan
  * baru hilang setelah pemeriksaan sesi login selesai. Batas atas 6 detik
@@ -15,15 +15,22 @@ const MIN_MS = 2400;
 const MIN_REDUCED_MS = 700;
 const MAX_MS = 6000;
 const EXIT_MS = 220;
+// z-index layar sambutan harus di atas Leaflet (panel dan kontrol petanya sampai 1000).
 const SEEN_KEY = 'musrenbang:sambutan-dilihat';
 
 type SplashContextValue = { play: () => void };
 
 const SplashContext = createContext<SplashContextValue | null>(null);
 
+// Cadangan kalau sessionStorage tidak bertahan saat refresh (pengaturan browser atau
+// ekstensi): refresh dalam jendela ini dianggap muatan ulang, bukan kunjungan baru.
+const RELOAD_WINDOW_MS = 60 * 1000;
+
 function alreadySeen(): boolean {
   try {
-    return window.sessionStorage.getItem(SEEN_KEY) === '1';
+    if (window.sessionStorage.getItem(SEEN_KEY) === '1') return true;
+    const at = Number(window.localStorage.getItem(SEEN_KEY));
+    return at > 0 && Date.now() - at < RELOAD_WINDOW_MS;
   } catch {
     return false;
   }
@@ -32,16 +39,21 @@ function alreadySeen(): boolean {
 function markSeen() {
   try {
     window.sessionStorage.setItem(SEEN_KEY, '1');
+    window.localStorage.setItem(SEEN_KEY, String(Date.now()));
   } catch {
     // Penyimpanan diblokir: splash boleh tampil lagi di muatan berikutnya.
   }
 }
 
+// Ditandai sejak modul dimuat, jadi refresh di tengah animasi pun tidak memutarnya lagi.
+const SPLASH_AT_LOAD = !alreadySeen();
+if (SPLASH_AT_LOAD) markSeen();
+
 export function WelcomeSplashProvider({ children }: { children: ReactNode }) {
   const { loading } = useAuth();
   // Fase awal dihitung sebelum render pertama supaya tidak ada kilatan isi web.
   const [phase, setPhase] = useState<'hidden' | 'visible' | 'leaving'>(() =>
-    alreadySeen() ? 'hidden' : 'visible',
+    SPLASH_AT_LOAD ? 'visible' : 'hidden',
   );
   const [minDone, setMinDone] = useState(false);
 
@@ -52,6 +64,10 @@ export function WelcomeSplashProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('sambutan')) {
       play();
+      // Hapus penanda dari alamat supaya refresh tidak memutar ulang.
+      const url = new URL(window.location.href);
+      url.searchParams.delete('sambutan');
+      window.history.replaceState(null, '', url);
     }
   }, [play]);
 
@@ -86,7 +102,7 @@ export function WelcomeSplashProvider({ children }: { children: ReactNode }) {
       {children}
       {phase !== 'hidden' && (
         <div
-          className="fixed inset-0 z-[100] grid place-items-center bg-ground px-4 transition-opacity ease-out data-[leaving=true]:opacity-0"
+          className="fixed inset-0 z-[2000] grid place-items-center bg-ground px-4 transition-opacity ease-out data-[leaving=true]:opacity-0"
           style={{ transitionDuration: `${EXIT_MS}ms` }}
           data-leaving={phase === 'leaving'}
           aria-busy={phase === 'visible'}

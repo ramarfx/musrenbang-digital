@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react';
 import { HeroCard } from '@/components/ui/Card';
 import { buildRingSlices, DonutRing } from '@/components/ui/DonutRing';
+import { Modal } from '@/components/ui/Modal';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
 import { formatRupiah } from '@/lib/format';
 import { formatSelisih } from '../lib';
@@ -20,8 +20,7 @@ type Props = {
 /**
  * Pop-up rincian pembagian dana. Kiri: ring besar dengan legenda (menempel saat
  * daftar di-scroll). Kanan: tabel semua program dengan kolom sejajar, termasuk yang
- * di ring digabung menjadi "Lainnya". Memakai elemen <dialog> asli, jadi fokus
- * terkunci di dalam, Escape menutup, dan pembaca layar mengenalinya.
+ * di ring digabung menjadi "Lainnya". Pembungkus pop-up memakai komponen Modal.
  */
 export function AllocationDetailDialog({
   open,
@@ -31,21 +30,6 @@ export function AllocationDetailDialog({
   apbdByKategori,
   bandingkanDenganApbd,
 }: Props) {
-  const ref = useRef<HTMLDialogElement>(null);
-
-  useEffect(() => {
-    const dialog = ref.current;
-    if (!dialog) return;
-    if (open && !dialog.open) {
-      dialog.showModal();
-      document.body.style.overflow = 'hidden';
-    }
-    if (!open && dialog.open) dialog.close();
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [open]);
-
   const total = items.reduce((sum, item) => sum + item.jumlah, 0);
   const sisa = budget - total;
   const urut = [...items].sort((a, b) => b.jumlah - a.jumlah);
@@ -53,15 +37,11 @@ export function AllocationDetailDialog({
   const persenBudget = (nilai: number) => (budget > 0 ? Math.round((nilai / budget) * 100) : 0);
 
   return (
-    <dialog
-      ref={ref}
-      aria-labelledby="rincian-judul"
+    <Modal
+      open={open}
       onClose={onClose}
-      onClick={(event) => {
-        // Klik di luar isi (pada latar gelap) menutup pop-up.
-        if (event.target === ref.current) onClose();
-      }}
-      className="anim-dialog no-scrollbar m-auto max-h-[calc(100dvh-24px)] w-[min(1120px,calc(100vw-24px))] overflow-y-auto rounded-3xl border border-border bg-ground p-0 text-ink backdrop:bg-ink/55"
+      labelledBy="rincian-judul"
+      className="w-[min(1120px,calc(100vw-24px))]"
     >
       <div className="p-5 sm:p-8">
         <div className="flex items-start justify-between gap-4">
@@ -216,6 +196,6 @@ export function AllocationDetailDialog({
           </div>
         </div>
       </div>
-    </dialog>
+    </Modal>
   );
 }

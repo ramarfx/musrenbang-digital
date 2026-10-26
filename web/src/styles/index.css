@@ -250,13 +250,13 @@ html::-webkit-scrollbar,
 }
 
 /*
- * Muat tertunda: elemen tak terlihat selama 400ms pertama, lalu memudar masuk 200ms.
+ * Muat tertunda: elemen tak terlihat selama 1 detik pertama, lalu memudar masuk 200ms.
  * Dipakai pemuat dan kotak abu (skeleton) supaya muatan cepat tidak berkedip.
- * Kalau elemen dilepas sebelum 400ms (datanya sudah datang), pengguna tidak melihat apa pun.
+ * Kalau elemen dilepas sebelum 1 detik (datanya sudah datang), pengguna tidak melihat apa pun.
  */
 .load-late {
   opacity: 0;
-  animation: load-late-in 200ms var(--ease-out) 400ms forwards;
+  animation: load-late-in 200ms var(--ease-out) 1000ms forwards;
 }
 @keyframes load-late-in {
   to {
@@ -374,6 +374,11 @@ html::-webkit-scrollbar,
   transform-origin: 0 50%;
   animation: anim-bar-grow 600ms var(--ease-out) 200ms backwards;
 }
+/* Bar dua arah di halaman Bandingkan: tumbuh dari garis tengah (sisi asal lewat origin-left/right). */
+.bar-in {
+  animation: anim-bar-grow 600ms var(--ease-out) backwards;
+  animation-delay: calc(150ms + var(--i, 0) * 45ms);
+}
 .anim-dialog[open] .ring-draw {
   animation: ring-draw 800ms var(--ease-out) backwards;
   animation-delay: calc(180ms + var(--i, 0) * 90ms);
@@ -434,6 +439,7 @@ html::-webkit-scrollbar,
 
   .anim-dialog[open],
   .anim-dialog[open]::backdrop,
+  .bar-in,
   .anim-dialog[open] .bar-grow,
   .anim-dialog[open] .ring-draw,
   .anim-page,

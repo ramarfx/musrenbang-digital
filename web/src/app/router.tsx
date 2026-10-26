@@ -1,4 +1,3 @@
-import { PageLoader } from '@/components/ui/PageLoader';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { RequireAdmin, RequireAuth } from '@/features/auth';
 import { lazy, Suspense, type ReactNode } from 'react';
@@ -17,7 +16,8 @@ const Metodologi = lazy(() => import('@/routes/Metodologi'));
 const NotFound = lazy(() => import('@/routes/NotFound'));
 
 function page(element: ReactNode) {
-  return <Suspense fallback={<PageLoader />}>{element}</Suspense>;
+  // Layar sambutan menutupi muatan pertama; setelah itu halaman cukup kosong sesaat.
+  return <Suspense fallback={null}>{element}</Suspense>;
 }
 
 export const router = createBrowserRouter([
