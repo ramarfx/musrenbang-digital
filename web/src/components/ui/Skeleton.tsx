@@ -8,7 +8,7 @@ export function ListSkeleton({ rows = 4 }: { rows?: number }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {Array.from({ length: rows }, (_, index) => (
-        <div key={index} className="rounded-xl border border-stone-200 bg-white p-4">
+        <div key={index} className="rounded-3xl border border-border bg-surface p-5">
           <Skeleton className="h-5 w-2/3" />
           <Skeleton className="mt-3 h-4 w-full" />
           <Skeleton className="mt-2 h-4 w-4/5" />

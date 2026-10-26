@@ -34,7 +34,7 @@ export function ApbdTable({ items }: { items: ApbdItem[] }) {
                   className={
                     item.status_verifikasi === 'verified_program'
                       ? 'text-emerald-800'
-                      : 'text-amber-700'
+                      : 'text-mustard-tua'
                   }
                 >
                   {APBD_VERIFICATION_LABEL[item.status_verifikasi]}

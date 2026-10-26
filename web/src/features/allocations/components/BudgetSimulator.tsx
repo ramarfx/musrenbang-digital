@@ -185,7 +185,7 @@ export function BudgetSimulator() {
       </Card>
 
       {!userId && (
-        <p className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+        <p className="rounded-2xl bg-mustard-pucat p-4 text-sm text-mustard-tua">
           Simulasi bisa dicoba tanpa login, tetapi menyimpan alokasi butuh akun.{' '}
           <Link to="/login" className="font-semibold underline">
             Masuk dulu

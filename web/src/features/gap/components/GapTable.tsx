@@ -33,7 +33,7 @@ export function GapTable({ items }: { items: GapItem[] }) {
                 </td>
                 <td
                   className={`px-4 py-2 text-right font-semibold tabular-nums ${
-                    nol ? 'text-stone-500' : positif ? 'text-emerald-800' : 'text-amber-700'
+                    nol ? 'text-stone-500' : positif ? 'text-emerald-800' : 'text-mustard-tua'
                   }`}
                 >
                   {positif ? '+' : ''}

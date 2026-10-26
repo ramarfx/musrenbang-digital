@@ -1,3 +1,4 @@
+import { buttonClass } from '@/components/ui/Button';
 import type { ProposalStatus } from '@musrenbang/shared';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -45,16 +46,10 @@ export default function Beranda() {
         description="Usulkan program, alokasikan anggaran virtual, beri suara, dan bandingkan prioritas warga dengan APBD yang sebenarnya."
         actions={
           <>
-            <Link
-              to="/simulator"
-              className="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700"
-            >
+            <Link to="/simulator" className={buttonClass('primary')}>
               Coba Simulator Anggaran
             </Link>
-            <Link
-              to="/bandingkan"
-              className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-stone-900 shadow-sm transition hover:bg-amber-400"
-            >
+            <Link to="/bandingkan" className={buttonClass('outline')}>
               Lihat Gap Warga-APBD
             </Link>
           </>
@@ -133,10 +128,7 @@ export default function Beranda() {
             title="Belum ada usulan"
             description="Jadilah yang pertama mengusulkan program untuk kotamu."
             action={
-              <Link
-                to="/usulan/baru"
-                className="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
-              >
+              <Link to="/usulan/baru" className={buttonClass('primary')}>
                 Buat usulan pertama
               </Link>
             }

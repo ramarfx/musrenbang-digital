@@ -9,7 +9,8 @@ type CardProps = {
 
 export function Card({ children, className, as: Tag = 'section' }: CardProps) {
   return (
-    <Tag className={cn('rounded-xl border border-stone-200 bg-white p-4 shadow-sm', className)}>
+    // Kartu putih datar Desain 1: garis tipis, tanpa bayangan, sudut 24px.
+    <Tag className={cn('rounded-3xl border border-border bg-surface p-5 sm:p-6', className)}>
       {children}
     </Tag>
   );

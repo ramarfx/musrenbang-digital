@@ -20,7 +20,7 @@ export function ProposalFilters({
   totalCount,
 }: ProposalFiltersProps) {
   return (
-    <div className="flex flex-wrap items-end gap-3 rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
+    <div className="flex flex-wrap items-end gap-3 rounded-3xl border border-border bg-surface p-5">
       <div className="min-w-52 flex-1">
         <label htmlFor="cari-usulan" className="mb-1 block text-sm font-medium text-stone-700">
           Cari usulan

@@ -7,7 +7,7 @@ export function ProposalCard({ proposal }: { proposal: Proposal }) {
   return (
     <Link
       to={`/usulan/${proposal.id}`}
-      className="group flex flex-col rounded-xl border border-stone-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-700 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-800"
+      className="group flex flex-col rounded-3xl border border-border bg-surface p-5 transition-colors duration-150 ease-out hover:border-ink/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
     >
       <div className="flex items-start justify-between gap-3">
         <h3 className="font-bold text-stone-900 group-hover:text-emerald-800">{proposal.judul}</h3>

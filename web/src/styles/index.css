@@ -1,9 +1,86 @@
 @import 'tailwindcss';
 
+/*
+ * Desain 1 (hijau). Aturan tim: tanpa gradasi, tanpa biru, tanpa warna pelangi.
+ * Nilai mentah ada di :root supaya mode gelap nanti cukup mengganti di satu tempat.
+ */
+:root {
+  --ground: #f7f4ef; /* Kertas: latar halaman */
+  --surface: #ffffff;
+  --border: #e6e0d6;
+  --rule: #efeae1;
+  --ink: #14222b; /* Tinta: warna ikon logo, dipakai untuk aksi */
+  --ink-tekan: #26363f;
+  --muted: #5e6a70;
+  --active: #ece7dd;
+  --track: #e9e4da;
+
+  --hijau: #0b6e55; /* sidebar dan kartu hero */
+  --hijau-tekan: #0a5e49;
+  --hijau-terang: #4fc79c; /* aksen di atas tinta, batang "b" di ikon */
+  --warga: #047857; /* data porsi warga, batang logo */
+  --apbd: #14222b; /* data porsi APBD */
+
+  --mint: #a7f3d0;
+  --mint-pucat: #d1fae5;
+  --mint-tua: #065f46;
+  --mustard: #f2c46d;
+  --mustard-pucat: #efe6c9;
+  --mustard-tua: #5e4a0a;
+  --terakota: #ee9f7f;
+  --pasir: #e6e0d6;
+  --mati: #c9d8d2;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@theme inline {
+  --font-sans: 'Plus Jakarta Sans Variable', ui-sans-serif, system-ui, sans-serif;
+
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-rule: var(--rule);
+  --color-ink: var(--ink);
+  --color-ink-tekan: var(--ink-tekan);
+  --color-muted: var(--muted);
+  --color-active: var(--active);
+  --color-track: var(--track);
+  --color-hijau: var(--hijau);
+  --color-hijau-tekan: var(--hijau-tekan);
+  --color-hijau-terang: var(--hijau-terang);
+  --color-warga: var(--warga);
+  --color-apbd: var(--apbd);
+  --color-mint: var(--mint);
+  --color-mint-pucat: var(--mint-pucat);
+  --color-mint-tua: var(--mint-tua);
+  --color-mustard: var(--mustard);
+  --color-mustard-pucat: var(--mustard-pucat);
+  --color-mustard-tua: var(--mustard-tua);
+  --color-terakota: var(--terakota);
+  --color-pasir: var(--pasir);
+  --color-mati: var(--mati);
+
+  --ease-out: var(--ease-out);
+}
+
+/*
+ * Skala stone Tailwind dipetakan ke netral Desain 1 (kertas sampai tinta), jadi
+ * komponen fitur yang memakai stone-* otomatis ikut palet tanpa diubah satu per satu.
+ * stone-400 sengaja digelapkan supaya teks abu tetap lolos kontras AA di atas kertas.
+ */
 @theme {
-  --font-sans:
-    Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-    sans-serif;
+  --color-stone-50: #f7f4ef;
+  --color-stone-100: #efeae1;
+  --color-stone-200: #e6e0d6;
+  --color-stone-300: #d6cfc2;
+  --color-stone-400: #646f74;
+  --color-stone-500: #5e6a70;
+  --color-stone-600: #4c585e;
+  --color-stone-700: #36434b;
+  --color-stone-800: #22303a;
+  --color-stone-900: #14222b;
+  --color-stone-950: #0c161c;
 }
 
 html {
@@ -12,13 +89,47 @@ html {
 }
 
 body {
-  @apply bg-stone-50 text-stone-900 antialiased;
+  background: var(--ground);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--warga);
+  outline-offset: 2px;
+}
+
+button {
+  cursor: pointer;
 }
 
 .leaflet-container {
   font-family: inherit;
+  background: var(--track);
+}
+
+/* Ubin peta dibuat abu hangat supaya air dan jalan tidak tampil biru. */
+.peta-hangat .leaflet-tile-pane {
+  filter: grayscale(1) sepia(0.18) brightness(1.04) contrast(0.92);
 }
 
 ::selection {
-  @apply bg-emerald-200 text-emerald-950;
+  background: var(--mint);
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
 }

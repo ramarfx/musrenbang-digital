@@ -115,7 +115,7 @@ export function AdminProposalTable({
         />
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm">
+      <div className="overflow-x-auto rounded-3xl border border-border bg-surface">
         <table className="w-full text-left text-sm">
           <caption className="sr-only">Daftar usulan untuk dikelola admin</caption>
           <thead className="bg-stone-100 text-stone-700">
