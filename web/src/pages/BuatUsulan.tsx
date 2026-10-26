@@ -1,8 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet';
+import { useMapEvents } from 'react-leaflet';
 import { useAuth } from '../App';
-import { supabase } from '../lib/supabase';
+import { JudulHalaman } from '../components/Halaman';
+import { Kartu } from '../components/Kartu';
+import { Marker, Peta, penandaHijau } from '../components/PetaUsulan';
+import { Tombol } from '../components/Tombol';
+import { ambilKategori, buatUsulan } from '../lib/data';
+import { useMuat } from '../lib/useMuat';
 
 function PemilihLokasi({ onPilih }: { onPilih: (lat: number, lng: number) => void }) {
   useMapEvents({
@@ -13,12 +18,13 @@ function PemilihLokasi({ onPilih }: { onPilih: (lat: number, lng: number) => voi
   return null;
 }
 
-const inputClass = 'w-full rounded border border-stone-300 px-3 py-2';
+const kelasInput = 'w-full rounded-2xl border border-border bg-surface px-3.5 py-2.5';
+const kelasLabel = 'mb-1.5 block font-medium';
 
 export default function BuatUsulan() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [kategori, setKategori] = useState<string[]>([]);
+  const { data: kategori } = useMuat(ambilKategori);
   const [judul, setJudul] = useState('');
   const [deskripsi, setDeskripsi] = useState('');
   const [kategoriDipilih, setKategoriDipilih] = useState('');
@@ -28,158 +34,144 @@ export default function BuatUsulan() {
   const [lng, setLng] = useState<number | null>(null);
   const [pesan, setPesan] = useState('');
 
-  useEffect(() => {
-    supabase
-      .from('categories')
-      .select('nama')
-      .order('nama')
-      .then(({ data }) => {
-        const names = ((data as { nama: string }[]) ?? []).map((r) => r.nama);
-        setKategori(names);
-        setKategoriDipilih(names[0] ?? '');
-      });
-  }, []);
-
   if (!user) {
     return (
-      <p className="text-stone-700">
-        Membuat usulan butuh akun.{' '}
-        <Link to="/login" className="font-medium underline">
-          Masuk dulu
-        </Link>
-        .
-      </p>
+      <>
+        <JudulHalaman judul="Buat usulan" />
+        <p>
+          Membuat usulan butuh akun.{' '}
+          <Link to="/login" className="font-semibold text-warga underline">
+            Masuk dulu
+          </Link>
+          .
+        </p>
+      </>
     );
   }
 
   const kirim = async (e: React.FormEvent) => {
     e.preventDefault();
     setPesan('');
-    const { data, error } = await supabase
-      .from('proposals')
-      .insert({
-        judul: judul.trim(),
-        deskripsi: deskripsi.trim(),
-        kategori: kategoriDipilih,
-        lokasi: lokasi.trim() || null,
-        latitude: lat,
-        longitude: lng,
-        estimasi_biaya: Number(estimasi) || 0,
-        pengusul_id: user.id,
-      })
-      .select('id')
-      .single();
+    const { error, id } = await buatUsulan({
+      judul: judul.trim(),
+      deskripsi: deskripsi.trim(),
+      kategori: kategoriDipilih || kategori?.[0] || '',
+      lokasi: lokasi.trim() || null,
+      latitude: lat,
+      longitude: lng,
+      estimasi_biaya: Number(estimasi) || 0,
+      pengusul_id: user.id,
+    });
     if (error) {
-      setPesan(`Gagal menyimpan: ${error.message}`);
+      setPesan(`Gagal menyimpan: ${error}`);
       return;
     }
-    navigate(`/usulan/${(data as { id: number }).id}`);
+    navigate(`/usulan/${id}`);
   };
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <h1 className="text-3xl font-bold">Buat Usulan</h1>
-      <form onSubmit={kirim} className="space-y-4">
-        <div>
-          <label htmlFor="judul" className="mb-1 block font-medium">
-            Judul
-          </label>
-          <input
-            id="judul"
-            value={judul}
-            onChange={(e) => setJudul(e.target.value)}
-            required
-            className={inputClass}
-          />
-        </div>
-        <div>
-          <label htmlFor="deskripsi" className="mb-1 block font-medium">
-            Deskripsi
-          </label>
-          <textarea
-            id="deskripsi"
-            value={deskripsi}
-            onChange={(e) => setDeskripsi(e.target.value)}
-            required
-            rows={4}
-            className={inputClass}
-          />
-        </div>
-        <div>
-          <label htmlFor="kategori" className="mb-1 block font-medium">
-            Kategori
-          </label>
-          <select
-            id="kategori"
-            value={kategoriDipilih}
-            onChange={(e) => setKategoriDipilih(e.target.value)}
-            className={inputClass}
-          >
-            {kategori.map((k) => (
-              <option key={k} value={k}>
-                {k}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="lokasi" className="mb-1 block font-medium">
-            Lokasi (teks)
-          </label>
-          <input
-            id="lokasi"
-            value={lokasi}
-            onChange={(e) => setLokasi(e.target.value)}
-            placeholder="cth. Jl. Raya Bogor, Kramat Jati"
-            className={inputClass}
-          />
-        </div>
-        <div>
-          <label htmlFor="estimasi" className="mb-1 block font-medium">
-            Estimasi biaya (rupiah)
-          </label>
-          <input
-            id="estimasi"
-            type="number"
-            min={0}
-            value={estimasi}
-            onChange={(e) => setEstimasi(e.target.value)}
-            className={inputClass}
-          />
-        </div>
-        <div>
-          <span className="mb-1 block font-medium">Titik di peta (opsional, klik peta)</span>
-          <MapContainer
-            center={[-6.2088, 106.8456]}
-            zoom={11}
-            className="h-80 w-full rounded border border-stone-200"
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+    <>
+      <JudulHalaman
+        judul="Buat usulan"
+        sub="Usulkan satu program untuk lingkunganmu. Warga lain bisa mendukung dan mengomentarinya."
+      />
+      <Kartu className="max-w-2xl">
+        <form onSubmit={kirim} className="flex flex-col gap-4">
+          <div>
+            <label htmlFor="judul" className={kelasLabel}>
+              Judul
+            </label>
+            <input
+              id="judul"
+              value={judul}
+              onChange={(e) => setJudul(e.target.value)}
+              required
+              className={kelasInput}
             />
-            <PemilihLokasi
-              onPilih={(la, ln) => {
-                setLat(la);
-                setLng(ln);
-              }}
+          </div>
+          <div>
+            <label htmlFor="deskripsi" className={kelasLabel}>
+              Deskripsi
+            </label>
+            <textarea
+              id="deskripsi"
+              value={deskripsi}
+              onChange={(e) => setDeskripsi(e.target.value)}
+              required
+              rows={4}
+              className={kelasInput}
             />
-            {lat !== null && lng !== null && <Marker position={[lat, lng]} />}
-          </MapContainer>
-          {lat !== null && lng !== null && (
-            <p className="mt-1 text-sm text-stone-600">
-              Dipilih: {lat.toFixed(5)}, {lng.toFixed(5)}
+          </div>
+          <div>
+            <label htmlFor="kategori" className={kelasLabel}>
+              Program
+            </label>
+            <select
+              id="kategori"
+              value={kategoriDipilih || kategori?.[0] || ''}
+              onChange={(e) => setKategoriDipilih(e.target.value)}
+              className={kelasInput}
+            >
+              {(kategori ?? []).map((k) => (
+                <option key={k} value={k}>
+                  {k}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="lokasi" className={kelasLabel}>
+              Lokasi
+            </label>
+            <input
+              id="lokasi"
+              value={lokasi}
+              onChange={(e) => setLokasi(e.target.value)}
+              placeholder="Nama jalan dan kelurahan"
+              className={kelasInput}
+            />
+          </div>
+          <div>
+            <label htmlFor="estimasi" className={kelasLabel}>
+              Estimasi biaya (rupiah)
+            </label>
+            <input
+              id="estimasi"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              value={estimasi}
+              onChange={(e) => setEstimasi(e.target.value)}
+              className={kelasInput}
+            />
+          </div>
+          <div>
+            <span className={kelasLabel}>Titik di peta (opsional, ketuk peta)</span>
+            <Peta>
+              <PemilihLokasi
+                onPilih={(la, ln) => {
+                  setLat(la);
+                  setLng(ln);
+                }}
+              />
+              {lat !== null && lng !== null && <Marker position={[lat, lng]} icon={penandaHijau} />}
+            </Peta>
+            {lat !== null && lng !== null && (
+              <p className="mt-1.5 text-sm text-muted">
+                Dipilih: {lat.toFixed(5)}, {lng.toFixed(5)}
+              </p>
+            )}
+          </div>
+          <Tombol type="submit" varian="utama" className="self-start">
+            Kirim usulan
+          </Tombol>
+          {pesan && (
+            <p role="alert" className="text-sm text-mustard-tua">
+              {pesan}
             </p>
           )}
-        </div>
-        <button
-          type="submit"
-          className="rounded bg-emerald-800 px-5 py-2 font-medium text-white hover:bg-emerald-700"
-        >
-          Kirim Usulan
-        </button>
-        {pesan && <p className="text-sm text-red-700">{pesan}</p>}
-      </form>
-    </div>
+        </form>
+      </Kartu>
+    </>
   );
 }

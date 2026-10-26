@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
-import { supabase } from '../lib/supabase';
+import { JudulHalaman } from '../components/Halaman';
+import { Kartu } from '../components/Kartu';
+import { Tombol } from '../components/Tombol';
+import { daftar, masuk } from '../lib/data';
 
-const inputClass = 'w-full rounded border border-stone-300 px-3 py-2';
+const kelasInput = 'w-full rounded-2xl border border-border bg-surface px-3.5 py-2.5';
+const kelasLabel = 'mb-1.5 block font-medium';
 
 export default function Auth() {
   const { refresh } = useAuth();
@@ -14,104 +18,101 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [pesan, setPesan] = useState('');
 
-  const pastikanProfil = async (userId: string, emailValue: string, namaValue: string) => {
-    const { data } = await supabase.from('profiles').select('id').eq('id', userId).maybeSingle();
-    if (!data) {
-      await supabase.from('profiles').insert({
-        id: userId,
-        email: emailValue,
-        nama: namaValue || emailValue.split('@')[0],
-      });
-    }
-  };
-
   const kirim = async (e: React.FormEvent) => {
     e.preventDefault();
     setPesan('');
     if (mode === 'daftar') {
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) {
-        setPesan(`Gagal mendaftar: ${error.message}`);
+      const hasil = await daftar(email, password, nama);
+      if (hasil.error) {
+        setPesan(`Gagal mendaftar: ${hasil.error}`);
         return;
       }
-      if (data.session) {
-        await pastikanProfil(data.session.user.id, email, nama);
-        await refresh();
-        navigate('/');
-      } else {
+      if (hasil.perluKonfirmasi) {
         setPesan('Akun dibuat. Cek email untuk konfirmasi (bila diaktifkan), lalu masuk.');
         setMode('login');
+        return;
       }
-      return;
+    } else {
+      const hasil = await masuk(email, password, nama);
+      if (hasil.error) {
+        setPesan(`Gagal masuk: ${hasil.error}`);
+        return;
+      }
     }
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setPesan(`Gagal masuk: ${error.message}`);
-      return;
-    }
-    await pastikanProfil(data.user.id, email, nama);
     await refresh();
     navigate('/');
   };
 
   return (
-    <div className="mx-auto max-w-md space-y-6">
-      <h1 className="text-3xl font-bold">{mode === 'login' ? 'Masuk' : 'Daftar'}</h1>
-      <form onSubmit={kirim} className="space-y-4">
-        {mode === 'daftar' && (
+    <div className="mx-auto max-w-md">
+      <JudulHalaman
+        judul={mode === 'login' ? 'Masuk' : 'Daftar akun warga'}
+        sub="Akun dipakai untuk mengirim pilihan anggaran, membuat usulan, dan mendukung usulan."
+      />
+      <Kartu>
+        <form onSubmit={kirim} className="flex flex-col gap-4">
+          {mode === 'daftar' && (
+            <div>
+              <label htmlFor="nama" className={kelasLabel}>
+                Nama
+              </label>
+              <input
+                id="nama"
+                value={nama}
+                onChange={(e) => setNama(e.target.value)}
+                required
+                autoComplete="name"
+                className={kelasInput}
+              />
+            </div>
+          )}
           <div>
-            <label htmlFor="nama" className="mb-1 block font-medium">
-              Nama
+            <label htmlFor="email" className={kelasLabel}>
+              Email
             </label>
             <input
-              id="nama"
-              value={nama}
-              onChange={(e) => setNama(e.target.value)}
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
-              className={inputClass}
+              autoComplete="email"
+              className={kelasInput}
             />
           </div>
-        )}
-        <div>
-          <label htmlFor="email" className="mb-1 block font-medium">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className={inputClass}
-          />
-        </div>
-        <div>
-          <label htmlFor="password" className="mb-1 block font-medium">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className={inputClass}
-          />
-        </div>
-        <button
-          type="submit"
-          className="w-full rounded bg-emerald-800 px-4 py-2 font-medium text-white hover:bg-emerald-700"
-        >
-          {mode === 'login' ? 'Masuk' : 'Daftar'}
-        </button>
-        {pesan && <p className="text-sm text-stone-700">{pesan}</p>}
-      </form>
-      <p className="text-center text-sm">
+          <div>
+            <label htmlFor="password" className={kelasLabel}>
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              className={kelasInput}
+            />
+          </div>
+          <Tombol type="submit" varian="utama" className="w-full">
+            {mode === 'login' ? 'Masuk' : 'Daftar'}
+          </Tombol>
+          {pesan && (
+            <p role="status" className="text-sm">
+              {pesan}
+            </p>
+          )}
+        </form>
+      </Kartu>
+      <p className="mt-4 text-center text-sm">
         {mode === 'login' ? 'Belum punya akun? ' : 'Sudah punya akun? '}
         <button
           type="button"
-          onClick={() => setMode(mode === 'login' ? 'daftar' : 'login')}
-          className="font-medium underline"
+          onClick={() => {
+            setMode(mode === 'login' ? 'daftar' : 'login');
+            setPesan('');
+          }}
+          className="font-semibold text-warga underline underline-offset-4"
         >
           {mode === 'login' ? 'Daftar' : 'Masuk'}
         </button>

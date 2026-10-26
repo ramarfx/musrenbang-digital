@@ -1,101 +1,98 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../App';
+import { Gagal, JudulHalaman, Kosong, Memuat } from '../components/Halaman';
+import { Kartu } from '../components/Kartu';
+import { StatusPill } from '../components/Label';
+import { ambilUsulan, ubahStatusUsulan } from '../lib/data';
 import type { Proposal } from '../lib/supabase';
-import { supabase } from '../lib/supabase';
-import { StatusBadge } from './Beranda';
-
-const TAHAP = ['Diajukan', 'Diverifikasi', 'Masuk APBD', 'Dikerjakan', 'Selesai'];
+import { TAHAP } from '../lib/status';
+import { useMuat } from '../lib/useMuat';
 
 export default function Admin() {
   const { user, profile } = useAuth();
-  const [usulan, setUsulan] = useState<Proposal[]>([]);
+  const { data, memuat, galat, ulangi } = useMuat(ambilUsulan);
   const [pesan, setPesan] = useState('');
-
-  const muat = async () => {
-    const { data } = await supabase
-      .from('proposals')
-      .select('*')
-      .order('dibuat_pada', { ascending: false });
-    setUsulan((data as Proposal[]) ?? []);
-  };
-
-  useEffect(() => {
-    muat();
-  }, []);
 
   if (!user) {
     return (
-      <p className="text-stone-700">
-        Halaman admin butuh akun.{' '}
-        <Link to="/login" className="font-medium underline">
-          Masuk dulu
-        </Link>
-        .
-      </p>
+      <>
+        <JudulHalaman judul="Kelola usulan" />
+        <p>
+          Halaman admin butuh akun.{' '}
+          <Link to="/login" className="font-semibold text-warga underline">
+            Masuk dulu
+          </Link>
+          .
+        </p>
+      </>
     );
   }
   if (profile?.peran !== 'admin') {
-    return <p className="text-stone-700">Halaman ini hanya untuk admin.</p>;
+    return <JudulHalaman judul="Kelola usulan" sub="Halaman ini hanya untuk admin." />;
   }
 
-  const ubahStatus = async (proposal: Proposal, statusBaru: string) => {
-    if (statusBaru === proposal.status) return;
-    const { error } = await supabase
-      .from('proposals')
-      .update({ status: statusBaru })
-      .eq('id', proposal.id);
-    if (error) {
-      setPesan(`Gagal mengubah status: ${error.message}`);
-      return;
-    }
-    await supabase.from('proposal_status_history').insert({
-      proposal_id: proposal.id,
-      status_lama: proposal.status,
-      status_baru: statusBaru,
-      diubah_oleh: user.id,
-    });
-    setPesan(`Status "${proposal.judul}" diubah menjadi ${statusBaru}.`);
-    muat();
+  const ubahStatus = async (usulan: Proposal, statusBaru: string) => {
+    if (statusBaru === usulan.status) return;
+    const { error } = await ubahStatusUsulan(usulan, statusBaru, user.id);
+    setPesan(
+      error
+        ? `Gagal mengubah status: ${error}`
+        : `Status "${usulan.judul}" diubah menjadi ${statusBaru}.`,
+    );
+    if (!error) ulangi();
   };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Admin: Kelola Usulan</h1>
-      <p className="text-stone-600">
-        Mengubah status otomatis mencatat riwayat di tabel status history.
-      </p>
-      {pesan && <p className="text-sm text-stone-700">{pesan}</p>}
-      <div className="space-y-3">
-        {usulan.map((u) => (
-          <div
-            key={u.id}
-            className="flex flex-wrap items-center justify-between gap-3 rounded border border-stone-200 bg-white p-4"
-          >
-            <div>
-              <Link to={`/usulan/${u.id}`} className="font-medium">
-                {u.judul}
-              </Link>
-              <div className="mt-1">
-                <StatusBadge status={u.status} />
-              </div>
-            </div>
-            <select
-              aria-label={`Ubah status ${u.judul}`}
-              value={u.status}
-              onChange={(e) => ubahStatus(u, e.target.value)}
-              className="rounded border border-stone-300 px-3 py-2"
-            >
-              {TAHAP.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </div>
-        ))}
-        {usulan.length === 0 && <p className="text-stone-500">Belum ada usulan.</p>}
-      </div>
-    </div>
+    <>
+      <JudulHalaman
+        judul="Kelola usulan"
+        sub="Ubah status usulan. Setiap perubahan dicatat di riwayat status."
+      />
+      {pesan && (
+        <p role="status" className="mb-4 text-sm">
+          {pesan}
+        </p>
+      )}
+      {memuat ? (
+        <Memuat apa="usulan" />
+      ) : galat ? (
+        <Gagal apa="usulan" pesan={galat} ulangi={ulangi} />
+      ) : (data ?? []).length === 0 ? (
+        <Kosong>Belum ada usulan untuk dikelola.</Kosong>
+      ) : (
+        <Kartu className="py-2! sm:py-2!">
+          <ul>
+            {(data ?? []).map((u) => (
+              <li
+                key={u.id}
+                className="flex flex-wrap items-center justify-between gap-3 border-t border-rule py-3.5 first:border-t-0"
+              >
+                <div className="min-w-0">
+                  <Link to={`/usulan/${u.id}`} className="font-semibold">
+                    {u.judul}
+                  </Link>
+                  <div className="mt-1">
+                    <StatusPill status={u.status} />
+                  </div>
+                </div>
+                <select
+                  aria-label={`Ubah status ${u.judul}`}
+                  value={u.status}
+                  onChange={(e) => ubahStatus(u, e.target.value)}
+                  className="h-11 rounded-full border border-border bg-surface px-4"
+                >
+                  {TAHAP.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </li>
+            ))}
+          </ul>
+        </Kartu>
+      )}
+    </>
   );
 }

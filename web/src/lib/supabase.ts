@@ -1,16 +1,16 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
-if (!url || !anonKey) {
-  throw new Error(
-    'VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY belum diisi. Salin .env.example menjadi .env di folder web, lalu isi dari Dashboard Supabase.',
-  );
-}
+/**
+ * Mode contoh aktif bila .env di folder web belum diisi. Aplikasi lalu membaca
+ * berkas seed (lihat lib/contoh.ts) dan semua aksi tulis ditolak dengan pesan jelas.
+ */
+export const modeContoh = !url || !anonKey;
 
-/** Client Supabase untuk aplikasi web (kunci publik saja). */
-export const supabase = createClient(url, anonKey);
+/** Client Supabase untuk aplikasi web (kunci publik saja). Null di mode contoh. */
+export const supabase: SupabaseClient | null = modeContoh ? null : createClient(url!, anonKey!);
 
 export type Profile = {
   id: string;

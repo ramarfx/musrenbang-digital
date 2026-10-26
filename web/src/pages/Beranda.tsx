@@ -1,141 +1,117 @@
-import L from 'leaflet';
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
-import { formatRupiah, formatTanggal } from '../lib/format';
-import type { Proposal } from '../lib/supabase';
-import { supabase } from '../lib/supabase';
-
-// Perbaikan ikon marker bawaan Leaflet di bundler Vite.
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-});
-
-const STATUS_WARNA: Record<string, string> = {
-  Diajukan: 'bg-stone-200 text-stone-800',
-  Diverifikasi: 'bg-sky-200 text-sky-800',
-  'Masuk APBD': 'bg-amber-200 text-amber-800',
-  Dikerjakan: 'bg-emerald-200 text-emerald-800',
-  Selesai: 'bg-teal-700 text-white',
-};
-
-export function StatusBadge({ status }: { status: string }) {
-  return (
-    <span
-      className={`rounded-full px-2 py-1 text-xs font-medium ${STATUS_WARNA[status] ?? 'bg-stone-200'}`}
-    >
-      {status}
-    </span>
-  );
-}
+import { Popup } from 'react-leaflet';
+import { Gagal, JudulHalaman, Kosong, Memuat } from '../components/Halaman';
+import { Kartu, KartuHero } from '../components/Kartu';
+import { NamaKategori, StatusPill } from '../components/Label';
+import { Marker, Peta, penandaHijau } from '../components/PetaUsulan';
+import { TombolLink } from '../components/Tombol';
+import { ambilUsulan } from '../lib/data';
+import { formatRupiah } from '../lib/format';
+import { useMuat } from '../lib/useMuat';
 
 export default function Beranda() {
-  const [usulan, setUsulan] = useState<Proposal[]>([]);
-  const [memuat, setMemuat] = useState(true);
-
-  useEffect(() => {
-    supabase
-      .from('proposals')
-      .select('*')
-      .order('dibuat_pada', { ascending: false })
-      .then(({ data }) => {
-        setUsulan((data as Proposal[]) ?? []);
-        setMemuat(false);
-      });
-  }, []);
-
-  const denganLokasi = usulan.filter((u) => u.latitude !== null && u.longitude !== null);
+  const { data: usulan, memuat, galat, ulangi } = useMuat(ambilUsulan);
+  const denganLokasi = (usulan ?? []).filter((u) => u.latitude !== null && u.longitude !== null);
 
   return (
-    <div className="space-y-8">
-      <section>
-        <h1 className="text-3xl font-bold">Anggaran kota, diputuskan bersama.</h1>
-        <p className="mt-2 max-w-2xl text-stone-600">
-          Usulkan program, alokasikan anggaran virtual Rp10.000.000, beri suara, dan bandingkan
-          prioritas warga dengan APBD yang sebenarnya.
-        </p>
-        <div className="mt-4 flex gap-3">
+    <>
+      <JudulHalaman
+        judul="Anggaran kota, diputuskan bersama"
+        sub="Usulkan program, bagi anggaran virtual Rp10.000.000, dukung usulan warga lain, lalu bandingkan prioritas warga dengan APBD yang sebenarnya."
+      />
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <Kartu className="p-3! sm:p-3!">
+          <h2 className="px-2 pt-1 pb-3 font-semibold">Peta usulan warga</h2>
+          {memuat ? (
+            <Memuat apa="peta usulan" />
+          ) : galat ? (
+            <Gagal apa="peta usulan" pesan={galat} ulangi={ulangi} />
+          ) : denganLokasi.length === 0 ? (
+            <Kosong>Belum ada usulan yang punya titik di peta.</Kosong>
+          ) : (
+            <Peta tinggi="h-[360px] lg:h-[420px]">
+              {denganLokasi.map((u) => (
+                <Marker key={u.id} position={[u.latitude!, u.longitude!]} icon={penandaHijau}>
+                  <Popup>
+                    <Link to={`/usulan/${u.id}`} className="font-semibold text-ink underline">
+                      {u.judul}
+                    </Link>
+                    <div className="mt-1 text-muted">{u.kategori}</div>
+                  </Popup>
+                </Marker>
+              ))}
+            </Peta>
+          )}
+        </Kartu>
+
+        <KartuHero className="flex flex-col">
+          <h2 className="text-lg font-bold">Bagi Rp10.000.000 versimu</h2>
+          <p className="mt-2 text-white/80">
+            Geser dana virtual ke 10 program kota. Pilihanmu digabung dengan warga lain dan
+            dibandingkan dengan APBD.
+          </p>
+          <div className="mt-6 flex flex-col gap-3">
+            <TombolLink to="/simulator" className="bg-white text-[#0a5a47] hover:bg-ground">
+              Buka simulator
+            </TombolLink>
+            <TombolLink
+              to="/bandingkan"
+              className="border-white/30 bg-transparent text-white hover:bg-white/10"
+            >
+              Lihat selisih warga dan APBD
+            </TombolLink>
+          </div>
+        </KartuHero>
+      </div>
+
+      <section className="mt-10">
+        <div className="mb-3 flex items-end justify-between gap-4">
+          <h2 className="text-lg font-bold">Usulan terbaru</h2>
           <Link
-            to="/simulator"
-            className="rounded bg-emerald-800 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+            to="/usulan"
+            className="text-sm font-semibold text-warga underline underline-offset-4"
           >
-            Coba Simulator Anggaran
-          </Link>
-          <Link
-            to="/bandingkan"
-            className="rounded bg-amber-500 px-4 py-2 text-sm font-medium text-stone-900 hover:bg-amber-400"
-          >
-            Lihat Gap Warga-APBD
+            Semua usulan
           </Link>
         </div>
-      </section>
-
-      <section>
-        <h2 className="mb-3 text-xl font-bold">Peta Usulan</h2>
-        {denganLokasi.length === 0 ? (
-          <p className="rounded border border-dashed border-stone-300 p-6 text-center text-stone-500">
-            Belum ada usulan berlokasi di peta.
-          </p>
-        ) : (
-          <MapContainer
-            center={[-6.2088, 106.8456]}
-            zoom={11}
-            className="h-96 w-full rounded border border-stone-200"
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            {denganLokasi.map((u) => (
-              <Marker key={u.id} position={[u.latitude!, u.longitude!]}>
-                <Popup>
-                  <Link to={`/usulan/${u.id}`} className="font-medium">
-                    {u.judul}
-                  </Link>
-                  <div>{u.kategori}</div>
-                </Popup>
-              </Marker>
-            ))}
-          </MapContainer>
-        )}
-      </section>
-
-      <section>
-        <h2 className="mb-3 text-xl font-bold">Daftar Usulan</h2>
         {memuat ? (
-          <p className="text-stone-500">Memuat usulan...</p>
-        ) : usulan.length === 0 ? (
-          <p className="rounded border border-dashed border-stone-300 p-6 text-center text-stone-500">
-            Belum ada usulan. Jadilah yang pertama lewat halaman Buat Usulan.
-          </p>
+          <Memuat apa="usulan" />
+        ) : galat ? (
+          <Gagal apa="usulan" pesan={galat} ulangi={ulangi} />
+        ) : (usulan ?? []).length === 0 ? (
+          <Kosong>
+            Belum ada usulan.{' '}
+            <Link to="/usulan/baru" className="font-semibold text-warga underline">
+              Buat usulan pertama
+            </Link>
+            .
+          </Kosong>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {usulan.map((u) => (
-              <Link
-                key={u.id}
-                to={`/usulan/${u.id}`}
-                className="rounded border border-stone-200 bg-white p-4 hover:border-emerald-700"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-bold">{u.judul}</h3>
-                  <StatusBadge status={u.status} />
-                </div>
-                <p className="mt-1 line-clamp-2 text-sm text-stone-600">{u.deskripsi}</p>
-                <div className="mt-3 flex flex-wrap gap-3 text-sm text-stone-500">
-                  <span>{u.kategori}</span>
-                  <span>{formatRupiah(u.estimasi_biaya)}</span>
-                  <span>{formatTanggal(u.dibuat_pada)}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <Kartu className="py-2! sm:py-2!">
+            <ul>
+              {(usulan ?? []).slice(0, 4).map((u) => (
+                <li key={u.id} className="border-t border-rule first:border-t-0">
+                  <Link
+                    to={`/usulan/${u.id}`}
+                    className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
+                  >
+                    <span className="min-w-0">
+                      <span className="block font-semibold">{u.judul}</span>
+                      <span className="block text-sm text-muted">{u.lokasi ?? 'Tanpa lokasi'}</span>
+                    </span>
+                    <span className="flex flex-none flex-wrap items-center gap-3 text-sm">
+                      <NamaKategori kategori={u.kategori} />
+                      <span className="text-muted">{formatRupiah(u.estimasi_biaya)}</span>
+                      <StatusPill status={u.status} />
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Kartu>
         )}
       </section>
-    </div>
+    </>
   );
 }

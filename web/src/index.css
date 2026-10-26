@@ -1,5 +1,159 @@
 @import 'tailwindcss';
 
+/*
+ * Token warna Desain 1 (hijau). Nilai mentah ada di :root supaya mode gelap
+ * nanti cukup mengganti nilai di satu tempat; Tailwind membaca lewat @theme inline.
+ * Aturan tim: tanpa gradasi, tanpa biru, tanpa warna pelangi.
+ */
+:root {
+  --ground: #f7f4ef;
+  --surface: #ffffff;
+  --border: #e6e0d6;
+  --rule: #efeae1;
+  --ink: #14222b;
+  --muted: #5e6a70;
+  --active: #ece7dd;
+  --track: #e9e4da;
+
+  /* Hijau sidebar, kartu hero, dan tombol utama. */
+  --hijau: #0b6e55;
+  --hijau-tekan: #0a5e49;
+  /* Hijau data: porsi warga. Sama dengan batang logo. */
+  --warga: #047857;
+  /* Porsi APBD memakai tinta, bukan abu kebiruan prototipe. */
+  --apbd: #14222b;
+
+  --mint: #a7f3d0;
+  --mint-pucat: #d1fae5;
+  --mint-tua: #065f46;
+  --mustard: #f2c46d;
+  --mustard-pucat: #efe6c9;
+  --mustard-tua: #5e4a0a;
+  --terakota: #ee9f7f;
+  --pasir: #e6e0d6;
+
+  --mati: #c9d8d2;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@theme inline {
+  --font-sans: 'Plus Jakarta Sans Variable', system-ui, sans-serif;
+
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-rule: var(--rule);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-active: var(--active);
+  --color-track: var(--track);
+  --color-hijau: var(--hijau);
+  --color-hijau-tekan: var(--hijau-tekan);
+  --color-warga: var(--warga);
+  --color-apbd: var(--apbd);
+  --color-mint: var(--mint);
+  --color-mint-pucat: var(--mint-pucat);
+  --color-mint-tua: var(--mint-tua);
+  --color-mustard: var(--mustard);
+  --color-mustard-pucat: var(--mustard-pucat);
+  --color-mustard-tua: var(--mustard-tua);
+  --color-terakota: var(--terakota);
+  --color-pasir: var(--pasir);
+  --color-mati: var(--mati);
+
+  --ease-out: var(--ease-out);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--warga);
+    outline-offset: 2px;
+  }
+
+  button {
+    cursor: pointer;
+  }
+}
+
+/*
+ * Slider: isi slider digambar dengan elemen biasa di belakang input (lihat
+ * Slider.tsx), jadi trek bawaan dibuat transparan. Tidak ada linear-gradient.
+ */
+.slider-input {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+.slider-input::-webkit-slider-runnable-track {
+  height: 28px;
+  background: transparent;
+}
+.slider-input::-moz-range-track {
+  height: 28px;
+  background: transparent;
+}
+.slider-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  margin-top: 2px;
+  border-radius: 9999px;
+  background: var(--surface);
+  border: 3px solid var(--slider-isi, var(--warga));
+  transition: transform 160ms var(--ease-out);
+}
+.slider-input::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--surface);
+  border: 3px solid var(--slider-isi, var(--warga));
+}
+.slider-input:active::-webkit-slider-thumb {
+  transform: scale(1.1);
+}
+.slider-input:focus-visible {
+  outline: none;
+}
+.slider-input:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--warga);
+  outline-offset: 2px;
+}
+.slider-input:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--warga);
+  outline-offset: 2px;
+}
+
 .leaflet-container {
   font-family: inherit;
+  background: var(--track);
+}
+
+/* Ubin peta dibuat abu hangat supaya air dan jalan tidak tampil biru. */
+.peta-hangat .leaflet-tile-pane {
+  filter: grayscale(1) sepia(0.18) brightness(1.04) contrast(0.92);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
 }

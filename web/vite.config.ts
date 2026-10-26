@@ -6,5 +6,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     port: 5173,
+    // Mode data contoh membaca berkas seed di ../db/seeds (hanya dibaca, tidak diubah).
+    fs: { allow: ['..'] },
   },
 });
