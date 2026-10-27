@@ -53,6 +53,16 @@ async function proposal(actor: Actor, label: string) {
     `Status awal ${label} dipaksakan database`,
     response.data[0].status === 'Diajukan' && response.data[0].moderasi === 'Menunggu',
   );
+  const initialHistory = await rows(
+    `v_proposal_status_history?proposal_id=eq.${response.data[0].id}&status_lama=is.null`,
+    actor,
+  );
+  check(
+    `Riwayat awal ${label} otomatis memiliki catatan`,
+    initialHistory.length === 1 &&
+      initialHistory[0].status_baru === 'Diajukan' &&
+      initialHistory[0].catatan === 'Usulan diajukan.',
+  );
   return response.data[0].id;
 }
 
@@ -60,9 +70,9 @@ async function run() {
   const migrations =
     await db`SELECT version FROM supabase_migrations.schema_migrations ORDER BY version`;
   check(
-    'Enam migration tercatat persisten pada database lokal',
+    'Tujuh migration tercatat persisten pada database lokal',
     migrations.map((row: { version: string }) => row.version).join(',') ===
-      '20261026090000,20261026090100,20261026090200,20261026090300,20261026195414,20261027004023',
+      '20261026090000,20261026090100,20261026090200,20261026090300,20261026195414,20261027004023,20261027065525',
   );
   await beginFixtureRun();
   const allocationBaseline = await db<{ total: number }[]>`
@@ -200,6 +210,7 @@ async function run() {
         deskripsi: 'Deskripsi cukup panjang untuk pengujian integrasi.',
         kategori: 'Pendidikan',
         pengusul_id: a.id,
+        estimasi_biaya: 1000,
         ...forged,
       },
     );
@@ -211,12 +222,18 @@ async function run() {
     p_proposal_id: p,
     p_moderasi: 'Disetujui',
   });
-  await denied(
-    'A tidak memanggil RPC status admin',
+  const legacyCitizenStatus = await request<{ code?: string }>(
     '/rest/v1/rpc/change_proposal_status',
     a,
     'POST',
     { p_proposal_id: p, p_status: 'Selesai' },
+  );
+  const statusAfterLegacy = await rows(`proposals?id=eq.${p}&select=status`, admin);
+  check(
+    'RPC status lama menolak warga tanpa mengubah status',
+    legacyCitizenStatus.status === 400 &&
+      legacyCitizenStatus.data.code === '22023' &&
+      statusAfterLegacy[0]?.status === 'Diajukan',
   );
   const noReason = await request<{ code: string }>(
     '/rest/v1/rpc/moderate_proposal',
@@ -256,9 +273,8 @@ async function run() {
     proposal_id: p,
     isi: 'Belum boleh komentar',
   });
-  // Fixture historis tersembunyi disiapkan oleh SQL pengelola untuk menguji read path.
+  // Komentar historis disiapkan oleh SQL lokal; riwayat awal sudah dibuat trigger proposal.
   await db`INSERT INTO public.comments(proposal_id,user_id,isi) VALUES(${p},${a.id}::uuid,'Komentar historis tersembunyi')`;
-  await db`INSERT INTO public.proposal_status_history(proposal_id,status_baru) VALUES(${p},'Diajukan')`;
   for (const table of [
     'comments',
     'v_comments',
@@ -317,24 +333,45 @@ async function run() {
     ).status === 200,
   );
   check(
-    'RPC status admin berhasil',
+    'RPC status admin berhasil dengan catatan wajib',
     (
-      await request('/rest/v1/rpc/change_proposal_status', admin, 'POST', {
+      await request('/rest/v1/rpc/change_proposal_status_with_note', admin, 'POST', {
         p_proposal_id: p,
         p_status: 'Diverifikasi',
+        p_catatan: 'Lokasi dan kebutuhan sudah diverifikasi.',
       })
     ).status === 204,
   );
+  const directStatus = await request(`/rest/v1/proposals?${query}`, admin, 'PATCH', {
+    status: 'Selesai',
+  });
+  const afterDirectStatus = await rows(`proposals?id=eq.${p}&select=status`, admin);
   check(
-    'Riwayat RPC terlihat publik',
-    (await rows(`v_proposal_status_history?proposal_id=eq.${p}&status_baru=eq.Diverifikasi`, null))
-      .length === 1,
+    'Admin tidak dapat melewati RPC status lewat tabel langsung',
+    directStatus.status >= 400 && afterDirectStatus[0]?.status === 'Diverifikasi',
+  );
+  const legacyStatus = await request<{ code?: string }>(
+    '/rest/v1/rpc/change_proposal_status',
+    admin,
+    'POST',
+    { p_proposal_id: p, p_status: 'Selesai' },
+  );
+  check(
+    'RPC status lama menolak perubahan tanpa catatan',
+    legacyStatus.status === 400 && legacyStatus.data.code === '22023',
+  );
+  const statusHistory = await rows(
+    `v_proposal_status_history?proposal_id=eq.${p}&status_baru=eq.Diverifikasi`,
+    null,
+  );
+  check(
+    'Riwayat RPC terlihat publik dengan catatan admin',
+    statusHistory.length === 1 &&
+      statusHistory[0].catatan === 'Lokasi dan kebutuhan sudah diverifikasi.',
   );
   check(
     'View invoker tetap menyediakan nama aktor riwayat',
-    (
-      await rows(`v_proposal_status_history?proposal_id=eq.${p}&status_baru=eq.Diverifikasi`, null)
-    )[0]?.diubah_oleh_nama === 'Admin Fixture',
+    statusHistory[0]?.diubah_oleh_nama === 'Admin Fixture',
   );
   await denied('Riwayat tidak dapat dipalsukan A', '/rest/v1/proposal_status_history', a, 'POST', {
     proposal_id: p,
@@ -475,6 +512,51 @@ async function run() {
     JSON.stringify(gapAnon) === JSON.stringify(gapA) &&
       JSON.stringify(gapAnon) === JSON.stringify(gapB) &&
       JSON.stringify(gapAnon) === JSON.stringify(gapAdmin),
+  );
+  check(
+    'v_gap menampilkan jumlah partisipan lintas pengguna',
+    gapAnon.every((row) => Number(row.jumlah_partisipan) === 2),
+  );
+  const gapEducation = gapAnon.find((row) => row.kategori === 'Pendidikan');
+  const gapHealth = gapAnon.find((row) => row.kategori === 'Kesehatan');
+  check(
+    'v_gap mengikuti rasio nominal gabungan untuk alokasi parsial dengan jumlah berbeda',
+    Number(gapEducation?.persen_warga) === 63.64 && Number(gapHealth?.persen_warga) === 36.36,
+  );
+  check(
+    'v_gap tidak menyatakan APBD tersedia tanpa item verified_program',
+    gapAnon.every((row) => row.apbd_tersedia === false),
+  );
+  const publicStatsAnon = await rows('v_public_stats', null);
+  const publicStatsWarga = await rows('v_public_stats', a);
+  const publicStatsAdmin = await rows('v_public_stats', admin);
+  check(
+    'Statistik publik identik untuk anon, warga, dan admin',
+    JSON.stringify(publicStatsAnon) === JSON.stringify(publicStatsWarga) &&
+      JSON.stringify(publicStatsAnon) === JSON.stringify(publicStatsAdmin) &&
+      Number(publicStatsAnon[0]?.jumlah_partisipan_alokasi) === 2 &&
+      Number(publicStatsAnon[0]?.total_alokasi_warga) === baselineAllocationTotal + 11000000,
+  );
+  const statsAdminOnly = await request<{ total_pengguna: number }[]>(
+    '/rest/v1/v_admin_stats',
+    admin,
+  );
+  const statsAnon = await request<unknown>('/rest/v1/v_admin_stats', null);
+  const statsWarga = await request<unknown>('/rest/v1/v_admin_stats', a);
+  const hiddenFromNonAdmin = (response: { status: number; data: unknown }) => {
+    if (response.status === 200) return Array.isArray(response.data) && response.data.length === 0;
+    const code =
+      typeof response.data === 'object' && response.data !== null && 'code' in response.data
+        ? response.data.code
+        : undefined;
+    return [401, 403].includes(response.status) || (response.status === 400 && code === '42501');
+  };
+  check(
+    `Statistik admin hanya tersedia bagi admin (anon HTTP ${statsAnon.status}, warga HTTP ${statsWarga.status})`,
+    statsAdminOnly.status === 200 &&
+      statsAdminOnly.data.length === 1 &&
+      hiddenFromNonAdmin(statsAnon) &&
+      hiddenFromNonAdmin(statsWarga),
   );
   const privateSchemaResponse = await fetch(`${apiUrl}/rest/v1/rpc/is_admin`, {
     headers: {

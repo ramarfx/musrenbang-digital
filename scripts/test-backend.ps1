@@ -4,6 +4,9 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+# psql may emit ordinary PostgreSQL NOTICE messages on stderr. Treat native
+# process failures by exit code below, not as PowerShell terminating errors.
+$PSNativeCommandUseErrorActionPreference = $false
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $target = [Uri]$DatabaseUrl
 if ($target.Host -notin @('127.0.0.1', 'localhost', '[::1]', '::1')) {
@@ -21,10 +24,39 @@ $payloadPath = Join-Path $outputDir 'foundation-dry-run.sql'
 $logPath = Join-Path $outputDir 'foundation.log'
 $sqlParts = [System.Collections.Generic.List[string]]::new()
 $sqlParts.Add('BEGIN;')
+$sqlParts.Add('SET LOCAL client_min_messages = warning;')
 $sqlParts.Add("SET LOCAL statement_timeout = '30s';")
 $sqlParts.Add("SET LOCAL lock_timeout = '5s';")
 $migrations = Get-ChildItem (Join-Path $repoRoot 'supabase/migrations/*.sql') | Sort-Object Name
 foreach ($migration in $migrations) {
+  if ($migration.Name -eq '20261027065525_mvp_public_stats_status_audit.sql') {
+    $sqlParts.Add("INSERT INTO public.apbd_items(kategori,nominal_rp,tahun,kota,sumber,status_verifikasi) VALUES ('Pendidikan',999000000,2026,'DKI Jakarta','legacy fixture without source','verified_program');")
+    $sqlParts.Add("SELECT 'LEGACY_APBD_FIXTURE_OK';")
+    $sqlParts.Add(@'
+INSERT INTO public.proposals (
+  id, judul, deskripsi, kategori, status, estimasi_biaya, dibuat_pada
+) OVERRIDING SYSTEM VALUE VALUES
+  (92000001, 'Legacy tanpa riwayat', 'Usulan legacy untuk menguji rekonstruksi status awal.',
+    'Pendidikan', 'Diajukan', 1000, '2026-01-01 00:00:00+00'),
+  (92000002, 'Legacy dengan transisi', 'Usulan legacy untuk menguji rekonstruksi status awal.',
+    'Pendidikan', 'Dikerjakan', 1000, '2026-01-01 00:00:00+00'),
+  (92000003, 'Legacy awal tersedia', 'Usulan legacy untuk menguji satu status awal.',
+    'Pendidikan', 'Diverifikasi', 1000, '2026-01-01 00:00:00+00'),
+  (92000004, 'Legacy kembali ke Diajukan', 'Usulan untuk menguji transisi Diajukan yang lebih baru.',
+    'Pendidikan', 'Dikerjakan', 1000, '2026-01-01 00:00:00+00');
+
+INSERT INTO public.proposal_status_history (
+  proposal_id, status_lama, status_baru, diubah_pada
+) VALUES
+  (92000002, 'Diajukan', 'Diverifikasi', '2026-01-02 00:00:00+00'),
+  (92000002, 'Diverifikasi', 'Dikerjakan', '2026-01-03 00:00:00+00'),
+  (92000003, NULL, 'Diajukan', '2026-01-01 00:00:00+00'),
+  (92000003, 'Diajukan', 'Diverifikasi', '2026-01-02 00:00:00+00'),
+  (92000004, 'Selesai', 'Diajukan', '2026-01-02 00:00:00+00'),
+  (92000004, 'Diajukan', 'Dikerjakan', '2026-01-03 00:00:00+00');
+SELECT 'LEGACY_STATUS_FIXTURES_OK';
+'@)
+  }
   $migrationSql = Get-Content -LiteralPath $migration.FullName -Raw
   if ($migrationSql -match '(?im)^\s*(BEGIN|COMMIT|ROLLBACK)\s*;') {
     throw "Kontrol transaksi tidak diizinkan di migration: $($migration.Name)"
@@ -70,7 +102,7 @@ SELECT jsonb_build_object(
   'tabel_aplikasi', (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
     WHERE n.nspname='public' AND c.relname IN ('profiles','proposals','comments','votes',
       'allocations','proposal_status_history','categories','apbd_items','config',
-      'v_proposals','v_comments','v_proposal_status_history','v_gap')),
+      'v_proposals','v_comments','v_proposal_status_history','v_gap','v_public_stats','v_admin_stats')),
   'akun_fixture', (SELECT count(*) FROM auth.users WHERE id IN (
     '11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222',
     '33333333-3333-4333-8333-333333333333')),

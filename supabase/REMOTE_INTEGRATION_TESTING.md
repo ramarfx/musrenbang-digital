@@ -21,6 +21,23 @@ pwsh -NoProfile -File scripts/test-remote-integration.ps1 `
   -PreflightOnly
 ```
 
+Preflight read-only terakhir pada 27 Oktober 2026 memverifikasi target/ref proyek,
+URL API, API key publik pada proyek tersebut, email provider aktif, signup aktif,
+dan email confirmation wajib. Project masih berada pada enam migration. Preflight
+tersebut tidak membuat akun atau fixture dan tidak menulis data.
+
+`SITE_URL`, redirect allowlist, konfigurasi SMTP rinci, dan batas rate belum
+terverifikasi. Pemeriksaan Management API read-only tidak dijalankan karena token
+Management API tidak tersedia. `REMOTE_DATABASE_URL` juga belum disediakan, sehingga
+preflight itu tidak menghasilkan fingerprint database lengkap. Jangan menafsirkan
+status provider aktif sebagai bukti SMTP mengirim ke mailbox uji.
+
+Mode tulis runner saat ini mensyaratkan tujuh migration termasuk
+`20261027065525_mvp_public_stats_status_audit`. Remote masih memiliki enam; karena itu
+mode tulis akan berhenti pada pemeriksaan history. Jangan menerapkan migration hanya
+untuk melewati gate ini; migration memerlukan review dan persetujuan deployment
+terpisah terlebih dahulu.
+
 Untuk membaca SMTP/site URL/redirect allowlist/rate limit, gunakan token
 Management API yang dimasukkan lewat prompt lokal:
 
@@ -62,11 +79,10 @@ mengulang key opaque tersebut sebagai bearer; JWT Auth pengguna tetap dikirim pa
   mengirim ke alamat uji, rate limit cukup untuk dua signup, dan redirect setelah
   konfirmasi dapat dibuka. Jika informasi tidak tampil pada endpoint publik,
   lakukan verifikasi manual di Dashboard. Runner tidak mengubah konfigurasi.
-- Catatan preflight read-only Tahap 1E sebelumnya (belum di-refresh pada implementasi
-  runner ini): `SITE_URL` tercatat `http://localhost:3000`, allowlist redirect
-  tambahan kosong, sedangkan Vite repository berjalan di `http://localhost:5173`.
-  Periksa ulang redirect yang dipakai email sebelum signup; SMTP khusus dan nilai
-  rate limit numerik belum dapat dipastikan dari pembacaan sebelumnya.
+- Nilai `SITE_URL`, redirect allowlist, detail SMTP/sender, dan rate limit numerik
+  belum terverifikasi. Periksa secara manual pada Dashboard atau dengan token
+  Management API read-only sebelum menjadwalkan pengujian Auth. Jangan menggunakan
+  nilai localhost yang pernah muncul pada catatan lama sebagai konfigurasi saat ini.
 - Untuk pemeriksaan Management API, token hanya perlu hak baca konfigurasi Auth.
   Runner hanya memakai `GET /v1/projects/<ref>/config/auth` dan menampilkan
   site URL, allowlist redirect, boolean SMTP configured, serta rate-limit terpilih;

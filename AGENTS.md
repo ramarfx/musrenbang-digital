@@ -13,6 +13,8 @@ React + Vite; trust the repo config and code when they conflict with PRD prose.
 - `bun run check` — format:check + lint + typecheck + test. Run before finishing; there is no CI.
 - `bun test packages/shared/src/lib/gap.test.ts` — run one test file. `bun test -t "pattern"` filters by test name.
 - `bun run typecheck` — runs shared, web, and root/scripts tsconfigs; use it instead of ad-hoc `tsc`.
+- `pwsh scripts/test-backend.ps1` — apply migrations and run SQL assertions locally in one transaction, then roll back. Start the isolated database-only Supabase project first.
+- `pwsh scripts/test-integration.ps1 -EnvironmentSuffix mvp` — local Auth, PostgREST, RLS, RPC, concurrency, and fixture-cleanup tests. Never uses a remote fallback.
 - `bun run format` — Oxfmt. Do not use Prettier or ESLint; this repo uses Oxfmt/Oxlint.
 - `bun run seed` — requires root `.env` and a real Supabase project; destructive (see below).
 
@@ -28,7 +30,8 @@ React + Vite; trust the repo config and code when they conflict with PRD prose.
 
 ## Supabase and data
 
-- Migration order is `init` → `rls` → `views` → `rpc`. There is no `supabase/config.toml`; setup is via SQL Editor. Do not assume a local database.
+- Root `supabase/config.toml` is the CLI migration context (PostgreSQL 17, seed disabled); `supabase/integration/config.toml` configures the isolated HTTP integration stack. Project link metadata is local and must be checked before any remote CLI operation.
+- Migration order is `init` → `rls` → `views` → `rpc` → `foundation_security` → `security_advisor_hardening` → `mvp_public_stats_status_audit`. The first six are deployed to the authorized development project; migration seven is a local candidate until separately approved. Do not infer that remote has migration seven.
 - Never edit a migration already applied to a project; add a new numbered migration.
 - RLS is the source of truth for authorization. Do not replace it with UI checks or a service-role client.
 - Domain statuses: `Diajukan`, `Diverifikasi`, `Masuk APBD`, `Dikerjakan`, `Selesai`. Roles: `warga`, `admin`.
@@ -36,8 +39,8 @@ React + Vite; trust the repo config and code when they conflict with PRD prose.
 - Change proposal status only via RPC `change_proposal_status`; a trigger rejects non-admin direct status updates.
 - Save allocations only via RPC `save_allocations`; it enforces the virtual budget and replaces the user's rows atomically.
 - `profiles` is auto-created by an `auth.users` trigger. Admin role is granted manually via SQL; there is no self-service role UI.
-- Views `v_*` use `security_invoker = false` intentionally to expose safe aggregates and author names. Do not “fix” this without replacing the read model; base tables stay under RLS.
-- `v_gap` aggregates all `apbd_items` without year/city filtering; it assumes one seeded city/year. Revisit if multi-year data is added.
+- The four foundation views use `security_invoker = true`; safe author names, vote totals, and cross-user aggregates are supplied through narrowly granted helpers in `private`. Never expose `private` through the Data API.
+- In local migration seven, `v_gap` filters APBD by configured city/year and includes only `verified_program` rows with a source URL. It continues to use the ratio of summed nominal allocations; PRD wording about per-user average remains unresolved. Migration seven is not on remote.
 - `packages/shared/src/types/database.ts` is manual, not generated. Update it alongside migrations.
 
 ## Environment and seed hazards
@@ -51,5 +54,5 @@ React + Vite; trust the repo config and code when they conflict with PRD prose.
 
 - Keep Indonesian domain names and UI copy (`usulan`, `alokasi`, `peran`, etc.); tests and messages are Indonesian.
 - Oxfmt: 2 spaces, 100 columns, single quotes, trailing commas.
-- Tests are colocated (`*.test.ts`) and currently cover shared schemas and gap logic only; there is no database integration test setup.
+- Bun unit tests are colocated (`*.test.ts`). SQL assertions live in `supabase/tests/foundation_security.sql`; isolated local integration tests use Auth, PostgREST, Mailpit, and HTTP requests for allocation concurrency. A green unit suite alone does not prove database authorization.
 - `bun run build` outputs to `web/dist` (ignored). Tailwind 4 is configured through `@tailwindcss/vite`, not a `tailwind.config` file.

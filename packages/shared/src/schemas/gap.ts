@@ -8,6 +8,9 @@ export const gapItemSchema = z.object({
   gap_poin_persen: z.coerce.number(),
   nominal_apbd: z.coerce.number(),
   total_alokasi_warga: z.coerce.number(),
+  // Field ini ditambahkan migration 7; respons remote enam migration tetap dapat dibaca.
+  jumlah_partisipan: z.coerce.number().int().nonnegative().optional(),
+  apbd_tersedia: z.boolean().optional(),
 });
 
 export type GapItem = z.infer<typeof gapItemSchema>;

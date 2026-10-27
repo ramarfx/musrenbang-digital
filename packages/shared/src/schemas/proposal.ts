@@ -81,7 +81,7 @@ export const proposalInputSchema = z
     estimasi_biaya: z
       .number()
       .int('Estimasi biaya harus bilangan bulat.')
-      .min(0, 'Estimasi biaya tidak boleh negatif.')
+      .positive('Estimasi biaya harus lebih besar dari nol.')
       .max(TEXT_LIMITS.estimasiMaks, 'Estimasi biaya terlalu besar.'),
   })
   .superRefine((value, ctx) => {
@@ -101,6 +101,14 @@ export const proposalStatusUpdateSchema = z.object({
   status: proposalStatusSchema,
 });
 
+export const proposalStatusUpdateWithNoteSchema = proposalStatusUpdateSchema.extend({
+  catatan: z
+    .string()
+    .trim()
+    .min(1, 'Catatan perubahan status wajib diisi.')
+    .max(2_000, 'Catatan perubahan status maksimal 2000 karakter.'),
+});
+
 export const statusHistoryRowSchema = z.object({
   id: idSchema,
   proposal_id: idSchema,
@@ -108,6 +116,8 @@ export const statusHistoryRowSchema = z.object({
   status_baru: z.string(),
   diubah_oleh: uuidSchema.nullable(),
   diubah_pada: timestampSchema,
+  // View remote lama belum menyediakan kolom catatan sebelum migration 7.
+  catatan: z.string().nullable().default(null),
 });
 
 export const statusHistorySchema = statusHistoryRowSchema.omit({ diubah_oleh: true }).extend({
@@ -122,7 +132,7 @@ export const proposalSeedSchema = z.object({
   lokasi: z.string().nullable().optional(),
   latitude: z.number().min(-90).max(90).nullable().optional(),
   longitude: z.number().min(-180).max(180).nullable().optional(),
-  estimasi_biaya: z.number().int().nonnegative(),
+  estimasi_biaya: z.number().int().positive(),
   status: proposalStatusSchema.default('Diajukan'),
 });
 
@@ -130,6 +140,7 @@ export type ProposalRow = z.infer<typeof proposalRowSchema>;
 export type Proposal = z.infer<typeof proposalSchema>;
 export type ProposalInput = z.infer<typeof proposalInputSchema>;
 export type ProposalStatusUpdate = z.infer<typeof proposalStatusUpdateSchema>;
+export type ProposalStatusUpdateWithNote = z.infer<typeof proposalStatusUpdateWithNoteSchema>;
 export type ProposalModerationInput = z.infer<typeof proposalModerationInputSchema>;
 export type ProposalSeed = z.infer<typeof proposalSeedSchema>;
 export type StatusHistoryRow = z.infer<typeof statusHistoryRowSchema>;

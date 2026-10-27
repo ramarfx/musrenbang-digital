@@ -113,7 +113,10 @@ export async function denied(
   body?: unknown,
 ) {
   const response = await request<{ code?: string }>(path, actor, method, body);
-  check(name, [401, 403].includes(response.status));
+  const forbidden =
+    [401, 403].includes(response.status) ||
+    (response.status === 400 && response.data.code === '42501');
+  check(name, forbidden);
   return response;
 }
 

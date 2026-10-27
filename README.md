@@ -73,10 +73,16 @@ SQL Editor:
    `change_proposal_status`
 5. `supabase/migrations/20261026195414_foundation_security.sql`: moderasi, batas akses
    tabel/view, provisioning profil, dan jalur tulis alokasi melalui RPC.
+6. `supabase/migrations/20261027004023_security_advisor_hardening.sql`: empat view
+   invoker dan helper baca terbatas di schema `private`.
+7. `supabase/migrations/20261027065525_mvp_public_stats_status_audit.sql`: provenance
+   APBD, estimasi usulan positif, catatan audit status, statistik, dan filter APBD
+   berdasarkan kota/tahun serta status verifikasi.
 
-Migration keenam `20261027004023_security_advisor_hardening.sql` sudah diuji lokal
-dan masih menunggu persetujuan pemasangan remote. Migration ini mengubah empat
-view menjadi invoker dengan helper baca terbatas di schema `private`.
+Per 27 Oktober 2026, enam migration pertama sudah terpasang pada proyek development
+`dogyibbzwfslspflsidm`. Migration ketujuh masih lokal dan belum disetujui untuk
+pemasangan remote. Remote masih memakai kontrak enam migration; jangan menganggap
+view statistik atau kolom provenance migration ketujuh sudah tersedia di sana.
 
 Migration kelima memberi moderasi `Menunggu` pada seluruh usulan lama. Data tidak
 dihapus, tetapi belum tampil publik sebelum admin menyetujuinya. Seed usulan juga
@@ -124,10 +130,13 @@ menaruh `SUPABASE_SERVICE_ROLE_KEY` di `web/.env` atau kode frontend.
 bun run seed
 ```
 
-Seed memuat 10 kategori, data APBD DKI Jakarta 2026 dari CSV, 20 usulan contoh, dan
-nilai `config` (kota, tahun, anggaran virtual). Seed memakai service role sehingga
-melewati RLS. Mengulang seed aman untuk usulan warga: hanya usulan tanpa pengusul
-(`pengusul_id IS NULL`) yang dihapus dan dimuat ulang.
+Seed memuat 10 kategori, data riset APBD DKI Jakarta 2026 dari CSV, 20 usulan contoh,
+dan nilai `config` (kota, tahun, anggaran virtual). Nilai CSV saat ini masih berstatus
+`perlu_lampiran`; nilainya belum menjadi komposisi program APBD terverifikasi dan
+tidak masuk `v_gap`. Baris tanpa nominal dilewati, bukan disimpan sebagai nol.
+Seed memakai service role sehingga melewati RLS dan menghapus seluruh `apbd_items`
+serta usulan contoh tanpa pengusul sebelum memuat ulang. Jalankan hanya pada database
+yang memang disiapkan untuk seed, jangan pada remote berisi data yang perlu dijaga.
 
 ### 5. Jalankan aplikasi
 
@@ -198,9 +207,10 @@ Urutan sebelum commit: `bun run format`, lalu `bun run check`.
    Halaman di `routes/` hanya merangkai fitur.
 6. **Query key terpusat.** Semua key ada di `web/src/lib/query-keys.ts` supaya
    invalidasi cache konsisten setelah vote, komentar, alokasi, atau perubahan status.
-7. **Status usulan hanya berubah lewat RPC** `change_proposal_status` agar riwayat
-   status selalu tercatat. Trigger database menolak perubahan status langsung oleh
-   non-admin.
+7. **Status usulan hanya berubah lewat RPC** agar riwayat status selalu tercatat.
+   Remote enam migration masih menggunakan `change_proposal_status`; migration lokal
+   7 menyediakan `change_proposal_status_with_note` dan kontrak frontend perlu
+   mengirim catatan sebelum migration itu dipertimbangkan untuk deployment.
 
 ## Validasi dan error
 
@@ -213,22 +223,26 @@ Urutan sebelum commit: `bun run format`, lalu `bun run check`.
 
 ## Status
 
-Fondasi aplikasi, migrasi, seed, dan halaman utama tersedia. Migration keamanan
-Tahap 1 telah diuji pada PostgreSQL Supabase lokal, tetapi belum diterapkan ke remote.
-Kesiapan MVP juga bergantung pada pekerjaan PRD berikutnya, termasuk provenance APBD
-dan definisi agregasi. Tersedianya kode bukan bukti seluruh kriteria PRD telah lulus.
+Fondasi Auth, RLS, RPC, dan enam migration sudah diuji lokal dan terpasang pada
+development. Migration ketujuh beserta perubahan kontrak lokal sudah diuji, tetapi
+belum diterapkan remote. Sebagian kontrak frontend masih perlu disesuaikan sebelum
+migration ketujuh dipasang. Tersedianya kode bukan bukti seluruh kriteria PRD lulus.
 
 Catatan jujur untuk demo:
 
-- 2 dari 10 kategori APBD (Keamanan dan Penerangan; Teknologi dan Layanan Digital)
-  masih bernominal 0 dengan status `perlu_lampiran` dan ditampilkan sebagai
-  "data menyusul".
+- CSV APBD saat ini berisi rincian awal dari ringkasan APBD murni 2026, bukan rekonsiliasi
+  APBD Perubahan dan bukan pemetaan final belanja program. Semua item berstatus
+  `perlu_lampiran`; dua kategori tanpa nominal dilewati oleh seed. Nilai belum boleh
+  diperlakukan sebagai angka perbandingan resmi.
 - Belum ada verifikasi KTP/NIK, sehingga satu orang dapat membuat beberapa akun.
   Risiko ini dicatat, bukan disembunyikan.
 - Setelah migration keenam, read model memakai `security_invoker = true` dan RLS
   tabel sumber. Helper `private` menjaga nama penulis, jumlah suara, dan agregat
   lintas warga tetap tersedia. RPC tulis tetap memakai `SECURITY DEFINER` dengan
-  validasi identitas, peran, dan payload. Detail ada di `ARSITEKTUR.md`.
+  validasi identitas, peran, dan payload. Migration ketujuh menambahkan catatan wajib
+  untuk perubahan status dan statistik. Detail serta kontrak frontend ada di
+  [`ARSITEKTUR.md`](./ARSITEKTUR.md) dan
+  [`supabase/BACKEND_HANDOFF.md`](./supabase/BACKEND_HANDOFF.md).
 
 ## Pengujian backend lokal dengan RAM terbatas
 
@@ -275,8 +289,8 @@ dari `supabase/integration/config.toml`. API memakai port 55421, PostgreSQL 5542
 dan Mailpit 55424. Hanya database, Auth, PostgREST, Kong, serta Mailpit dijalankan.
 Tidak ada fallback remote. Semua URL database dibatasi ke alamat integration lokal.
 
-Lima migration diterapkan persisten pada database lokal dan dicatat oleh Supabase
-CLI. Berbeda dari tes SQL Tahap 1, request HTTP dan dua koneksi concurrency memakai
+Tujuh migration diterapkan persisten pada database lokal dan dicatat oleh Supabase
+CLI. Berbeda dari tes SQL, request HTTP dan dua koneksi concurrency memakai
 transaksi masing-masing. Database tetap tersedia sepanjang tes, kemudian container
 dihentikan dengan backup lokal. Gunakan `-KeepRunning` jika perlu inspeksi setelah tes.
 Untuk menghentikannya secara manual:

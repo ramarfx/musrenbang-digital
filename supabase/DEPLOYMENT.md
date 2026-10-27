@@ -1,5 +1,27 @@
 # Checklist remote development
 
+## Kondisi remote saat ini
+
+Target tetap hanya `musrenbang-digital-backend` (`dogyibbzwfslspflsidm`). Pemeriksaan
+terakhir pada 27 Oktober 2026 menunjukkan enam migration fondasi sudah terpasang;
+`20261027065525_mvp_public_stats_status_audit.sql` masih kandidat lokal. Tidak ada
+izin untuk memasangnya melalui catatan ini. Pemasangan baru memerlukan persetujuan
+eksplisit terpisah setelah review lokal dan koordinasi kontrak frontend.
+
+Status baca terakhir: proyek aktif, Data API dan signup aktif, konfirmasi email
+wajib, GraphQL tidak diekspos. Security Advisor menunjukkan 0 ERROR dan 3 WARN pada
+RPC `SECURITY DEFINER` authenticated yang telah diaudit. `SITE_URL`, redirect
+allowlist, rincian SMTP, rate limit, dan fingerprint penuh belum terverifikasi.
+
+Migration ketujuh mengubah kontrak RPC status menjadi bercatatan dan menambah kolom
+provenance APBD/view statistik yang belum ada pada remote. Frontend saat ini masih
+memanggil RPC status lama; integrasi frontend perlu disiapkan sebelum migration
+ketujuh dipertimbangkan untuk deployment.
+
+Bagian berikut merekam checklist dan hasil historis deployment lima/keenam
+migration. Perintah di bawah ini bukan persetujuan atau instruksi untuk memasang
+migration ketujuh.
+
 Target tunggal: `musrenbang-digital-backend`, ref `dogyibbzwfslspflsidm`.
 Baseline Git: foundation `3adaff7`, integration `43373bf`.
 Dokumen ini adalah prosedur persiapan. Penerapan permanen memerlukan persetujuan

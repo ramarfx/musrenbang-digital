@@ -1,15 +1,33 @@
-param([switch]$KeepRunning, [switch]$ConcurrencyOnly)
+param(
+  [switch]$KeepRunning,
+  [switch]$ConcurrencyOnly,
+  [ValidatePattern('^[a-z0-9-]{1,16}$')]
+  [string]$EnvironmentSuffix = ''
+)
 
 $ErrorActionPreference = 'Stop'
 # Bun/Supabase CLI dapat menulis status progres biasa ke stderr. Jangan perlakukan
 # itu sebagai terminating error; setiap pemanggilan tetap memeriksa $LASTEXITCODE.
 $PSNativeCommandUseErrorActionPreference = $false
 $repoRoot = Split-Path $PSScriptRoot -Parent
-$workdir = Join-Path $repoRoot '.tmp/integration-local'
+$projectId = 'musrenbang-integration'
+$workdirName = 'integration-local'
+if ($EnvironmentSuffix) {
+  $projectId = "musrenbang-integration-$EnvironmentSuffix"
+  $workdirName = "integration-local-$EnvironmentSuffix"
+}
+$workdir = Join-Path (Join-Path $repoRoot '.tmp') $workdirName
 $localSupabase = Join-Path $workdir 'supabase'
 New-Item -ItemType Directory -Force (Join-Path $localSupabase 'migrations') | Out-Null
-Copy-Item -LiteralPath (Join-Path $repoRoot 'supabase/integration/config.toml') `
-  -Destination (Join-Path $localSupabase 'config.toml')
+$config = Get-Content -LiteralPath (Join-Path $repoRoot 'supabase/integration/config.toml') -Raw
+$config = [regex]::Replace(
+  $config,
+  '(?m)^project_id\s*=\s*"[^"]+"\s*$',
+  ('project_id = "{0}"' -f $projectId)
+)
+$configPath = Join-Path $localSupabase 'config.toml'
+$utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+[System.IO.File]::WriteAllText($configPath, $config, $utf8NoBom)
 Get-ChildItem (Join-Path $repoRoot 'supabase/migrations/*.sql') | ForEach-Object {
   Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $localSupabase 'migrations')
 }
@@ -87,7 +105,7 @@ try {
     $previousErrorAction = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-      $stopOutput = & bunx --bun supabase --workdir $workdir stop --project-id musrenbang-integration 2>&1
+      $stopOutput = & bunx --bun supabase --workdir $workdir stop --project-id $projectId 2>&1
       $stopExitCode = $LASTEXITCODE
     } finally {
       $ErrorActionPreference = $previousErrorAction

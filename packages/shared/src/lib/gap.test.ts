@@ -9,6 +9,8 @@ const item = (kategori: string, gap: number): GapItem => ({
   gap_poin_persen: gap,
   nominal_apbd: 1_000_000_000,
   total_alokasi_warga: 500_000,
+  jumlah_partisipan: 2,
+  apbd_tersedia: true,
 });
 
 describe('sortGapByMagnitude', () => {

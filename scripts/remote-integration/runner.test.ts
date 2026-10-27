@@ -1,13 +1,22 @@
 import { describe, expect, test } from 'bun:test';
+import { mkdir, mkdtemp, readFile, rm } from 'node:fs/promises';
+import { join } from 'node:path';
 import { cleanupManifest } from './cleanup';
 import { apiHeaders } from './http';
+import { createManifestExclusively, writeManifestAtomically } from './manifest';
 import { runTrackedWrite } from './tracking';
 import {
   ALLOWED_PROJECT_REF,
   ALLOWED_PROJECT_URL,
+  DEPLOYED_REMOTE_MIGRATIONS,
+  WRITE_TEST_MIGRATIONS,
+  assertExpectedMigrationHistory,
+  assertRecoveryManifest,
   assertRemoteTarget,
+  classifyRemoteMigrationHistory,
   extractJwtProjectRef,
   sanitizeDiagnostic,
+  shouldEnforceExpectedMigrationHistory,
   validateRunId,
   type FixtureManifest,
 } from './safety';
@@ -33,6 +42,56 @@ function manifestFixture(): FixtureManifest {
 }
 
 describe('remote runner safety gates', () => {
+  test('membedakan enam migration remote dari kandidat ketujuh lokal', () => {
+    expect(DEPLOYED_REMOTE_MIGRATIONS).toHaveLength(6);
+    expect(classifyRemoteMigrationHistory(DEPLOYED_REMOTE_MIGRATIONS)).toBe('deployed-baseline');
+    expect(classifyRemoteMigrationHistory(WRITE_TEST_MIGRATIONS)).toBe('mvp-migration-present');
+    expect(() => assertExpectedMigrationHistory(WRITE_TEST_MIGRATIONS)).not.toThrow();
+    expect(() => assertExpectedMigrationHistory(DEPLOYED_REMOTE_MIGRATIONS)).toThrow();
+    expect(() =>
+      assertExpectedMigrationHistory([...WRITE_TEST_MIGRATIONS, '20990101000000']),
+    ).toThrow();
+    expect(classifyRemoteMigrationHistory([...DEPLOYED_REMOTE_MIGRATIONS, '20990101000000'])).toBe(
+      'unexpected',
+    );
+    expect(shouldEnforceExpectedMigrationHistory(false, false)).toBe(false);
+    expect(shouldEnforceExpectedMigrationHistory(true, false)).toBe(true);
+    expect(shouldEnforceExpectedMigrationHistory(true, true)).toBe(false);
+  });
+
+  test('recovery hanya menerima manifest milik project dan Run ID yang diminta', () => {
+    const manifest = manifestFixture();
+    expect(() => assertRecoveryManifest(manifest, runId)).not.toThrow();
+    expect(() =>
+      assertRecoveryManifest(manifest, '34d101d6-5862-4a85-9c6e-cdad9a46efaa'),
+    ).toThrow();
+    expect(() =>
+      assertRecoveryManifest({ ...manifest, projectRef: 'other-project' }, runId),
+    ).toThrow();
+    expect(() =>
+      assertRecoveryManifest({ ...manifest, environment: 'local-integration' }, runId),
+    ).toThrow();
+    expect(() => assertRecoveryManifest({ ...manifest, users: null }, runId)).toThrow();
+  });
+
+  test('manifest Run ID yang sudah ada ditolak tanpa menimpa catatan cleanup', async () => {
+    const tempRoot = join(process.cwd(), '.tmp', 'manifest-regression-tests');
+    await mkdir(tempRoot, { recursive: true });
+    const tempDir = await mkdtemp(join(tempRoot, 'run-'));
+    const path = join(tempDir, `${runId}.json`);
+    try {
+      await createManifestExclusively(path, manifestFixture());
+      await expect(
+        createManifestExclusively(path, { ...manifestFixture(), status: 'cleaned' }),
+      ).rejects.toMatchObject({ code: 'EEXIST' });
+      expect(JSON.parse(await readFile(path, 'utf8')).status).toBe('running');
+      await writeManifestAtomically(path, { ...manifestFixture(), status: 'cleanup-required' });
+      expect(JSON.parse(await readFile(path, 'utf8')).status).toBe('cleanup-required');
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
   test('accepts only the exact allowlisted project URL and ref', () => {
     expect(() =>
       assertRemoteTarget({

@@ -7,13 +7,18 @@ import { cleanupManifest } from './cleanup';
 import { apiHeaders } from './http';
 import { applicationTableOrder, snapshotApplicationTables } from './snapshot';
 import { runTrackedWrite } from './tracking';
-import { writeManifestAtomically } from './manifest';
+import { createManifestExclusively, writeManifestAtomically } from './manifest';
 import {
   ALLOWED_PROJECT_REF,
+  assertRecoveryManifest,
+  assertExpectedMigrationHistory,
   assertRemoteTarget,
+  classifyRemoteMigrationHistory,
   extractJwtProjectRef,
   sanitizeDiagnostic,
+  shouldEnforceExpectedMigrationHistory,
   validateRunId,
+  WRITE_TEST_MIGRATIONS,
   type FixtureManifest,
 } from './safety';
 
@@ -94,23 +99,25 @@ function assertDatabaseTarget(urlText: string) {
   }
 }
 
-async function verifyPublicKey() {
+async function verifyPublicKey(requireSignupReadiness: boolean) {
   const settings = await api<Record<string, unknown>>('/auth/v1/settings');
   check('API key valid pada Auth project yang di-allowlist', settings.status === 200);
   if (settings.status !== 200)
     throw new Error('Auth settings tidak dapat dibaca; target/key gagal preflight.');
-  check(
-    'Email provider aktif',
-    Boolean((settings.data as { external?: { email?: boolean } }).external?.email),
-  );
-  check(
-    'Konfirmasi email aktif',
-    Boolean((settings.data as { mailer_autoconfirm?: boolean }).mailer_autoconfirm === false),
-  );
-  const signupDisabled = (settings.data as { disable_signup?: boolean }).disable_signup;
-  if (typeof signupDisabled === 'boolean')
-    check('Signup diaktifkan untuk development', !signupDisabled);
-  else console.log('MANUAL status signup tidak ditampilkan oleh Auth settings endpoint.');
+  if (requireSignupReadiness) {
+    check(
+      'Email provider aktif',
+      Boolean((settings.data as { external?: { email?: boolean } }).external?.email),
+    );
+    check(
+      'Konfirmasi email aktif',
+      Boolean((settings.data as { mailer_autoconfirm?: boolean }).mailer_autoconfirm === false),
+    );
+    const signupDisabled = (settings.data as { disable_signup?: boolean }).disable_signup;
+    if (typeof signupDisabled === 'boolean')
+      check('Signup diaktifkan untuk development', !signupDisabled);
+    else console.log('MANUAL status signup tidak ditampilkan oleh Auth settings endpoint.');
+  }
   if (execute) {
     const keyCheck = await api(
       '/rest/v1/profiles?select=id&limit=0',
@@ -170,8 +177,13 @@ async function snapshot() {
   return snapshotApplicationTables(db);
 }
 
-async function readOnlyBaseline() {
+async function readOnlyBaseline(options: { requireDatabase: boolean; enforceHistory: boolean }) {
   if (!databaseUrl) {
+    if (options.requireDatabase) {
+      throw new Error(
+        'Mode tulis memerlukan REMOTE_DATABASE_URL untuk verifikasi schema sebelum write.',
+      );
+    }
     console.log('MANUAL baseline/fingerprint tidak tersedia: REMOTE_DATABASE_URL belum diberikan.');
     return;
   }
@@ -181,6 +193,30 @@ async function readOnlyBaseline() {
     `SELECT current_database() AS db, inet_server_addr()::text AS address`,
   );
   check('Koneksi PostgreSQL read-only menuju database Supabase', Boolean(identity[0]?.db));
+  const migrationRows = await db.begin('READ ONLY', (transaction) =>
+    transaction.unsafe(
+      'SELECT version FROM supabase_migrations.schema_migrations ORDER BY version',
+    ),
+  );
+  const versions = migrationRows.map((row: { version: string }) => row.version);
+  if (!options.enforceHistory) {
+    const classification = classifyRemoteMigrationHistory(versions);
+    console.log(
+      `MIGRATION_HISTORY_${classification.toUpperCase()} ` +
+        `remote=${versions.join(',') || '(kosong)'}; ` +
+        `deployedBaseline=${WRITE_TEST_MIGRATIONS.slice(0, 6).join(',')}; ` +
+        `writeTest=${WRITE_TEST_MIGRATIONS.join(',')}`,
+    );
+    preflightBaseline = await snapshot();
+    return;
+  }
+  try {
+    assertExpectedMigrationHistory(versions, WRITE_TEST_MIGRATIONS);
+    check('History remote cocok dengan tujuh migration yang diuji', true);
+  } catch (error) {
+    check('History remote cocok dengan tujuh migration yang diuji', false);
+    throw error;
+  }
   preflightBaseline = await snapshot();
 }
 
@@ -200,9 +236,14 @@ async function preflight() {
   check('Target project ref dan URL tepat', true);
   if (!anonKey) throw new Error('API key publik harus tersedia melalui prompt lokal.');
   if (execute && !serviceKey) throw new Error('Service key hanya diperlukan untuk mode tulis.');
-  await verifyPublicKey();
-  await checkManagementConfig();
-  await readOnlyBaseline();
+  if (execute && !databaseUrl)
+    throw new Error('REMOTE_DATABASE_URL wajib tersedia untuk memeriksa migration sebelum write.');
+  await verifyPublicKey(!recovering);
+  if (!recovering) await checkManagementConfig();
+  await readOnlyBaseline({
+    requireDatabase: execute && !recovering,
+    enforceHistory: shouldEnforceExpectedMigrationHistory(execute, recovering),
+  });
 }
 
 function fixtureEmail(value: string, label: 'warga-a' | 'warga-b' | 'admin') {
@@ -368,7 +409,7 @@ async function createProposal(actor: Actor, label: string) {
         deskripsi: `Usulan pengujian integrasi remote ${runId}; data sementara dan akan dibersihkan.`,
         kategori: 'Pendidikan',
         lokasi: 'Wilayah uji',
-        estimasi_biaya: 0,
+        estimasi_biaya: 1000,
       }),
     record: (entry, result) => {
       const id = result.data?.[0]?.id;
@@ -395,6 +436,17 @@ async function testApi(a: Actor, b: Actor, admin: Actor) {
       trustedAdminCheck.data === true,
   );
   const hidden = await createProposal(a, 'menunggu');
+  const initialHistory = await api<{ id: number; status_baru: string; catatan: string }[]>(
+    `/rest/v1/v_proposal_status_history?proposal_id=eq.${hidden}&status_lama=is.null&select=id,status_baru,catatan`,
+    a.access,
+  );
+  check(
+    'Trigger mencatat status awal proposal dengan catatan',
+    initialHistory.status === 200 &&
+      initialHistory.data.length === 1 &&
+      initialHistory.data[0].status_baru === 'Diajukan' &&
+      initialHistory.data[0].catatan === 'Usulan diajukan.',
+  );
   const own = await api<{ id: number }[]>(`/rest/v1/proposals?id=eq.${hidden}&select=id`, a.access);
   const other = await api<{ id: number }[]>(
     `/rest/v1/proposals?id=eq.${hidden}&select=id`,
@@ -478,20 +530,49 @@ async function testApi(a: Actor, b: Actor, admin: Actor) {
     p_status: 'Selesai',
   });
   check('RPC perubahan status menolak warga', forbiddenStatus.status >= 400);
-  const statusChange = await api('/rest/v1/rpc/change_proposal_status', admin.access, 'POST', {
-    p_proposal_id: hidden,
-    p_status: 'Diverifikasi',
+  const directStatus = await api(`/rest/v1/proposals?id=eq.${hidden}`, admin.access, 'PATCH', {
+    status: 'Selesai',
   });
+  const statusAfterDirect = await api<{ status: string }[]>(
+    `/rest/v1/proposals?id=eq.${hidden}&select=status`,
+    admin.access,
+  );
   check(
-    'RPC admin mengubah status dan menulis riwayat',
+    'Admin tidak dapat melewati RPC status dengan PATCH tabel langsung',
+    directStatus.status >= 400 && statusAfterDirect.data?.[0]?.status === 'Diajukan',
+  );
+  const legacyStatus = await api<{ code?: string }>(
+    '/rest/v1/rpc/change_proposal_status',
+    admin.access,
+    'POST',
+    { p_proposal_id: hidden, p_status: 'Diverifikasi' },
+  );
+  check(
+    'RPC lama menolak status tanpa catatan',
+    legacyStatus.status === 400 && legacyStatus.data.code === '22023',
+  );
+  const statusChange = await api(
+    '/rest/v1/rpc/change_proposal_status_with_note',
+    admin.access,
+    'POST',
+    {
+      p_proposal_id: hidden,
+      p_status: 'Diverifikasi',
+      p_catatan: 'Diverifikasi oleh admin untuk pengujian.',
+    },
+  );
+  check(
+    'RPC admin mengubah status dan menulis riwayat bercatatan',
     statusChange.status === 204 || statusChange.status === 200,
   );
-  const publicHistory = await api<{ status_baru: string }[]>(
-    `/rest/v1/v_proposal_status_history?proposal_id=eq.${hidden}&status_baru=eq.Diverifikasi`,
+  const publicHistory = await api<{ status_baru: string; catatan: string }[]>(
+    `/rest/v1/v_proposal_status_history?proposal_id=eq.${hidden}&status_baru=eq.Diverifikasi&select=status_baru,catatan`,
   );
   check(
-    'Riwayat status proposal yang disetujui terlihat publik',
-    publicHistory.status === 200 && publicHistory.data.length === 1,
+    'Riwayat status dan catatan proposal yang disetujui terlihat publik',
+    publicHistory.status === 200 &&
+      publicHistory.data.length === 1 &&
+      publicHistory.data[0].catatan === 'Diverifikasi oleh admin untuk pengujian.',
   );
   const vote = await api('/rest/v1/votes', b.access, 'POST', {
     proposal_id: hidden,
@@ -564,8 +645,42 @@ async function testApi(a: Actor, b: Actor, admin: Actor) {
     'Warga B tidak melihat alokasi warga A',
     hiddenAlloc.status === 200 && hiddenAlloc.data.length === 0,
   );
-  const gap = await api('/rest/v1/v_gap?select=kategori,total_alokasi_warga');
+  const gap = await api<
+    {
+      kategori: string;
+      total_alokasi_warga: number;
+      jumlah_partisipan: number;
+      apbd_tersedia: boolean;
+    }[]
+  >('/rest/v1/v_gap?select=kategori,total_alokasi_warga,jumlah_partisipan,apbd_tersedia');
   check('View v_gap agregat tersedia bagi anon', gap.status === 200 && Array.isArray(gap.data));
+  check(
+    'v_gap mengembalikan agregat partisipan tanpa identitas',
+    gap.status === 200 && gap.data.every((row) => typeof row.jumlah_partisipan === 'number'),
+  );
+  const publicStats = await api<
+    { jumlah_partisipan_alokasi: number; total_alokasi_warga: number }[]
+  >(
+    '/rest/v1/v_public_stats?select=jumlah_usulan_disetujui,jumlah_pemberi_suara,jumlah_partisipan_alokasi,total_alokasi_warga',
+  );
+  check(
+    'View statistik publik mengembalikan agregat saja',
+    publicStats.status === 200 &&
+      publicStats.data.length === 1 &&
+      typeof publicStats.data[0].jumlah_partisipan_alokasi === 'number',
+  );
+  const adminStats = await api<{ total_pengguna: number }[]>(
+    '/rest/v1/v_admin_stats',
+    admin.access,
+  );
+  const wargaStats = await api<{ total_pengguna: number }[]>('/rest/v1/v_admin_stats', a.access);
+  check(
+    'Statistik admin hanya tampil bagi admin',
+    adminStats.status === 200 &&
+      adminStats.data.length === 1 &&
+      wargaStats.status === 200 &&
+      wargaStats.data.length === 0,
+  );
   const first = api('/rest/v1/rpc/save_allocations', a.access, 'POST', {
     p_rows: [
       { kategori: 'Pendidikan', jumlah: 6000000 },
@@ -636,13 +751,9 @@ async function cleanupFixtures() {
 }
 
 async function recoveryCleanup() {
-  manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as FixtureManifest;
-  if (
-    manifest.environment !== 'remote-development' ||
-    manifest.projectRef !== ALLOWED_PROJECT_REF ||
-    manifest.runId !== runId
-  )
-    throw new Error('Manifest cleanup tidak cocok dengan project/run yang di-allowlist.');
+  const savedManifest: unknown = JSON.parse(await readFile(manifestPath, 'utf8'));
+  assertRecoveryManifest(savedManifest, runId);
+  manifest = savedManifest;
   await cleanupFixtures();
 }
 
@@ -670,7 +781,7 @@ async function compareBaseline(): Promise<boolean | undefined> {
       ? `BASELINE_INCONCLUSIVE: tabel berubah dari baseline (${mismatches.join(', ')}); mungkin ada aktivitas tim lain.`
       : 'BASELINE_MATCH: jumlah dan fingerprint seluruh tabel aplikasi kembali sama.',
   );
-  await persist();
+  await createManifestExclusively(manifestPath, manifest);
   return mismatches.length === 0;
 }
 

@@ -1,5 +1,53 @@
 export const ALLOWED_PROJECT_REF = 'dogyibbzwfslspflsidm';
 export const ALLOWED_PROJECT_URL = `https://${ALLOWED_PROJECT_REF}.supabase.co`;
+export const DEPLOYED_REMOTE_MIGRATIONS = [
+  '20261026090000',
+  '20261026090100',
+  '20261026090200',
+  '20261026090300',
+  '20261026195414',
+  '20261027004023',
+] as const;
+
+export const LOCAL_MVP_MIGRATIONS = ['20261027065525'] as const;
+export const WRITE_TEST_MIGRATIONS = [
+  ...DEPLOYED_REMOTE_MIGRATIONS,
+  ...LOCAL_MVP_MIGRATIONS,
+] as const;
+
+function hasExactMigrationHistory(versions: readonly string[], expected: readonly string[]) {
+  const observed = [...versions].sort();
+  const expectedSorted = [...expected].sort();
+  return (
+    observed.length === expectedSorted.length &&
+    observed.every((version, index) => version === expectedSorted[index])
+  );
+}
+
+export function classifyRemoteMigrationHistory(versions: readonly string[]) {
+  if (hasExactMigrationHistory(versions, DEPLOYED_REMOTE_MIGRATIONS)) return 'deployed-baseline';
+  if (hasExactMigrationHistory(versions, WRITE_TEST_MIGRATIONS)) return 'mvp-migration-present';
+  return 'unexpected';
+}
+
+export function assertExpectedMigrationHistory(
+  versions: readonly string[],
+  expected: readonly string[] = WRITE_TEST_MIGRATIONS,
+) {
+  if (!hasExactMigrationHistory(versions, expected)) {
+    throw new Error(
+      `Migration history tidak cocok. Diharapkan ${[...expected].join(',')}; ` +
+        `ditemukan ${[...versions].sort().join(',') || '(kosong)'}.`,
+    );
+  }
+}
+
+export function shouldEnforceExpectedMigrationHistory(
+  executeRemoteWrites: boolean,
+  recovering: boolean,
+) {
+  return executeRemoteWrites && !recovering;
+}
 
 export type RunAuthorization = {
   projectRef: string;
@@ -92,6 +140,31 @@ export type FixtureManifest = {
   baseline?: Record<string, { count: number; fingerprint: string }>;
   finalSnapshot?: Record<string, { count: number; fingerprint: string }>;
 };
+
+export function assertRecoveryManifest(
+  value: unknown,
+  expectedRunId: string,
+): asserts value is FixtureManifest {
+  const validRunId = validateRunId(expectedRunId);
+  if (!value || typeof value !== 'object') {
+    throw new Error('Manifest cleanup bukan objek yang valid.');
+  }
+  const manifest = value as Partial<FixtureManifest>;
+  if (
+    manifest.version !== 1 ||
+    manifest.environment !== 'remote-development' ||
+    manifest.projectRef !== ALLOWED_PROJECT_REF ||
+    manifest.runId !== validRunId ||
+    !['running', 'cleanup-required', 'cleaned'].includes(manifest.status ?? '') ||
+    !Array.isArray(manifest.users) ||
+    !Array.isArray(manifest.proposals) ||
+    !manifest.cleanup ||
+    typeof manifest.cleanup.proposals !== 'boolean' ||
+    typeof manifest.cleanup.users !== 'boolean'
+  ) {
+    throw new Error('Manifest cleanup tidak cocok dengan project/run yang di-allowlist.');
+  }
+}
 
 export function validateRunId(value: string) {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) {
