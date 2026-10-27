@@ -14,6 +14,10 @@ export const PROPOSAL_STATUSES = [
 
 export type ProposalStatus = (typeof PROPOSAL_STATUSES)[number];
 
+export const PROPOSAL_MODERATION_STATUSES = ['Menunggu', 'Disetujui', 'Ditolak'] as const;
+
+export type ProposalModeration = (typeof PROPOSAL_MODERATION_STATUSES)[number];
+
 export const PROFILE_ROLES = ['warga', 'admin'] as const;
 
 export type ProfileRole = (typeof PROFILE_ROLES)[number];

@@ -1,0 +1,9 @@
+# Konteks migration development. Tidak mengubah konfigurasi proyek remote.
+# Project ref ditetapkan melalui `supabase link`, bukan project_id ini.
+project_id = "musrenbang-digital-development"
+
+[db]
+major_version = 17
+
+[db.seed]
+enabled = false
