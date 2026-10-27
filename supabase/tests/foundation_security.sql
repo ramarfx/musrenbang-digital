@@ -49,17 +49,33 @@ INSERT INTO public.proposal_status_history(id, proposal_id, status_baru) OVERRID
 SELECT 91000200 + (id - 91000000), id, 'Diajukan'
 FROM public.proposals WHERE id BETWEEN 91000001 AND 91000004;
 
+-- Simulasikan suara historis pada usulan yang belum boleh dibaca publik.
+INSERT INTO public.votes(proposal_id,user_id)
+VALUES (91000001,'11111111-1111-4111-8111-111111111111');
+
 -- Pengunjung tanpa login: hanya approved, termasuk melalui tabel turunan dan view.
 SET LOCAL ROLE anon;
 SELECT set_config('request.jwt.claims', '{"role":"anon"}', true);
 SELECT set_config('request.jwt.claim.sub', '', true);
 SELECT pg_temp.check_true(current_user = 'anon' AND auth.uid() IS NULL, 'Konteks anon benar-benar tanpa UID');
+SELECT pg_temp.check_true(NOT public.is_admin(), 'Helper is_admin anon selalu false');
+SELECT pg_temp.check_true(private.profile_name('22222222-2222-4222-8222-222222222222') IS NULL, 'Helper nama anon tidak membaca profil yang hanya terkait data tersembunyi');
+SELECT pg_temp.check_true(private.proposal_vote_count(91000001)=0, 'Helper vote anon tidak membaca agregat usulan tersembunyi');
+SELECT pg_temp.check_true(NOT (SELECT prosecdef FROM pg_proc WHERE oid='public.is_admin()'::regprocedure), 'RPC public.is_admin berjalan sebagai invoker');
+SELECT pg_temp.check_true((SELECT prosecdef FROM pg_proc WHERE oid='private.is_admin()'::regprocedure), 'Pemeriksaan peran terbatas pada helper private');
+SELECT pg_temp.check_true(NOT has_schema_privilege('anon','private','CREATE') AND NOT has_schema_privilege('authenticated','private','CREATE'), 'Role aplikasi tidak dapat membuat objek dalam schema private');
+SELECT pg_temp.check_true((SELECT count(*)=8 AND bool_and(prosecdef AND proconfig @> ARRAY['search_path=""'] AND pg_get_userbyid(proowner) NOT IN ('anon','authenticated')) FROM pg_proc WHERE pronamespace='private'::regnamespace), 'Seluruh helper private memiliki owner tepercaya dan search_path kosong');
+SELECT pg_temp.check_true(NOT EXISTS (SELECT 1 FROM pg_proc p CROSS JOIN LATERAL aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) a WHERE p.pronamespace='private'::regnamespace AND a.grantee=0 AND a.privilege_type='EXECUTE'), 'Tidak ada EXECUTE helper private melalui grant PUBLIC');
+SELECT pg_temp.check_true(has_function_privilege('anon','public.is_admin()','EXECUTE'), 'Anon tetap dapat memanggil pemeriksaan peran yang aman');
+SELECT pg_temp.check_true((SELECT bool_and(prosecdef AND proconfig @> ARRAY['search_path=""']) FROM pg_proc WHERE oid IN ('public.change_proposal_status(bigint,text)'::regprocedure, 'public.moderate_proposal(bigint,text,text)'::regprocedure, 'public.save_allocations(jsonb)'::regprocedure)), 'RPC berhak istimewa memakai search_path kosong');
+SELECT pg_temp.check_true((SELECT count(*)=4 FROM pg_class WHERE relnamespace='public'::regnamespace AND relname IN ('v_proposals','v_comments','v_proposal_status_history','v_gap') AND reloptions @> ARRAY['security_invoker=true']), 'Empat view memakai security_invoker');
 SELECT pg_temp.check_true((SELECT count(*) = 1 FROM public.proposals WHERE id BETWEEN 91000001 AND 91000004), 'Anon tabel hanya disetujui');
 SELECT pg_temp.check_true((SELECT count(*) = 1 FROM public.v_proposals WHERE id BETWEEN 91000001 AND 91000004), 'Anon view hanya disetujui');
 SELECT pg_temp.check_true((SELECT count(*) = 1 FROM public.comments WHERE proposal_id BETWEEN 91000001 AND 91000004), 'Anon komentar tabel tersaring');
 SELECT pg_temp.check_true((SELECT count(*) = 1 FROM public.v_comments WHERE proposal_id BETWEEN 91000001 AND 91000004), 'Anon komentar view tersaring');
 SELECT pg_temp.check_true((SELECT count(*) = 1 FROM public.proposal_status_history WHERE proposal_id BETWEEN 91000001 AND 91000004), 'Anon riwayat tabel tersaring');
 SELECT pg_temp.check_true((SELECT count(*) = 1 FROM public.v_proposal_status_history WHERE proposal_id BETWEEN 91000001 AND 91000004), 'Anon riwayat view tersaring');
+SELECT pg_temp.check_true((SELECT pengusul_nama='Warga A' FROM public.v_proposals WHERE id=91000002), 'Anon tetap melihat nama penulis usulan publik');
 SELECT pg_temp.expect_error('SELECT * FROM public.profiles', '42501', 'Anon tidak membaca profil');
 SELECT pg_temp.expect_error('SELECT * FROM public.allocations', '42501', 'Anon tidak membaca alokasi individual');
 SELECT pg_temp.expect_error('SELECT * FROM public.votes', '42501', 'Anon tidak membaca pemilih individual');
@@ -75,6 +91,8 @@ SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims', '{"role":"authenticated","sub":"11111111-1111-4111-8111-111111111111"}', true);
 SELECT set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
 SELECT pg_temp.check_true(current_user = 'authenticated' AND auth.uid() = '11111111-1111-4111-8111-111111111111'::uuid, 'Konteks warga A memakai role dan UID benar');
+SELECT pg_temp.check_true(private.profile_name('22222222-2222-4222-8222-222222222222') IS NULL, 'Helper nama A tidak membaca profil tersembunyi B');
+SELECT pg_temp.check_true(private.proposal_vote_count(91000001)=1, 'Helper vote tetap lengkap untuk pemilik usulan');
 SELECT pg_temp.check_true((SELECT count(*) = 3 FROM public.proposals WHERE id BETWEEN 91000001 AND 91000004), 'A membaca tabel milik sendiri dan publik');
 SELECT pg_temp.check_true((SELECT count(*) = 3 FROM public.v_proposals WHERE id BETWEEN 91000001 AND 91000004), 'A membaca view milik sendiri dan publik');
 SELECT pg_temp.check_true((SELECT catatan_moderasi = 'Alasan privat penolakan' FROM public.v_proposals WHERE id = 91000003), 'A membaca alasan penolakan sendiri');
@@ -82,6 +100,7 @@ SELECT pg_temp.check_true((SELECT count(*) = 3 FROM public.comments WHERE propos
 SELECT pg_temp.check_true((SELECT count(*) = 3 FROM public.v_comments WHERE proposal_id BETWEEN 91000001 AND 91000004), 'A komentar view sesuai visibilitas');
 SELECT pg_temp.check_true((SELECT count(*) = 3 FROM public.proposal_status_history WHERE proposal_id BETWEEN 91000001 AND 91000004), 'A riwayat tabel sesuai visibilitas');
 SELECT pg_temp.check_true((SELECT count(*) = 3 FROM public.v_proposal_status_history WHERE proposal_id BETWEEN 91000001 AND 91000004), 'A riwayat view sesuai visibilitas');
+SELECT pg_temp.check_true((SELECT pengusul_nama='Warga A' FROM public.v_proposals WHERE id=91000001), 'View invoker tetap menampilkan nama pemilik ke warga A');
 INSERT INTO public.proposals(id, judul, deskripsi, kategori, pengusul_id) OVERRIDING SYSTEM VALUE
 VALUES (91000005, 'Usulan baru warga A', 'Deskripsi cukup panjang untuk usulan baru.', 'Pendidikan', auth.uid());
 SELECT pg_temp.check_true((SELECT status = 'Diajukan' AND moderasi = 'Menunggu' FROM public.proposals WHERE id = 91000005), 'INSERT warga memakai status awal database');
@@ -106,6 +125,8 @@ SELECT pg_temp.expect_error('INSERT INTO public.proposals(judul,deskripsi,katego
 SELECT pg_temp.expect_error('INSERT INTO public.proposals(judul,deskripsi,kategori,pengusul_id) VALUES (''Pemilik awal palsu'',''Deskripsi cukup panjang untuk tes.'',''Pendidikan'',''22222222-2222-4222-8222-222222222222'')', '42501', 'INSERT menolak pemilik lain');
 SELECT pg_temp.expect_error('SELECT public.moderate_proposal(91000001,''Disetujui'')', '42501', 'A tidak memanggil RPC moderasi');
 SELECT pg_temp.expect_error('SELECT public.change_proposal_status(91000001,''Selesai'')', '42501', 'A tidak memanggil RPC status admin');
+SELECT pg_temp.expect_error('SELECT private.moderate_proposal(91000001,''Disetujui'')', '42501', 'Worker moderasi tidak dapat dipanggil langsung');
+SELECT pg_temp.expect_error('SELECT private.change_proposal_status(91000001,''Selesai'')', '42501', 'Worker status tidak dapat dipanggil langsung');
 UPDATE public.profiles SET nama = 'Nama A diperbarui' WHERE id = auth.uid();
 SELECT pg_temp.check_true((SELECT nama = 'Nama A diperbarui' FROM public.profiles WHERE id = auth.uid()), 'A boleh ubah nama sendiri');
 SELECT pg_temp.expect_error('UPDATE public.profiles SET peran=''admin'' WHERE id=auth.uid()', '42501', 'A tidak meningkatkan peran');
@@ -139,6 +160,8 @@ SELECT pg_temp.check_true((SELECT count(*)=1 AND sum(jumlah)=2000000 FROM public
 SELECT set_config('request.jwt.claims', '{"role":"authenticated","sub":"22222222-2222-4222-8222-222222222222"}', true);
 SELECT set_config('request.jwt.claim.sub', '22222222-2222-4222-8222-222222222222', true);
 SELECT pg_temp.check_true(current_user = 'authenticated' AND auth.uid() = '22222222-2222-4222-8222-222222222222'::uuid, 'Konteks warga B memakai role dan UID benar');
+SELECT pg_temp.check_true(private.profile_name(auth.uid())='Warga B', 'Helper nama tetap tersedia untuk profil sendiri');
+SELECT pg_temp.check_true(private.proposal_vote_count(91000001)=0, 'Helper vote B tidak membaca agregat tersembunyi A');
 SELECT pg_temp.check_true((SELECT count(*)=2 FROM public.proposals WHERE id BETWEEN 91000001 AND 91000005), 'B tabel: publik dan milik sendiri');
 SELECT pg_temp.check_true((SELECT count(*)=2 FROM public.v_proposals WHERE id BETWEEN 91000001 AND 91000005), 'B view: publik dan milik sendiri');
 SELECT pg_temp.check_true((SELECT count(*)=0 FROM public.v_proposals WHERE id=91000003), 'B tidak membaca alasan penolakan A');
@@ -156,6 +179,8 @@ SELECT pg_temp.check_true((SELECT count(*)=1 AND sum(jumlah)=1000000 FROM public
 SELECT set_config('request.jwt.claims', '{"role":"authenticated","sub":"33333333-3333-4333-8333-333333333333"}', true);
 SELECT set_config('request.jwt.claim.sub', '33333333-3333-4333-8333-333333333333', true);
 SELECT pg_temp.check_true(current_user = 'authenticated' AND auth.uid() = '33333333-3333-4333-8333-333333333333'::uuid AND public.is_admin(), 'Konteks admin memakai role dan UID benar');
+SELECT pg_temp.check_true(private.profile_name('22222222-2222-4222-8222-222222222222')='Warga B', 'Helper nama admin tetap dapat membaca semua profil');
+SELECT pg_temp.check_true(private.proposal_vote_count(91000001)=1, 'Helper vote admin tetap membaca usulan tersembunyi');
 SELECT pg_temp.check_true((SELECT count(*)=5 FROM public.proposals WHERE id BETWEEN 91000001 AND 91000005), 'Admin tabel melihat semua');
 SELECT pg_temp.check_true((SELECT count(*)=5 FROM public.v_proposals WHERE id BETWEEN 91000001 AND 91000005), 'Admin view melihat semua');
 SELECT pg_temp.check_true((SELECT count(*)=5 FROM public.comments WHERE proposal_id BETWEEN 91000001 AND 91000004), 'Admin komentar tabel melihat semua');
@@ -193,6 +218,7 @@ SELECT pg_temp.check_true((SELECT count(*)=0 FROM public.v_comments WHERE propos
 SELECT pg_temp.check_true((SELECT count(*)=0 FROM public.proposal_status_history WHERE proposal_id=91000002), 'Anon tabel riwayat ikut tersembunyi');
 SELECT pg_temp.check_true((SELECT count(*)=0 FROM public.v_proposal_status_history WHERE proposal_id=91000002), 'Anon view riwayat ikut tersembunyi');
 SELECT pg_temp.check_true((SELECT count(*)=10 FROM public.v_gap), 'Gap tetap dapat dibaca publik');
+SELECT pg_temp.check_true((SELECT sum(total_alokasi_warga)=3000000 FROM public.v_gap), 'Gap anon mempertahankan agregasi alokasi lintas warga');
 
 RESET ROLE;
 -- Hak TRUNCATE tidak tunduk pada RLS, jadi harus benar-benar dicabut.

@@ -243,9 +243,12 @@ Migrasi harus dijalankan berurutan karena saling bergantung:
 4. **`rpc`** — fungsi transaksional untuk invariant lintas baris.
 5. **`foundation_security`**: moderasi terpisah, pembatasan visibilitas lintas tabel/view,
    provisioning profil tepercaya, dan pengamanan jalur tulis alokasi.
+6. **`security_advisor_hardening`**: view invoker, helper baca terbatas, dan
+   pemisahan pemeriksaan peran publik dari lookup internal. Diuji lokal; belum
+   dipasang ke remote.
 
-Semua migrasi ditulis idempoten (`CREATE TABLE IF NOT EXISTS`, `DROP POLICY IF EXISTS`,
-`CREATE OR REPLACE`) agar aman diulang saat pengembangan.
+Migration dijalankan sekali sesuai migration history. Jangan mengulang atau
+mengedit migration yang sudah diterapkan; perubahan berikutnya memakai file baru.
 
 ### 6.2 Tabel
 
@@ -277,10 +280,29 @@ APBD per kategori/tahun.
 
 ### 6.3 Read model (view)
 
-Frontend membaca view, bukan join manual. View dibuat dengan
-`security_invoker = false` **secara sadar**: view berjalan dengan hak pemilik sehingga
-bisa membaca lintas baris untuk agregat dan nama penulis. View hanya mengekspos kolom
-aman; tabel dasar tetap dilindungi RLS.
+Frontend membaca view, bukan join manual. Setelah migration keenam, empat view
+memakai `security_invoker = true` dan `security_barrier = true`; baris sumber tunduk
+pada RLS pemanggil. Helper `SECURITY DEFINER` dalam schema `private` mempertahankan
+nama penulis dan jumlah suara tanpa membuka profil lengkap atau identitas pemilih.
+Lookup nama hanya memberi profil sendiri/admin atau nama yang terkait usulan,
+komentar, atau riwayat yang boleh dibaca pemanggil. Hitungan suara juga memeriksa
+visibilitas usulan di dalam helper, termasuk ketika dipanggil langsung melalui SQL.
+Agregat alokasi memakai helper kategori/total lintas warga agar `v_gap` tidak berubah
+menjadi statistik milik pemanggil saja. Schema `private` tidak diekspos Data API.
+
+`v_gap` masih berisiko mengungkap preferensi individu lewat inferensi ketika
+partisipan sedikit, terutama jika pemanggil mengurangi total publik dengan alokasi
+sendiri. PRD meminta agregat publik dan jumlah partisipan, tetapi belum menetapkan
+aturan penundaan publikasi atau ambang privasi. Aturan tersebut perlu keputusan
+produk; migration keenam tidak mengubah rumus atau menetapkan ambang minimum.
+
+Advisor lokal CLI v2.122.0 memakai bundle lint yang belum memuat 0028/0029.
+Hasil kosongnya bukan bukti bahwa warning fungsi hilang. Eksekusi definisi lint
+resmi 0028/0029 pada database lokal tetap menemukan tiga RPC publik yang dapat
+dieksekusi authenticated sebagai definer, dan tidak menemukan fungsi definer
+publik yang dapat dieksekusi anon. Tiga RPC itu sengaja dipertahankan dengan
+otorisasi eksplisit, search_path kosong, serta worker privat tanpa hak EXECUTE
+untuk role aplikasi.
 
 | View                        | Kolom penting                                                                 | Dipakai untuk                           |
 | --------------------------- | ----------------------------------------------------------------------------- | --------------------------------------- |
@@ -615,3 +637,12 @@ sedangkan schema dan migration history lokal tetap tersedia untuk pengulangan.
 Tidak ada deployment frontend, perubahan rumus Gap, atau penerapan remote dalam
 Tahap 1C. Keberhasilan tes lokal tidak menggantikan smoke test konfigurasi remote
 setelah pemasangan development yang disetujui secara terpisah.
+
+## 18. Konteks CLI development
+
+`supabase/config.toml` menyiapkan konteks migration dengan PostgreSQL 17 dan seed
+nonaktif. File ini tidak menyimpan kredensial atau mengubah Auth/Data API remote.
+Konfigurasi integration lokal tetap berada di `supabase/integration/config.toml`.
+Metadata link CLI tersimpan dalam `supabase/.temp/` yang diabaikan Git. Ref target
+harus diperiksa sebelum dry-run/pemasangan. Prosedur lengkap dan pemeriksaan objek
+database ada di `supabase/DEPLOYMENT.md`; penerapan remote perlu persetujuan terpisah.

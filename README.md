@@ -74,6 +74,10 @@ SQL Editor:
 5. `supabase/migrations/20261026195414_foundation_security.sql`: moderasi, batas akses
    tabel/view, provisioning profil, dan jalur tulis alokasi melalui RPC.
 
+Migration keenam `20261027004023_security_advisor_hardening.sql` sudah diuji lokal
+dan masih menunggu persetujuan pemasangan remote. Migration ini mengubah empat
+view menjadi invoker dengan helper baca terbatas di schema `private`.
+
 Migration kelima memberi moderasi `Menunggu` pada seluruh usulan lama. Data tidak
 dihapus, tetapi belum tampil publik sebelum admin menyetujuinya. Seed usulan juga
 memakai default ini; jangan menyetujui data lama secara otomatis.
@@ -221,9 +225,10 @@ Catatan jujur untuk demo:
   "data menyusul".
 - Belum ada verifikasi KTP/NIK, sehingga satu orang dapat membuat beberapa akun.
   Risiko ini dicatat, bukan disembunyikan.
-- Read model memakai `security_invoker = false` secara sadar agar agregat dan nama
-  penulis bisa dibaca publik; view hanya mengekspos kolom aman dan tabel dasar tetap
-  dilindungi RLS. Detail ada di `ARSITEKTUR.md`.
+- Setelah migration keenam, read model memakai `security_invoker = true` dan RLS
+  tabel sumber. Helper `private` menjaga nama penulis, jumlah suara, dan agregat
+  lintas warga tetap tersedia. RPC tulis tetap memakai `SECURITY DEFINER` dengan
+  validasi identitas, peran, dan payload. Detail ada di `ARSITEKTUR.md`.
 
 ## Pengujian backend lokal dengan RAM terbatas
 
@@ -299,3 +304,12 @@ dan UID akun hasil Auth. Tes mengamati `pg_blocking_pids`, bukan hanya menunggu
 durasi arbitrer. Skenario meliputi set kosong, set lama, serta transaksi kedua yang
 melebihi budget. Logout diverifikasi dengan penolakan refresh token; access JWT
 stateless dapat tetap berlaku sampai kedaluwarsa dan tidak diklaim langsung dicabut.
+
+## Persiapan remote development
+
+`supabase/config.toml` adalah konteks CLI migration development dengan PostgreSQL 17
+dan seed nonaktif. Konfigurasi integration tetap terpisah. Project ref remote
+ditetapkan melalui `supabase link`; `project_id` pada TOML bukan ref remote.
+Target yang diperbolehkan hanya `dogyibbzwfslspflsidm`.
+Prosedur dry-run, perintah pemasangan yang memerlukan persetujuan, dan checklist
+pascadeployment tersedia di [`supabase/DEPLOYMENT.md`](supabase/DEPLOYMENT.md).

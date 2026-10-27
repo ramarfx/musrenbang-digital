@@ -46,9 +46,9 @@ async function run() {
   const migrations =
     await db`SELECT version FROM supabase_migrations.schema_migrations ORDER BY version`;
   check(
-    'Lima migration tercatat persisten pada database lokal',
+    'Enam migration tercatat persisten pada database lokal',
     migrations.map((row: { version: string }) => row.version).join(',') ===
-      '20261026090000,20261026090100,20261026090200,20261026090300,20261026195414',
+      '20261026090000,20261026090100,20261026090200,20261026090300,20261026195414,20261027004023',
   );
   const settings = await request<{ mailer_autoconfirm: boolean }>('/auth/v1/settings');
   check(
@@ -74,6 +74,21 @@ async function run() {
   check(
     'Peran admin diberikan melalui SQL pengelola',
     (await rows(`profiles?id=eq.${admin.id}`, admin))[0].peran === 'admin',
+  );
+  const anonAdminCheck = await request('/rest/v1/rpc/is_admin', null, 'POST', {});
+  const wargaAdminCheck = await request('/rest/v1/rpc/is_admin', a, 'POST', {});
+  const adminAdminCheck = await request('/rest/v1/rpc/is_admin', admin, 'POST', {});
+  check(
+    'is_admin RPC tetap aman untuk anon',
+    anonAdminCheck.status === 200 && anonAdminCheck.data === false,
+  );
+  check(
+    'is_admin RPC tidak mengangkat warga',
+    wargaAdminCheck.status === 200 && wargaAdminCheck.data === false,
+  );
+  check(
+    'is_admin RPC mengenali admin melalui profil',
+    adminAdminCheck.status === 200 && adminAdminCheck.data === true,
   );
   check('Warga B tidak membaca profil A', (await rows(`profiles?id=eq.${a.id}`, b)).length === 0);
   await denied('Anon tidak membaca profil', '/rest/v1/profiles', null, 'GET');
@@ -259,6 +274,10 @@ async function run() {
   );
   check('Usulan disetujui tampil publik', (await rows(`v_proposals?${query}`, null)).length === 1);
   check(
+    'View invoker tetap menyediakan nama pengusul yang aman',
+    (await rows(`v_proposals?${query}`, null))[0]?.pengusul_nama === 'Nama A diperbarui',
+  );
+  check(
     'A tidak mengedit usulan disetujui',
     (
       await request<unknown[]>(`/rest/v1/proposals?${query}`, a, 'PATCH', {
@@ -287,6 +306,12 @@ async function run() {
     'Riwayat RPC terlihat publik',
     (await rows(`v_proposal_status_history?proposal_id=eq.${p}&status_baru=eq.Diverifikasi`, null))
       .length === 1,
+  );
+  check(
+    'View invoker tetap menyediakan nama aktor riwayat',
+    (
+      await rows(`v_proposal_status_history?proposal_id=eq.${p}&status_baru=eq.Diverifikasi`, null)
+    )[0]?.diubah_oleh_nama === 'Admin Fixture',
   );
   await denied('Riwayat tidak dapat dipalsukan A', '/rest/v1/proposal_status_history', a, 'POST', {
     proposal_id: p,
@@ -330,6 +355,10 @@ async function run() {
   });
   check('B berkomentar pada usulan disetujui', comment.status === 201);
   const commentId = comment.data[0].id;
+  check(
+    'View invoker tetap menyediakan nama penulis komentar',
+    (await rows(`v_comments?id=eq.${commentId}`, null))[0]?.penulis_nama === 'Warga B',
+  );
   check(
     'Admin menghapus komentar',
     (await request(`/rest/v1/comments?id=eq.${commentId}`, admin, 'DELETE')).status === 200,
@@ -388,6 +417,51 @@ async function run() {
     'B tidak membaca alokasi A',
     (await rows(`allocations?user_id=eq.${a.id}`, b)).length === 0,
   );
+  check(
+    'B dapat menyimpan alokasi sendiri lewat RPC tervalidasi',
+    (
+      await request('/rest/v1/rpc/save_allocations', b, 'POST', {
+        p_rows: [{ kategori: 'Pendidikan', jumlah: 1000000 }],
+      })
+    ).status === 204,
+  );
+  const gapAnon = await rows('v_gap', null);
+  const gapA = await rows('v_gap', a);
+  const gapB = await rows('v_gap', b);
+  const gapAdmin = await rows('v_gap', admin);
+  const allocationTotal = (data: Record<string, unknown>[]) =>
+    data.reduce((sum, row) => sum + Number(row.total_alokasi_warga), 0);
+  check(
+    'v_gap mempertahankan agregat lintas warga untuk anon',
+    allocationTotal(gapAnon) === 11000000,
+  );
+  check('v_gap tidak berubah menjadi agregat per pemanggil A', allocationTotal(gapA) === 11000000);
+  check('v_gap tidak berubah menjadi agregat per pemanggil B', allocationTotal(gapB) === 11000000);
+  check('v_gap tetap lengkap untuk admin', allocationTotal(gapAdmin) === 11000000);
+  check(
+    'v_gap menghasilkan nilai identik untuk keempat konteks',
+    JSON.stringify(gapAnon) === JSON.stringify(gapA) &&
+      JSON.stringify(gapAnon) === JSON.stringify(gapB) &&
+      JSON.stringify(gapAnon) === JSON.stringify(gapAdmin),
+  );
+  const privateSchemaResponse = await fetch(`${apiUrl}/rest/v1/rpc/is_admin`, {
+    headers: {
+      apikey: process.env.INTEGRATION_ANON_KEY!,
+      Authorization: `Bearer ${a.token}`,
+      'Accept-Profile': 'private',
+    },
+    signal: AbortSignal.timeout(10000),
+  });
+  check('Schema private tidak diekspos melalui Data API', privateSchemaResponse.status === 406);
+  const graphqlSchemaResponse = await fetch(`${apiUrl}/rest/v1/v_gap?select=kategori&limit=0`, {
+    headers: {
+      apikey: process.env.INTEGRATION_ANON_KEY!,
+      Authorization: `Bearer ${a.token}`,
+      'Accept-Profile': 'graphql_public',
+    },
+    signal: AbortSignal.timeout(10000),
+  });
+  check('Schema GraphQL tidak diekspos melalui Data API', graphqlSchemaResponse.status === 406);
   const invalids = [
     [{ kategori: 'Pendidikan', jumlah: 10000001 }],
     [{ kategori: 'Pendidikan', jumlah: -1 }],
