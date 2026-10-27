@@ -58,8 +58,8 @@ export function GapLead({ ringkasan }: { ringkasan: GapRingkasan }) {
           </>
         ) : (
           <>
-            <p className="mt-1 text-[56px] leading-none font-semibold tracking-[-0.04em] text-muted">
-              &mdash;
+            <p className="mt-1 text-[32px] leading-none font-semibold tracking-[-0.03em] text-muted">
+              Belum ada
             </p>
             <p className="mt-3 text-[13px] text-muted">
               Angka muncul setelah ada warga yang menyimpan pilihannya di simulator.

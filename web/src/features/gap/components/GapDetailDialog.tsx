@@ -1,6 +1,7 @@
-import { APBD_VERIFICATION_LABEL, describeGap, type ApbdItem } from '@musrenbang/shared';
+import { describeGap, type ApbdItem } from '@musrenbang/shared';
 import { Link } from 'react-router-dom';
 import { Modal } from '@/components/ui/Modal';
+import { labelVerifikasi } from '@/features/apbd/lib';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
 import { getCategoryInfo } from '@/features/categories/info';
 import { formatPersen, formatRupiah } from '@/lib/format';
@@ -108,7 +109,7 @@ export function GapDetailDialog({ row, onClose, ringkasan, apbd }: Props) {
                         </small>
                       </b>
                     ) : (
-                      <b className="text-3xl font-semibold text-muted">&mdash;</b>
+                      <b className="text-xl font-semibold text-muted">Belum ada</b>
                     )}
                   </div>
                   <p className="mt-2 max-w-[60ch] text-[14px] text-ink">
@@ -140,9 +141,9 @@ export function GapDetailDialog({ row, onClose, ringkasan, apbd }: Props) {
                 <dt className="text-muted">Status data</dt>
                 <dd className="font-semibold">
                   {sumber
-                    ? APBD_VERIFICATION_LABEL[sumber.status_verifikasi]
+                    ? labelVerifikasi(sumber.status_verifikasi)
                     : row.adaApbd
-                      ? 'Terpetakan'
+                      ? 'Dipetakan dari program'
                       : 'Perlu lampiran'}
                 </dd>
                 <dt className="text-muted">Sumber</dt>

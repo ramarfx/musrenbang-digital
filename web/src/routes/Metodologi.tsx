@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { PERGUB_APBD_URL } from '@/features/apbd/lib';
 import { useAppConfigQuery } from '@/features/config/queries';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -40,16 +41,33 @@ export default function Metodologi() {
       <Section title="Sumber data APBD">
         <p>
           Data APBD adalah APBD murni {tahun} {kota}. Total belanja daerah resminya
-          Rp74.285.299.931.740 (Pergub DKI Jakarta No. 44 Tahun 2025).
+          Rp74.285.299.931.740, menurut{' '}
+          <a
+            href={PERGUB_APBD_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-warga underline"
+          >
+            Pergub DKI Jakarta No. 44 Tahun 2025
+          </a>
+          . Pergub itu hanya memuat total besar. Angka per bidang ada di lampirannya, yang tidak
+          tersedia di situs JDIH.
         </p>
         <p>
-          Angka per kategori adalah hasil pemetaan dari pos APBD resmi, bukan angka resmi per
-          kategori. Delapan dari sepuluh kategori terisi dari program yang dirinci pemberitaan dan
-          dikonfirmasi sumber resmi. Dua kategori, Keamanan dan Penerangan serta Teknologi dan
-          Layanan Digital, belum terisi dan ditampilkan sebagai &quot;data menyusul&quot;.
+          Karena itu angka per kategori di aplikasi ini bukan angka resmi per kategori. Angkanya
+          dijumlahkan dari program yang dirinci pemberitaan (detiksatu.com, saiber.tv, dan
+          maklumat.id) tentang APBD {tahun} yang disahkan. Dua rujukan resmi sudah dicocokkan: total
+          belanja daerah, dan porsi fungsi pendidikan 26,59% dari belanja daerah. Sisanya belum
+          dicocokkan ke lampiran.
         </p>
         <p>
-          Rincian nominal, sumber, dan status verifikasi tiap kategori ada di halaman{' '}
+          Delapan dari sepuluh kategori terisi. Dua kategori, Keamanan dan Penerangan serta
+          Teknologi dan Layanan Digital, belum terisi dan ditampilkan sebagai &quot;data
+          menyusul&quot;. Pergub 44/2025 tercatat sudah diubah oleh Pergub 10/2026; angka di sini
+          belum dicocokkan dengan perubahan itu.
+        </p>
+        <p>
+          Rincian nominal, sumber, dan status tiap kategori ada di halaman{' '}
           <Link to="/apbd" className="font-semibold text-warga underline">
             APBD
           </Link>

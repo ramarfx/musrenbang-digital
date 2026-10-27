@@ -164,7 +164,7 @@ export function AllocationDetailDialog({
                       </td>
                       <td className="pl-4 text-right font-semibold whitespace-nowrap">
                         {kosong ? (
-                          <span className="font-normal text-muted">&mdash;</span>
+                          <span className="font-normal text-muted">Belum diisi</span>
                         ) : (
                           formatRupiah(item.jumlah)
                         )}
@@ -172,7 +172,7 @@ export function AllocationDetailDialog({
                       {bandingkanDenganApbd && (
                         <td className="hidden pl-4 text-right text-[13.5px] whitespace-nowrap lg:table-cell">
                           {selisih === null ? (
-                            <span className="text-muted">&mdash;</span>
+                            <span className="text-muted">Belum ada</span>
                           ) : (
                             <>
                               {formatSelisih(selisih)} <span className="text-muted">poin</span>

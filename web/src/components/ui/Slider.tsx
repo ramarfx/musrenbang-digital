@@ -14,7 +14,7 @@ type SliderProps = {
 /**
  * Slider dengan input range asli (keyboard dan pembaca layar tetap jalan).
  * Isinya elemen biasa di belakang input, bukan linear-gradient. Lebar isi
- * mengikuti pusat jempol: 12px dari ujung kiri sampai 12px sebelum ujung kanan.
+ * mengikuti pusat pegangan slider: 12px dari ujung kiri sampai 12px sebelum ujung kanan.
  */
 export function Slider({ id, label, value, max, step, onChange, valueText }: SliderProps) {
   const ratio = max > 0 ? value / max : 0;

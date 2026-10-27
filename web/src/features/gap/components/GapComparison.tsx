@@ -142,7 +142,7 @@ export function GapComparison({ ringkasan, onPilih }: Props) {
                   {row.adaApbd ? (
                     formatPersen(row.persen_apbd)
                   ) : (
-                    <span className="text-muted">&mdash;</span>
+                    <span className="text-[13px] text-muted">Belum ada</span>
                   )}
                 </td>
                 <td className="pl-3 text-right md:whitespace-nowrap">

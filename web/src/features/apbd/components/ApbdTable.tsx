@@ -1,6 +1,7 @@
-import { APBD_VERIFICATION_LABEL, type ApbdItem } from '@musrenbang/shared';
+import type { ApbdItem } from '@musrenbang/shared';
 import { Card } from '@/components/ui/Card';
 import { formatRupiah } from '@/lib/format';
+import { labelVerifikasi } from '../lib';
 
 export function ApbdTable({ items }: { items: ApbdItem[] }) {
   return (
@@ -37,7 +38,7 @@ export function ApbdTable({ items }: { items: ApbdItem[] }) {
                       : 'text-mustard-tua'
                   }
                 >
-                  {APBD_VERIFICATION_LABEL[item.status_verifikasi]}
+                  {labelVerifikasi(item.status_verifikasi)}
                 </span>
               </td>
             </tr>

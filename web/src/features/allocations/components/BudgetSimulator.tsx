@@ -353,7 +353,7 @@ export function BudgetSimulator() {
                         className="h-2.5 rounded-full bg-white/12"
                         style={{ width: `${70 - i * 9}%` }}
                       />
-                      <b className="font-semibold text-white/25">&mdash;</b>
+                      <b className="h-2.5 w-7 rounded-full bg-white/12" />
                     </li>
                   ))
                 : ring.map((slice) => (
