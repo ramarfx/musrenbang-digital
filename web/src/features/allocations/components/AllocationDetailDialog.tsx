@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { HeroCard } from '@/components/ui/Card';
 import { buildRingSlices, DonutRing } from '@/components/ui/DonutRing';
 import { Modal } from '@/components/ui/Modal';
@@ -18,9 +19,9 @@ type Props = {
 };
 
 /**
- * Pop-up rincian pembagian dana. Kiri: ring besar dengan legenda (menempel saat
- * daftar di-scroll). Kanan: tabel semua program dengan kolom sejajar, termasuk yang
- * di ring digabung menjadi "Lainnya". Pembungkus pop-up memakai komponen Modal.
+ * Pop-up rincian pembagian dana. Kiri: ring besar dengan legenda (setinggi tabel
+ * di sebelahnya). Kanan: tabel semua program dengan kolom sejajar.
+ * Pembungkus pop-up memakai komponen Modal.
  */
 export function AllocationDetailDialog({
   open,
@@ -49,10 +50,7 @@ export function AllocationDetailDialog({
             <h2 id="rincian-judul" className="text-xl font-bold tracking-[-0.02em]">
               Rincian pembagian dana
             </h2>
-            <p className="mt-1 max-w-[52ch] text-sm text-muted">
-              Semua program dan nominalnya, termasuk yang di ring digabung menjadi
-              &quot;Lainnya&quot;.
-            </p>
+            <p className="mt-1 max-w-[52ch] text-sm text-muted">Semua program dan nominalnya.</p>
           </div>
           <button
             type="button"
@@ -63,8 +61,8 @@ export function AllocationDetailDialog({
           </button>
         </div>
 
-        <div className="stagger mt-5 grid items-start gap-6 md:grid-cols-[288px_minmax(0,1fr)]">
-          <HeroCard className="md:sticky md:top-0">
+        <div className="stagger mt-5 grid gap-6 md:grid-cols-[288px_minmax(0,1fr)]">
+          <HeroCard className="md:flex md:flex-col">
             <DonutRing
               slices={ring}
               total={total}
@@ -99,7 +97,7 @@ export function AllocationDetailDialog({
               ))}
             </ul>
 
-            <dl className="mt-5 text-[13px]">
+            <dl className="mt-5 text-[13px] md:mt-auto md:pt-5">
               <div className="flex justify-between gap-3 border-t border-white/15 py-2.5">
                 <dt className="text-white/70">Terpakai</dt>
                 <dd className="font-bold">{formatRupiah(total)}</dd>
@@ -188,10 +186,33 @@ export function AllocationDetailDialog({
               </tbody>
             </table>
             {bandingkanDenganApbd && (
-              <p className="mt-3 border-t border-rule pt-3 text-[12.5px] text-muted">
-                Selisih APBD: porsi pilihanmu dikurangi porsi APBD yang terpetakan, dalam poin
-                persentase.
-              </p>
+              <div className="mt-3 border-t border-rule pt-4 text-[13px] text-muted">
+                <p className="font-semibold text-ink">Cara membaca kolom Selisih APBD</p>
+                <p className="mt-1">
+                  Angka ini membandingkan pilihanmu dengan porsi APBD yang sebenarnya, dalam poin
+                  persentase.
+                </p>
+                <ul className="mt-2 grid gap-1.5">
+                  <li>
+                    <b className="text-ink">Plus (+)</b>: kamu memberi porsi lebih besar dari APBD.
+                    Makin tinggi angkanya, makin kamu merasa program ini kurang diperhatikan.
+                  </li>
+                  <li>
+                    <b className="text-ink">Minus (−)</b>: porsi APBD sudah lebih besar dari
+                    pilihanmu. Makin dalam minusnya, makin besar APBD dibanding keinginanmu.
+                  </li>
+                  <li>
+                    <b className="text-ink">Mendekati 0</b>: pilihanmu hampir sama dengan APBD.
+                  </li>
+                </ul>
+                <p className="mt-2">
+                  Contoh: +9,6 poin berarti pilihanmu 9,6 poin persentase di atas APBD.{' '}
+                  <Link to="/metodologi" className="font-semibold text-warga underline">
+                    Lihat metodologi
+                  </Link>
+                  .
+                </p>
+              </div>
             )}
           </div>
         </div>

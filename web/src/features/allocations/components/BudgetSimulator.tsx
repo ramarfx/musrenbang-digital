@@ -155,7 +155,11 @@ export function BudgetSimulator() {
     if (hasil) animasiKe(hasil);
   };
 
-  const ring = buildRingSlices(items.map((item) => ({ label: item.kategori, value: item.jumlah })));
+  // Kartu hanya menampilkan 4 program terbesar + "Lainnya"; rincian lengkap ada di pop-up.
+  const ring = buildRingSlices(
+    items.map((item) => ({ label: item.kategori, value: item.jumlah })),
+    4,
+  );
   const ringLabel =
     ring.map((slice) => `${slice.label} ${Math.round((slice.value / budget) * 100)}%`).join(', ') ||
     'Belum ada pembagian';

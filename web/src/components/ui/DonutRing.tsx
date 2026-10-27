@@ -2,30 +2,55 @@ import type { CSSProperties, ReactNode } from 'react';
 
 export type RingSlice = { label: string; value: number; color: string };
 
-/** Warna ring dana Desain 1: 4 program terbesar, lalu "Lainnya". */
-const RING_COLORS = ['#F7F4EF', '#F2C46D', '#A7F3D0', '#EE9F7F'];
-// "Lainnya" memakai hijau terang logo, bukan putih transparan: putih transparan nyaris sama
-// dengan jalur kosong ring sehingga potongan 60% terbaca seperti bagian yang belum terisi.
-const RING_OTHER = '#4FC79C';
+/**
+ * Sepuluh warna ring dana untuk latar hijau, tanpa biru dan tanpa gradasi. Tiap program
+ * memegang satu warna tetap (urut abjad nama program), jadi warnanya tidak berpindah
+ * saat urutan besar-kecilnya berubah.
+ */
+const RING_COLORS = [
+  '#F7F4EF',
+  '#F2C46D',
+  '#A7F3D0',
+  '#EE9F7F',
+  '#D6E36B',
+  '#F2B5C8',
+  '#C98B3C',
+  '#6FD3C0',
+  '#E2674F',
+  '#B9C7B0',
+];
+
+// Gabungan program kecil ("Lainnya") memakai abu hijau yang tidak sama dengan 10 warna di atas
+// dan tidak mirip jalur kosong ring.
+const RING_OTHER = '#8FA79B';
 
 /**
- * Ambil 4 bagian terbesar, sisanya digabung jadi "Lainnya (n program)".
- * Bagian bernilai 0 dibuang.
+ * Potongan ring per program bernilai di atas 0, urut dari yang terbesar. Warna program
+ * tetap, sama di kartu dan di pop-up. Dengan `tampil`, hanya sebanyak itu program terbesar
+ * yang ditampilkan dan sisanya digabung menjadi "Lainnya (n program)".
  */
-export function buildRingSlices(data: { label: string; value: number }[]): RingSlice[] {
-  const sorted = data.filter((item) => item.value > 0).sort((a, b) => b.value - a.value);
-  const slices: RingSlice[] = sorted
-    .slice(0, 4)
-    .map((item, index) => ({ ...item, color: RING_COLORS[index] }));
-  const rest = sorted.slice(4);
-  if (rest.length > 0) {
-    slices.push({
+export function buildRingSlices(
+  data: { label: string; value: number }[],
+  tampil?: number,
+): RingSlice[] {
+  const urutan = data.map((item) => item.label).sort((a, b) => a.localeCompare(b));
+  const sorted: RingSlice[] = data
+    .filter((item) => item.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .map((item) => ({
+      ...item,
+      color: RING_COLORS[urutan.indexOf(item.label) % RING_COLORS.length],
+    }));
+  if (tampil === undefined || sorted.length <= tampil + 1) return sorted;
+  const rest = sorted.slice(tampil);
+  return [
+    ...sorted.slice(0, tampil),
+    {
       label: `Lainnya (${rest.length} program)`,
       value: rest.reduce((sum, item) => sum + item.value, 0),
       color: RING_OTHER,
-    });
-  }
-  return slices;
+    },
+  ];
 }
 
 const RADIUS = 86;
