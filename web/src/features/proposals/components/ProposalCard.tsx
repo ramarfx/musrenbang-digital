@@ -72,7 +72,7 @@ export function ProposalCard({ proposal }: { proposal: Proposal }) {
         <UpvoteButton proposalId={proposal.id} jumlah={proposal.jumlah_suara} />
         <Link
           to={`/usulan/${proposal.id}#komentar`}
-          className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-surface px-3 text-[13px] font-semibold text-ink transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.95] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
+          className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-surface px-3 text-[13px] font-semibold text-ink transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.95] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
         >
           <Icon name="usulan" size={16} />
           Komentar

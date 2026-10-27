@@ -55,7 +55,7 @@ export function AllocationDetailDialog({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-10 flex-none items-center rounded-full border border-border bg-surface px-4 text-sm font-semibold transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.97]"
+            className="inline-flex h-10 flex-none items-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.97]"
           >
             Tutup
           </button>

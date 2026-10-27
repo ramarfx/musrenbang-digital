@@ -6,7 +6,7 @@ export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'dan
 export type ButtonSize = 'sm' | 'md';
 
 // Desain 1: aksi utama memakai tinta (warna ikon logo), hijau untuk aksi kedua.
-// Tanpa bayangan; semua tombol bulat penuh.
+// Tanpa bayangan; sudut tombol 12px, bukan pil.
 const variants: Record<ButtonVariant, string> = {
   primary:
     'bg-ink text-white hover:bg-ink-tekan disabled:bg-mati disabled:text-muted disabled:opacity-100',
@@ -17,7 +17,7 @@ const variants: Record<ButtonVariant, string> = {
 };
 
 const base =
-  'inline-flex items-center justify-center gap-2 rounded-full font-semibold whitespace-nowrap transition-[scale,background-color] duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100';
+  'inline-flex items-center justify-center gap-2 rounded-xl font-semibold whitespace-nowrap transition-[scale,background-color] duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100';
 
 const sizes: Record<ButtonSize, string> = {
   sm: 'h-9 px-3.5 text-[13px]',

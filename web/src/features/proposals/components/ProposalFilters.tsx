@@ -57,7 +57,7 @@ export function ProposalFilters({
                 aria-pressed={aktif}
                 onClick={() => onStatusChange(option)}
                 className={cn(
-                  'inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-[13px] font-semibold transition-[scale,background-color,border-color,color] duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga',
+                  'inline-flex h-9 items-center gap-2 rounded-xl border px-3.5 text-[13px] font-semibold transition-[scale,background-color,border-color,color] duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga',
                   aktif
                     ? 'border-ink bg-ink text-white'
                     : 'border-border bg-surface text-ink hover:bg-active',
@@ -66,7 +66,7 @@ export function ProposalFilters({
                 {option === 'semua' ? 'Semua' : option}
                 <span
                   className={cn(
-                    'rounded-full px-1.5 text-[12px] font-medium tabular-nums',
+                    'rounded-md px-1.5 text-[12px] font-medium tabular-nums',
                     aktif ? 'bg-white/20 text-white' : 'bg-pasir text-muted',
                   )}
                 >
@@ -90,7 +90,7 @@ export function ProposalFilters({
               aria-pressed={urutan === pilihan}
               onClick={() => onUrutanChange(pilihan)}
               className={cn(
-                'h-8 rounded-full px-3.5 text-[13px] font-semibold transition-[scale,background-color,color] duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga',
+                'h-8 rounded-lg px-3.5 text-[13px] font-semibold transition-[scale,background-color,color] duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga',
                 urutan === pilihan
                   ? 'bg-ink text-white'
                   : 'text-muted hover:bg-active hover:text-ink',

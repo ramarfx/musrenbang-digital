@@ -49,7 +49,7 @@ export function UpvoteButton({ proposalId, jumlah, terang = false, className }: 
       aria-pressed={sudah}
       aria-label={sudah ? 'Batalkan upvote' : 'Upvote usulan ini'}
       className={cn(
-        'relative inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-[13px] font-semibold transition-[scale,background-color,border-color,color] duration-150 ease-out active:scale-[0.95] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga',
+        'relative inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-[13px] font-semibold transition-[scale,background-color,border-color,color] duration-150 ease-out active:scale-[0.95] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga',
         terang
           ? sudah
             ? 'border-white bg-white text-hijau'
@@ -64,7 +64,7 @@ export function UpvoteButton({ proposalId, jumlah, terang = false, className }: 
         <span
           key={`gelombang-${pop}`}
           aria-hidden="true"
-          className="upvote-gelombang pointer-events-none absolute inset-0 rounded-full border-2 border-current"
+          className="upvote-gelombang pointer-events-none absolute inset-0 rounded-xl border-2 border-current"
         />
       )}
       <span key={`panah-${pop}`} className={pop > 0 && sudah ? 'upvote-naik' : undefined}>

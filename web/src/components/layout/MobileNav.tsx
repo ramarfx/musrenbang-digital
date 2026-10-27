@@ -58,7 +58,7 @@ export function MobileNav({ open, setOpen }: MobileNavProps) {
           aria-expanded={open}
           aria-controls="menu-hp"
           onClick={() => setOpen((value) => !value)}
-          className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-surface px-4 text-sm font-semibold transition-[scale] duration-150 ease-out active:scale-[0.97]"
+          className="inline-flex h-11 items-center gap-2 rounded-xl border border-border bg-surface px-4 text-sm font-semibold transition-[scale] duration-150 ease-out active:scale-[0.97]"
         >
           <Icon name={open ? 'tutup' : 'menu'} />
           {open ? 'Tutup' : 'Menu'}

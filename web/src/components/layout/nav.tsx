@@ -129,7 +129,7 @@ export function UserRow({ dark }: { dark: boolean }) {
   };
 
   const actionClass = cn(
-    'inline-flex h-9 flex-none items-center rounded-full px-4 text-[13px] font-bold transition-[scale,background-color] duration-150 ease-out active:scale-[0.96] disabled:opacity-60',
+    'inline-flex h-9 flex-none items-center rounded-xl px-4 text-[13px] font-bold transition-[scale,background-color] duration-150 ease-out active:scale-[0.96] disabled:opacity-60',
     dark ? 'bg-white text-ink hover:bg-ground' : 'bg-ink text-white hover:bg-ink-tekan',
   );
 
