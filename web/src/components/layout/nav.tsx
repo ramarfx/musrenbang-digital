@@ -4,12 +4,13 @@ import { toast } from 'sonner';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { useAuth } from '@/features/auth';
 import { useAppConfigQuery } from '@/features/config/queries';
+import { NotificationBell } from './NotificationBell';
 import { cn } from '@/lib/cn';
 
 type NavItem = { to: string; label: string; icon: IconName; end?: boolean };
 type NavGroup = { title?: string; items: NavItem[] };
 
-export function buildNav(isAdmin: boolean): NavGroup[] {
+export function buildNav(isAdmin: boolean, sudahMasuk = false): NavGroup[] {
   const groups: NavGroup[] = [
     { items: [{ to: '/', label: 'Beranda', icon: 'beranda', end: true }] },
     {
@@ -17,6 +18,9 @@ export function buildNav(isAdmin: boolean): NavGroup[] {
       items: [
         { to: '/simulator', label: 'Simulator', icon: 'simulator' },
         { to: '/usulan/baru', label: 'Buat usulan', icon: 'usulan' },
+        ...(sudahMasuk
+          ? [{ to: '/usulan-saya', label: 'Usulan saya', icon: 'daftar' } satisfies NavItem]
+          : []),
       ],
     },
     {
@@ -152,6 +156,7 @@ export function UserRow({ dark }: { dark: boolean }) {
           {user ? (isAdmin ? 'Admin' : 'Warga') : 'Belum masuk'}
         </span>
       </span>
+      {user && <NotificationBell dark={dark} tempat={dark ? 'samping' : 'atas'} />}
       {user ? (
         <button
           type="button"

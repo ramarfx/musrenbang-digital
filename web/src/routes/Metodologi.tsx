@@ -33,8 +33,8 @@ export default function Metodologi() {
       <Section title="Apa ini, dan apa bukan">
         <p>
           Musrenbang Digital adalah prototipe kanal pra-musrenbang untuk warga. Aplikasi ini bukan
-          pengganti musrenbang resmi dan bukan sistem pemerintah. Anggaran Rp10.000.000 di Simulator
-          adalah anggaran virtual, bukan uang nyata.
+          pengganti musrenbang resmi dan bukan sistem pemerintah. Simulator tidak memakai uang
+          nyata: warga hanya mengurutkan program dari yang paling penting.
         </p>
       </Section>
 
@@ -77,10 +77,15 @@ export default function Metodologi() {
 
       <Section title="Cara menghitung selisih warga dan APBD">
         <ol className="list-decimal space-y-2 pl-5">
-          <li>Semua alokasi warga dijumlahkan per kategori.</li>
           <li>
-            Persentase warga sebuah kategori adalah alokasi warga kategori itu dibagi total alokasi
-            semua kategori.
+            Tiap warga memberi nomor 1 sampai 10 pada sepuluh program, nomor 1 untuk yang paling
+            penting, dan tiap nomor dipakai sekali. Nomor diubah jadi poin: nomor 1 mendapat 10
+            poin, nomor 2 mendapat 9 poin, dan seterusnya sampai nomor 10 mendapat 1 poin.
+          </li>
+          <li>Poin dari semua warga dijumlahkan per kategori.</li>
+          <li>
+            Persentase warga sebuah kategori adalah poin kategori itu dibagi total poin semua
+            kategori.
           </li>
           <li>
             Persentase APBD sebuah kategori adalah nominal APBD kategori itu dibagi total nominal
@@ -94,7 +99,7 @@ export default function Metodologi() {
         </ol>
         <p>
           Selisih dihitung langsung dari data setiap kali halaman dibuka, tidak disimpan. Kalau
-          belum ada alokasi warga, persentase warga nol dan halaman tetap menampilkan sisi APBD.
+          belum ada urutan dari warga, persentase warga nol dan halaman tetap menampilkan sisi APBD.
           Tidak ada angka yang dikarang.
         </p>
       </Section>

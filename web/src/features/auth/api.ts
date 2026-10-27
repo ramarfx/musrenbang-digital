@@ -47,9 +47,10 @@ export async function getProfile(userId: string): Promise<Profile | null> {
 }
 
 function namaDariUser(user: User): string {
-  const metadataNama = user.user_metadata?.nama;
-  if (typeof metadataNama === 'string' && metadataNama.trim().length > 0) {
-    return metadataNama.trim();
+  // Akun email memakai `nama`; akun Google membawa `full_name` atau `name`.
+  for (const kunci of ['nama', 'full_name', 'name'] as const) {
+    const nilai = user.user_metadata?.[kunci];
+    if (typeof nilai === 'string' && nilai.trim().length > 0) return nilai.trim();
   }
   return user.email?.split('@')[0] ?? 'Warga';
 }
@@ -109,6 +110,19 @@ export async function signUp(input: RegisterInput) {
 
   const profile = await ensureProfile(data.user);
   return { session: data.session, profile };
+}
+
+/**
+ * Masuk dengan akun Google lewat Supabase Auth. Browser dialihkan ke Google, lalu kembali ke
+ * beranda dengan sesi aktif. Alamat beranda (dan alamat dev yang dipakai) harus terdaftar di
+ * Authorized JavaScript origins dan Redirect URLs milik proyek Supabase dan Google.
+ */
+export async function signInWithGoogle() {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: `${window.location.origin}/` },
+  });
+  if (error) throw friendlyAuthError(error, 'Gagal membuka login Google.');
 }
 
 export async function signOut() {

@@ -3,7 +3,6 @@ import { HeroCard } from '@/components/ui/Card';
 import { buildRingSlices, DonutRing } from '@/components/ui/DonutRing';
 import { Modal } from '@/components/ui/Modal';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
-import { formatRupiah } from '@/lib/format';
 import { formatSelisih } from '../lib';
 
 type Item = { kategori: string; jumlah: number };
@@ -12,30 +11,38 @@ type Props = {
   open: boolean;
   onClose: () => void;
   items: Item[];
-  budget: number;
+  /** Nomor prioritas per program (1 = paling penting); program tanpa nomor tidak ada. */
+  peringkat: Record<string, number>;
+  jumlahProgram: number;
   /** Porsi APBD per kategori (persen), dari v_gap. Kosong bila belum tersedia. */
   apbdByKategori: Record<string, number>;
   bandingkanDenganApbd: boolean;
 };
 
 /**
- * Pop-up rincian pembagian dana. Kiri: ring besar dengan legenda (setinggi tabel
- * di sebelahnya). Kanan: tabel semua program dengan kolom sejajar.
+ * Pop-up rincian urutan prioritas. Kiri: ring besar dengan legenda (setinggi tabel
+ * di sebelahnya). Kanan: tabel semua program menurut nomornya, dengan bobot dan selisih APBD.
  * Pembungkus pop-up memakai komponen Modal.
  */
 export function AllocationDetailDialog({
   open,
   onClose,
   items,
-  budget,
+  peringkat,
+  jumlahProgram,
   apbdByKategori,
   bandingkanDenganApbd,
 }: Props) {
   const total = items.reduce((sum, item) => sum + item.jumlah, 0);
-  const sisa = budget - total;
-  const urut = [...items].sort((a, b) => b.jumlah - a.jumlah);
+  const terisi = Object.keys(peringkat).length;
+  // Menurut nomor; yang belum bernomor di bawah.
+  const urut = [...items].sort(
+    (a, b) =>
+      (peringkat[a.kategori] ?? Infinity) - (peringkat[b.kategori] ?? Infinity) ||
+      a.kategori.localeCompare(b.kategori),
+  );
   const ring = buildRingSlices(items.map((item) => ({ label: item.kategori, value: item.jumlah })));
-  const persenBudget = (nilai: number) => (budget > 0 ? Math.round((nilai / budget) * 100) : 0);
+  const persenBobot = (nilai: number) => (total > 0 ? Math.round((nilai / total) * 100) : 0);
 
   return (
     <Modal
@@ -48,9 +55,11 @@ export function AllocationDetailDialog({
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 id="rincian-judul" className="text-xl font-bold tracking-[-0.02em]">
-              Rincian pembagian dana
+              Rincian urutan prioritas
             </h2>
-            <p className="mt-1 max-w-[52ch] text-sm text-muted">Semua program dan nominalnya.</p>
+            <p className="mt-1 max-w-[52ch] text-sm text-muted">
+              Semua program menurut nomornya, dengan bobot dari urutanmu.
+            </p>
           </div>
           <button
             type="button"
@@ -69,18 +78,16 @@ export function AllocationDetailDialog({
               size="size-[220px]"
               drawIn
               label={
-                ring.map((slice) => `${slice.label} ${persenBudget(slice.value)}%`).join(', ') ||
-                'Belum ada pembagian'
+                ring.map((slice) => `${slice.label} ${persenBobot(slice.value)}%`).join(', ') ||
+                'Belum ada urutan'
               }
             >
-              <span className="block text-[13px] text-white/75">
-                {sisa < 0 ? 'Kelebihan' : 'Sisa dana'}
-              </span>
+              <span className="block text-[13px] text-white/75">Diurutkan</span>
               <b className="block text-[21px] font-bold tracking-[-0.02em] whitespace-nowrap">
-                {formatRupiah(Math.abs(sisa))}
+                {terisi} dari {jumlahProgram}
               </b>
               <em className="mt-0.5 block text-[13px] text-mint not-italic">
-                {Math.min(100, persenBudget(total))}% terpakai
+                {terisi === jumlahProgram ? 'Lengkap' : 'Belum lengkap'}
               </em>
             </DonutRing>
 
@@ -92,19 +99,17 @@ export function AllocationDetailDialog({
                 >
                   <i className="size-3 rounded-[4px]" style={{ background: slice.color }} />
                   <span className="min-w-0 truncate">{slice.label}</span>
-                  <b className="font-semibold">{persenBudget(slice.value)}%</b>
+                  <b className="font-semibold">{persenBobot(slice.value)}%</b>
                 </li>
               ))}
             </ul>
 
             <dl className="mt-5 text-[13px] md:mt-auto md:pt-5">
-              <div className="flex justify-between gap-3 border-t border-white/15 py-2.5">
-                <dt className="text-white/70">Terpakai</dt>
-                <dd className="font-bold">{formatRupiah(total)}</dd>
-              </div>
               <div className="flex justify-between gap-3 border-t border-white/15 pt-2.5">
-                <dt className="text-white/70">Anggaran virtual</dt>
-                <dd className="font-bold">{formatRupiah(budget)}</dd>
+                <dt className="text-white/70">Program diurutkan</dt>
+                <dd className="font-bold">
+                  {terisi} dari {jumlahProgram}
+                </dd>
               </div>
             </dl>
           </HeroCard>
@@ -113,11 +118,9 @@ export function AllocationDetailDialog({
             <table className="w-full border-collapse text-left">
               <thead>
                 <tr className="text-[12.5px] text-muted">
-                  <th className="pb-2 font-normal">Program</th>
-                  <th className="hidden w-[140px] pb-2 pl-4 font-normal sm:table-cell">
-                    Porsi dana
-                  </th>
-                  <th className="pb-2 pl-4 text-right font-normal">Nominal</th>
+                  <th className="w-12 pb-2 font-normal">Nomor</th>
+                  <th className="pb-2 pl-3 font-normal">Program</th>
+                  <th className="hidden w-[140px] pb-2 pl-4 font-normal sm:table-cell">Bobot</th>
                   {bandingkanDenganApbd && (
                     <th className="hidden w-[104px] pb-2 pl-4 text-right font-normal lg:table-cell">
                       Selisih APBD
@@ -127,7 +130,8 @@ export function AllocationDetailDialog({
               </thead>
               <tbody className="stagger">
                 {urut.map((item) => {
-                  const persen = persenBudget(item.jumlah);
+                  const persen = persenBobot(item.jumlah);
+                  const nomor = peringkat[item.kategori];
                   const kosong = item.jumlah === 0;
                   const selisih =
                     bandingkanDenganApbd && total > 0 && !kosong
@@ -138,7 +142,8 @@ export function AllocationDetailDialog({
                       key={item.kategori}
                       className={`border-t border-rule ${kosong ? 'text-muted' : ''}`}
                     >
-                      <td className="py-2">
+                      <td className="py-2 text-[15px] font-bold tabular-nums">{nomor ?? ''}</td>
+                      <td className="py-2 pl-3">
                         <span className="flex items-center gap-3">
                           <CategoryTile kategori={item.kategori} small />
                           <span className="min-w-0">
@@ -146,7 +151,7 @@ export function AllocationDetailDialog({
                               {item.kategori}
                             </span>
                             <span className="block text-[12.5px] text-muted sm:hidden">
-                              {persen}% dari anggaran
+                              {kosong ? 'Belum bernomor' : `${persen}% bobot`}
                             </span>
                           </span>
                         </span>
@@ -161,13 +166,6 @@ export function AllocationDetailDialog({
                           </span>
                           <span className="w-9 flex-none text-right text-[13px]">{persen}%</span>
                         </span>
-                      </td>
-                      <td className="pl-4 text-right font-semibold whitespace-nowrap">
-                        {kosong ? (
-                          <span className="font-normal text-muted">Belum diisi</span>
-                        ) : (
-                          formatRupiah(item.jumlah)
-                        )}
                       </td>
                       {bandingkanDenganApbd && (
                         <td className="hidden pl-4 text-right text-[13.5px] whitespace-nowrap lg:table-cell">

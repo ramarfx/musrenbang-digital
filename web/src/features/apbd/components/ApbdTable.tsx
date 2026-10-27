@@ -1,7 +1,7 @@
 import type { ApbdItem } from '@musrenbang/shared';
 import { Card } from '@/components/ui/Card';
 import { formatRupiah } from '@/lib/format';
-import { labelVerifikasi } from '../lib';
+import { labelVerifikasi, rapikanSumber } from '../lib';
 
 export function ApbdTable({ items }: { items: ApbdItem[] }) {
   return (
@@ -29,7 +29,9 @@ export function ApbdTable({ items }: { items: ApbdItem[] }) {
                   <span className="text-stone-400">Data menyusul</span>
                 )}
               </td>
-              <td className="max-w-md px-4 py-3 text-stone-600">{item.sumber || '-'}</td>
+              <td className="max-w-md px-4 py-3 text-stone-600">
+                {rapikanSumber(item.sumber) ?? 'Belum dicantumkan'}
+              </td>
               <td className="px-4 py-3">
                 <span
                   className={

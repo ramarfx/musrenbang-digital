@@ -7,6 +7,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { PageLoader } from '@/components/ui/PageLoader';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
+import { LokasiUsulan } from '@/components/map/LokasiUsulan';
 import { CommentSection } from '@/features/comments/components/CommentSection';
 import { StatusBadge } from '@/features/proposals/components/StatusBadge';
 import { StatusTimeline } from '@/features/proposals/components/StatusTimeline';
@@ -144,7 +145,12 @@ export default function UsulanDetail() {
             </dl>
           </Card>
 
-          <div id="komentar" className="scroll-mt-6">
+          <Card>
+            <h2 className="mb-3 text-lg font-bold">Lokasi</h2>
+            <LokasiUsulan proposal={proposal} />
+          </Card>
+
+          <div id="komentar" className="scroll-mt-6 lg:scroll-mt-28">
             <CommentSection proposalId={proposal.id} />
           </div>
         </div>

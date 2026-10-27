@@ -1,7 +1,7 @@
 import { describeGap, type ApbdItem } from '@musrenbang/shared';
 import { Link } from 'react-router-dom';
 import { Modal } from '@/components/ui/Modal';
-import { labelVerifikasi } from '@/features/apbd/lib';
+import { labelVerifikasi, rapikanSumber } from '@/features/apbd/lib';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
 import { getCategoryInfo } from '@/features/categories/info';
 import { formatPersen, formatRupiah } from '@/lib/format';
@@ -82,7 +82,7 @@ export function GapDetailDialog({ row, onClose, ringkasan, apbd }: Props) {
           </div>
 
           <div className="stagger mt-6 grid gap-4">
-            <section className="rounded-2xl border border-border bg-surface p-5">
+            <section className="rounded-3xl border border-border bg-surface p-5">
               {row.adaApbd ? (
                 <>
                   <div className="grid gap-5 sm:grid-cols-2">
@@ -126,17 +126,11 @@ export function GapDetailDialog({ row, onClose, ringkasan, apbd }: Props) {
               )}
             </section>
 
-            <section className="rounded-2xl border border-border bg-surface p-5">
+            <section className="rounded-3xl border border-border bg-surface p-5">
               <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[150px_minmax(0,1fr)]">
                 <dt className="text-muted">Nominal APBD</dt>
                 <dd className="font-semibold">
                   {row.adaApbd ? formatRupiah(row.nominal_apbd) : 'Data menyusul'}
-                </dd>
-                <dt className="text-muted">Dana virtual warga</dt>
-                <dd className="font-semibold">
-                  {row.total_alokasi_warga > 0
-                    ? formatRupiah(row.total_alokasi_warga)
-                    : 'Belum ada'}
                 </dd>
                 <dt className="text-muted">Status data</dt>
                 <dd className="font-semibold">
@@ -148,7 +142,7 @@ export function GapDetailDialog({ row, onClose, ringkasan, apbd }: Props) {
                 </dd>
                 <dt className="text-muted">Sumber</dt>
                 <dd className="text-muted">
-                  {sumber?.sumber && sumber.sumber !== '—' ? sumber.sumber : 'Belum dicantumkan.'}
+                  {rapikanSumber(sumber?.sumber) ?? 'Belum dicantumkan.'}
                 </dd>
               </dl>
               <p className="mt-4 border-t border-rule pt-3 text-[12.5px] text-muted">

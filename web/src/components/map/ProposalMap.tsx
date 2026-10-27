@@ -22,7 +22,7 @@ export function ProposalMap({ proposals, className = 'h-96' }: ProposalMapProps)
       zoom={11}
       scrollWheelZoom={false}
       attributionControl={false}
-      className={`peta-hangat ${className} w-full rounded-2xl border border-border`}
+      className={`peta-hangat ${className} isolate w-full rounded-3xl border border-border`}
     >
       <AttributionControl prefix={ATTRIBUTION_PREFIX} />
       <TileLayer

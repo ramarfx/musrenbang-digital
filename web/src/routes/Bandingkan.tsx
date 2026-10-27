@@ -5,6 +5,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { PageLoader } from '@/components/ui/PageLoader';
 import { useApbdQuery } from '@/features/apbd/queries';
+import { useCategoriesQuery } from '@/features/categories/queries';
 import { useAppConfigQuery } from '@/features/config/queries';
 import { GapComparison } from '@/features/gap/components/GapComparison';
 import { GapDetailDialog } from '@/features/gap/components/GapDetailDialog';
@@ -16,9 +17,18 @@ export default function Bandingkan() {
   const gapQuery = useGapQuery();
   const configQuery = useAppConfigQuery();
   const apbdQuery = useApbdQuery();
+  const categoriesQuery = useCategoriesQuery();
   const [dipilih, setDipilih] = useState<GapRow | null>(null);
 
-  const ringkasan = useMemo(() => siapkanGap(gapQuery.data ?? []), [gapQuery.data]);
+  // Urutan kategori mengikuti simulator (daftar kategori dari database).
+  const urutanKategori = useMemo(
+    () => categoriesQuery.data?.map((kategori) => kategori.nama) ?? [],
+    [categoriesQuery.data],
+  );
+  const ringkasan = useMemo(
+    () => siapkanGap(gapQuery.data ?? [], urutanKategori),
+    [gapQuery.data, urutanKategori],
+  );
   const config = configQuery.data;
 
   const unduhCsv = () => {

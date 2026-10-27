@@ -32,7 +32,7 @@ function Tahap({ status }: { status: string }) {
  */
 export function ProposalCard({ proposal }: { proposal: Proposal }) {
   return (
-    <article className="group relative flex flex-col rounded-3xl border border-border bg-surface p-5 transition-[translate,border-color] duration-150 ease-out focus-within:border-ink/40 hover:-translate-y-0.5 hover:border-ink/40">
+    <article className="group relative flex flex-col rounded-3xl border border-border bg-surface p-5 sm:p-6 transition-[translate,border-color] duration-150 ease-out focus-within:border-ink/40 hover:-translate-y-0.5 hover:border-ink/40">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <CategoryTile kategori={proposal.kategori} />

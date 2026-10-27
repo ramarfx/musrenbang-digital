@@ -7,6 +7,7 @@ export const queryKeys = {
   profile: (userId: string | null) => ['profile', userId] as const,
   config: ['config'] as const,
   categories: ['categories'] as const,
+  myStatusChanges: (userId: string | null) => ['notifications', 'status', userId] as const,
   myVotes: (userId: string | null) => ['votes', 'mine', userId] as const,
   proposals: ['proposals'] as const,
   proposal: (proposalId: number) => ['proposals', 'detail', proposalId] as const,

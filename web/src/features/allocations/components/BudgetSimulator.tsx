@@ -22,7 +22,8 @@ import { useAppConfigQuery } from '@/features/config/queries';
 import { useGapQuery } from '@/features/gap/queries';
 import { formatRupiah } from '@/lib/format';
 import { allocateByWeights, formatSelisih } from '../lib';
-import { AllocationDetailDialog } from './AllocationDetailDialog';
+import { SetelahSimpan } from './SetelahSimpan';
+import { AnggaranDetailDialog } from './AnggaranDetailDialog';
 import { useSaveAllocationsMutation, useUserAllocationsQuery } from '../queries';
 
 export function BudgetSimulator() {
@@ -38,6 +39,8 @@ export function BudgetSimulator() {
   const [beranimasi, setBeranimasi] = useState(false);
   const animRef = useRef<number | null>(null);
   const [rincianBuka, setRincianBuka] = useState(false);
+  // Isi yang terakhir tersimpan; kartu konfirmasi tampil selama isi sekarang masih sama.
+  const [kunciTersimpan, setKunciTersimpan] = useState<string | null>(null);
   const initializedRef = useRef<string | null>(null);
 
   const categories = useMemo(
@@ -184,7 +187,10 @@ export function BudgetSimulator() {
       return;
     }
     saveMutation.mutate(validation.data, {
-      onSuccess: () => toast.success('Pilihanmu tersimpan. Gap warga ikut diperbarui.'),
+      onSuccess: () => {
+        setKunciTersimpan(JSON.stringify(items));
+        toast.success('Pilihanmu tersimpan. Gap warga ikut diperbarui.');
+      },
       onError: (error) => toast.error(error.message),
     });
   };
@@ -463,6 +469,9 @@ export function BudgetSimulator() {
               .
             </p>
           )}
+          {userId && kunciTersimpan !== null && kunciTersimpan === JSON.stringify(items) && (
+            <SetelahSimpan />
+          )}
           <p className="min-h-[59px] rounded-xl bg-active px-3 py-2.5 text-[13px] text-muted">
             {kelebihan
               ? 'Total melebihi anggaran virtual. Kurangi alokasi sampai sisa dana Rp0.'
@@ -473,7 +482,7 @@ export function BudgetSimulator() {
         </div>
       </div>
 
-      <AllocationDetailDialog
+      <AnggaranDetailDialog
         open={rincianBuka}
         onClose={() => setRincianBuka(false)}
         items={items}

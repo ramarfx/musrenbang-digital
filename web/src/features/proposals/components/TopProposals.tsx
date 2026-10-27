@@ -100,7 +100,7 @@ export function TopProposals({ proposals }: { proposals: readonly Proposal[] }) 
           ) : (
             <article
               key={proposal.id}
-              className="relative rounded-3xl border border-ink bg-surface p-5 transition-[translate] duration-150 ease-out hover:-translate-y-0.5 sm:p-6"
+              className="relative rounded-3xl border border-border bg-surface p-5 transition-[translate,border-color] duration-150 ease-out hover:-translate-y-0.5 hover:border-ink/40 sm:p-6"
             >
               {isi}
             </article>

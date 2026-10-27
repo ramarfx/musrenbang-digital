@@ -11,16 +11,28 @@ import { formatBesarPanjang, setaraRupiah, type GapRingkasan } from '../lib';
  * dan tidak menampilkan angka.
  */
 export function GapLead({ ringkasan }: { ringkasan: GapRingkasan }) {
-  const { sorotan, adaWarga, totalApbd } = ringkasan;
+  const { sorotan, teratas, adaWarga, totalApbd } = ringkasan;
 
   return (
     <div className="stagger grid gap-6 lg:grid-cols-2">
       <HeroCard>
         <p className="text-[13px] text-white/75">Di program mana warga paling berbeda dari APBD?</p>
         {sorotan ? (
-          <p className="mt-3 max-w-[48ch] text-xl leading-snug font-semibold tracking-[-0.01em]">
-            {describeGap(sorotan)}
-          </p>
+          <ol className="mt-3 max-w-[56ch]">
+            {teratas.map((row, index) => (
+              <li
+                key={row.kategori}
+                className={`flex gap-3 border-t border-white/15 py-3 first:border-t-0 first:pt-0 ${
+                  index === 0
+                    ? 'text-xl leading-snug font-semibold tracking-[-0.01em]'
+                    : 'text-[15px] leading-snug text-white/90'
+                }`}
+              >
+                <b className="w-5 flex-none text-white/75 tabular-nums">{index + 1}</b>
+                <span>{describeGap(row)}</span>
+              </li>
+            ))}
+          </ol>
         ) : (
           <>
             <p className="mt-3 max-w-[48ch] text-xl leading-snug font-semibold tracking-[-0.01em]">

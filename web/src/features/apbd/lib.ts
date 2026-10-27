@@ -12,3 +12,13 @@ export const PERGUB_APBD_URL =
 export function labelVerifikasi(status: ApbdVerificationStatus): string {
   return status === 'verified_program' ? 'Dipetakan dari program' : 'Perlu lampiran';
 }
+
+/**
+ * Merapikan teks sumber dari data untuk ditampilkan. Tanda strip panjang yang dipakai sebagai
+ * pemisah di data diganti koma, dan isi yang hanya tanda strip dianggap kosong (null).
+ */
+export function rapikanSumber(sumber: string | null | undefined): string | null {
+  const teks = (sumber ?? '').trim();
+  if (teks === '' || /^[-–—\s]+$/.test(teks)) return null;
+  return teks.replace(/\s*[–—]\s*/g, ', ');
+}

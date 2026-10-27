@@ -4,8 +4,12 @@ import type { GapItem } from '@musrenbang/shared';
 export type GapRow = GapItem & { adaApbd: boolean };
 
 export type GapRingkasan = {
-  /** Urut selisih terbesar dulu; kategori tanpa data APBD di paling bawah. */
+  /** Urutan kategori sama dengan simulator (PRD: urutan seragam di semua tampilan). */
   rows: GapRow[];
+  /** Urut selisih terbesar dulu; kategori tanpa data APBD di paling bawah. */
+  rowsSelisih: GapRow[];
+  /** Tiga kategori dengan selisih terbesar. Kosong bila belum ada pilihan warga. */
+  teratas: GapRow[];
   /** Kategori dengan selisih terbesar. Kosong bila belum ada pilihan warga. */
   sorotan: GapRow | undefined;
   /** Jumlah nominal APBD yang terpetakan, bukan total belanja daerah. */
@@ -20,17 +24,35 @@ export type GapRingkasan = {
  * ("data menyusul") tidak ikut dibandingkan: selisihnya hanya akan mencerminkan
  * data yang belum ada, bukan prioritas.
  */
-export function siapkanGap(items: readonly GapItem[]): GapRingkasan {
-  const rows: GapRow[] = items.map((item) => ({ ...item, adaApbd: item.nominal_apbd > 0 }));
-  const berdata = rows
+export function siapkanGap(
+  items: readonly GapItem[],
+  /** Urutan kategori di simulator. Kalau kosong, baris diurutkan menurut selisih. */
+  urutanKategori: readonly string[] = [],
+): GapRingkasan {
+  const semua: GapRow[] = items.map((item) => ({ ...item, adaApbd: item.nominal_apbd > 0 }));
+  const berdata = semua
     .filter((row) => row.adaApbd)
     .sort((a, b) => Math.abs(b.gap_poin_persen) - Math.abs(a.gap_poin_persen));
-  const menyusul = rows.filter((row) => !row.adaApbd);
-  const adaWarga = rows.some((row) => row.total_alokasi_warga > 0);
+  const menyusul = semua.filter((row) => !row.adaApbd);
+  const adaWarga = semua.some((row) => row.total_alokasi_warga > 0);
+  const rowsSelisih = [...berdata, ...menyusul];
+  const posisi = (kategori: string) => {
+    const index = urutanKategori.indexOf(kategori);
+    return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+  };
+  const rows =
+    urutanKategori.length > 0
+      ? [...rowsSelisih].sort(
+          (a, b) => posisi(a.kategori) - posisi(b.kategori) || a.kategori.localeCompare(b.kategori),
+        )
+      : rowsSelisih;
+  const teratas = adaWarga ? berdata.slice(0, 3) : [];
   return {
-    rows: [...berdata, ...menyusul],
-    sorotan: adaWarga ? berdata[0] : undefined,
-    totalApbd: rows.reduce((sum, row) => sum + row.nominal_apbd, 0),
+    rows,
+    rowsSelisih,
+    teratas,
+    sorotan: teratas[0],
+    totalApbd: semua.reduce((sum, row) => sum + row.nominal_apbd, 0),
     adaWarga,
     maks: Math.max(1, ...berdata.map((row) => Math.abs(row.gap_poin_persen))),
   };
@@ -68,7 +90,6 @@ export function buatCsv(rows: readonly GapRow[]): string {
     'apbd_persen',
     'selisih_poin',
     'nominal_apbd_rp',
-    'total_alokasi_warga_rp',
     'data_apbd',
   ];
   const baris = rows.map((row) =>
@@ -78,7 +99,6 @@ export function buatCsv(rows: readonly GapRow[]): string {
       row.persen_apbd,
       row.adaApbd ? row.gap_poin_persen : '',
       row.nominal_apbd,
-      row.total_alokasi_warga,
       row.adaApbd ? 'ada' : 'menyusul',
     ].join(','),
   );

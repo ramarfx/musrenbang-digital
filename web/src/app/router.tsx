@@ -13,6 +13,7 @@ const UsulanDetail = lazy(() => import('@/routes/UsulanDetail'));
 const Auth = lazy(() => import('@/routes/Auth'));
 const Admin = lazy(() => import('@/routes/Admin'));
 const Metodologi = lazy(() => import('@/routes/Metodologi'));
+const UsulanSaya = lazy(() => import('@/routes/UsulanSaya'));
 const NotFound = lazy(() => import('@/routes/NotFound'));
 
 function page(element: ReactNode) {
@@ -36,6 +37,14 @@ export const router = createBrowserRouter([
         element: page(
           <RequireAuth>
             <BuatUsulan />
+          </RequireAuth>,
+        ),
+      },
+      {
+        path: 'usulan-saya',
+        element: page(
+          <RequireAuth>
+            <UsulanSaya />
           </RequireAuth>,
         ),
       },

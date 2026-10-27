@@ -1,7 +1,8 @@
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
+import { cn } from '@/lib/cn';
 import { formatPersen } from '@/lib/format';
 import { formatSelisih } from '@/lib/selisih';
 import { formatBesarSingkat, setaraRupiah, type GapRingkasan, type GapRow } from '../lib';
@@ -60,10 +61,43 @@ function BarDuaArah({
  * dan tidak dibandingkan.
  */
 export function GapComparison({ ringkasan, onPilih }: Props) {
-  const { rows, maks, adaWarga, totalApbd } = ringkasan;
+  const { maks, adaWarga, totalApbd } = ringkasan;
+  // Bawaan: urutan sama dengan simulator (PRD). Pilihan kedua: selisih terbesar dulu.
+  const [urutan, setUrutan] = useState<'simulator' | 'selisih'>('simulator');
+  const rows = urutan === 'simulator' ? ringkasan.rows : ringkasan.rowsSelisih;
 
   return (
     <Card className="overflow-x-auto">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-[13px] text-muted">Urutan program</p>
+        <div
+          role="group"
+          aria-label="Urutan program"
+          className="inline-flex rounded-xl border border-border bg-ground p-0.5"
+        >
+          {(
+            [
+              ['simulator', 'Sama dengan simulator'],
+              ['selisih', 'Selisih terbesar'],
+            ] as const
+          ).map(([nilai, label]) => (
+            <button
+              key={nilai}
+              type="button"
+              aria-pressed={urutan === nilai}
+              onClick={() => setUrutan(nilai)}
+              className={cn(
+                'h-8 rounded-[10px] px-3 text-[13px] font-semibold transition-[scale,background-color,color] duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga',
+                urutan === nilai
+                  ? 'bg-ink text-white'
+                  : 'text-muted hover:bg-active hover:text-ink',
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="mb-4 flex flex-wrap gap-x-5 gap-y-2 text-[12.5px] text-muted">
         <span className="inline-flex items-center gap-2">
           <i className="block h-3.5 w-[3px] rounded-sm bg-apbd" />

@@ -2,6 +2,7 @@ import { buttonClass } from '@/components/ui/Button';
 import { PROPOSAL_STATUSES, type ProposalStatus } from '@musrenbang/shared';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { CaraKerja } from '@/components/CaraKerja';
 import { ProposalMap } from '@/components/map/ProposalMap';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -11,6 +12,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { ProposalCard } from '@/features/proposals/components/ProposalCard';
 import { TopProposals } from '@/features/proposals/components/TopProposals';
 import { ProposalFilters } from '@/features/proposals/components/ProposalFilters';
+import { useCategoriesQuery } from '@/features/categories/queries';
 import { useProposalsQuery } from '@/features/proposals/queries';
 import { formatAngka, formatRupiahRingkas } from '@/lib/format';
 
@@ -18,7 +20,9 @@ export default function Beranda() {
   const proposalsQuery = useProposalsQuery();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<ProposalStatus | 'semua'>('semua');
+  const [kategori, setKategori] = useState('semua');
   const [urutan, setUrutan] = useState<'terbaru' | 'terpopuler'>('terbaru');
+  const categoriesQuery = useCategoriesQuery();
 
   const proposals = proposalsQuery.data ?? [];
   const cocokKeyword = useMemo(() => {
@@ -32,11 +36,19 @@ export default function Beranda() {
         proposal.pengusul_nama.toLowerCase().includes(keyword),
     );
   }, [proposals, search]);
+  // Filter kategori dan status bekerja bersamaan, dan angka di tiap pilihan mengikuti filter lain.
+  const cocokKategori = useMemo(
+    () =>
+      kategori === 'semua'
+        ? cocokKeyword
+        : cocokKeyword.filter((proposal) => proposal.kategori === kategori),
+    [cocokKeyword, kategori],
+  );
   const filtered = useMemo(() => {
     const hasil =
       status === 'semua'
-        ? [...cocokKeyword]
-        : cocokKeyword.filter((proposal) => proposal.status === status);
+        ? [...cocokKategori]
+        : cocokKategori.filter((proposal) => proposal.status === status);
     if (urutan === 'terpopuler') {
       hasil.sort(
         (a, b) =>
@@ -45,15 +57,23 @@ export default function Beranda() {
       );
     }
     return hasil;
-  }, [cocokKeyword, status, urutan]);
+  }, [cocokKategori, status, urutan]);
   // Angka di tombol status mengikuti kata kunci, supaya tidak menjanjikan hasil yang kosong.
   const counts = useMemo(() => {
-    const hasil = { semua: cocokKeyword.length } as Record<ProposalStatus | 'semua', number>;
+    const hasil = { semua: cocokKategori.length } as Record<ProposalStatus | 'semua', number>;
     for (const item of PROPOSAL_STATUSES) {
-      hasil[item] = cocokKeyword.filter((proposal) => proposal.status === item).length;
+      hasil[item] = cocokKategori.filter((proposal) => proposal.status === item).length;
     }
     return hasil;
-  }, [cocokKeyword]);
+  }, [cocokKategori]);
+  const daftarKategori = useMemo(() => {
+    const menurutStatus =
+      status === 'semua' ? cocokKeyword : cocokKeyword.filter((p) => p.status === status);
+    return (categoriesQuery.data ?? []).map((item) => ({
+      nama: item.nama,
+      jumlah: menurutStatus.filter((proposal) => proposal.kategori === item.nama).length,
+    }));
+  }, [categoriesQuery.data, cocokKeyword, status]);
 
   const totalSuara = proposals.reduce((sum, proposal) => sum + proposal.jumlah_suara, 0);
   const totalEstimasi = proposals.reduce((sum, proposal) => sum + proposal.estimasi_biaya, 0);
@@ -65,7 +85,7 @@ export default function Beranda() {
     <div className="space-y-8">
       <PageHeader
         title="Anggaran kota, diputuskan bersama."
-        description="Usulkan program, alokasikan anggaran virtual, upvote usulan warga, dan bandingkan prioritas warga dengan APBD yang sebenarnya."
+        description="Usulkan program, urutkan prioritas anggaran, upvote usulan warga, dan bandingkan prioritas warga dengan APBD yang sebenarnya."
         actions={
           <>
             <Link to="/simulator" className={buttonClass('primary')}>
@@ -92,6 +112,8 @@ export default function Beranda() {
           <p className="text-2xl font-bold tabular-nums">{formatRupiahRingkas(totalEstimasi)}</p>
         </Card>
       </section>
+
+      <CaraKerja />
 
       {proposalsQuery.isSuccess && <TopProposals proposals={proposals} />}
 
@@ -141,6 +163,9 @@ export default function Beranda() {
           status={status}
           onStatusChange={setStatus}
           counts={counts}
+          kategori={kategori}
+          onKategoriChange={setKategori}
+          daftarKategori={daftarKategori}
           urutan={urutan}
           onUrutanChange={setUrutan}
           resultCount={filtered.length}
@@ -173,13 +198,14 @@ export default function Beranda() {
         {proposalsQuery.isSuccess && proposals.length > 0 && filtered.length === 0 && (
           <EmptyState
             title="Tidak ada usulan yang cocok"
-            description="Coba kata kunci lain atau ubah filter status."
+            description="Coba kata kunci lain atau ubah filter kategori dan status."
             action={
               <button
                 type="button"
                 onClick={() => {
                   setSearch('');
                   setStatus('semua');
+                  setKategori('semua');
                 }}
                 className={buttonClass('outline')}
               >

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import logoColor from '@/assets/logo/mb-lockup-horizontal-warna.svg';
 import { Icon } from '@/components/ui/Icon';
 import { useAuth } from '@/features/auth';
@@ -12,7 +12,7 @@ type MobileNavProps = {
 
 /** Bar atas dan menu layar penuh untuk HP dan tablet (di bawah 1024px). */
 export function MobileNav({ open, setOpen }: MobileNavProps) {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const location = useLocation();
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -49,9 +49,12 @@ export function MobileNav({ open, setOpen }: MobileNavProps) {
   return (
     <div className="lg:hidden">
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-rule bg-ground px-4">
-        <Link to="/" className="rounded-lg">
-          <img src={logoColor} alt="Musrenbang Digital, ke beranda" className="h-[34px] w-auto" />
-        </Link>
+        <img
+          src={logoColor}
+          alt="Musrenbang Digital"
+          draggable={false}
+          className="h-[34px] w-auto select-none"
+        />
         <button
           ref={buttonRef}
           type="button"
@@ -71,7 +74,7 @@ export function MobileNav({ open, setOpen }: MobileNavProps) {
           className="anim-menu fixed inset-x-0 top-14 bottom-0 z-20 flex flex-col gap-4 overflow-y-auto bg-ground px-4 pt-4 pb-6"
         >
           <RegionBox dark={false} />
-          <NavList groups={buildNav(isAdmin)} dark={false} />
+          <NavList groups={buildNav(isAdmin, user !== null)} dark={false} />
           <div className="mt-auto">
             <UserRow dark={false} />
           </div>

@@ -67,6 +67,42 @@ export async function hasVoted(proposalId: number, userId: string) {
   return Boolean(data);
 }
 
+export type StatusChange = z.infer<typeof statusHistorySchema> & { judul: string };
+
+/**
+ * Perubahan status pada usulan milik pengguna, terbaru dulu. Pembuatan usulan (status lama
+ * kosong) tidak dihitung karena pembuatnya sudah tahu. Dibaca dari view publik yang sama
+ * dengan linimasa, jadi tidak butuh tabel baru.
+ */
+export async function listMyStatusChanges(userId: string): Promise<StatusChange[]> {
+  const mine = await unwrap(
+    supabase.from('v_proposals').select('id, judul').eq('pengusul_id', userId),
+    'usulanku',
+  );
+  const proposals = parseWith(
+    z.array(z.object({ id: z.coerce.number().int(), judul: z.string() })),
+    mine,
+    'usulanku',
+  );
+  if (proposals.length === 0) return [];
+  const data = await unwrap(
+    supabase
+      .from('v_proposal_status_history')
+      .select('*')
+      .in(
+        'proposal_id',
+        proposals.map((item) => item.id),
+      )
+      .not('status_lama', 'is', null)
+      .order('diubah_pada', { ascending: false })
+      .limit(30),
+    'perubahan status',
+  );
+  const rows = parseWith(z.array(statusHistorySchema), data, 'perubahan status');
+  const judul = new Map(proposals.map((item) => [item.id, item.judul]));
+  return rows.map((row) => ({ ...row, judul: judul.get(row.proposal_id) ?? 'Usulanmu' }));
+}
+
 /** Id semua usulan yang sudah didukung pengguna ini, dalam satu permintaan. */
 export async function listMyVotes(userId: string) {
   const data = await unwrap(

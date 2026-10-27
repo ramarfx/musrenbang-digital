@@ -5,6 +5,7 @@ import {
   createProposal,
   getProposal,
   hasVoted,
+  listMyStatusChanges,
   listMyVotes,
   listProposals,
   listStatusHistory,
@@ -118,5 +119,15 @@ export function useToggleLikeMutation(userId: string | null) {
         queryClient.invalidateQueries({ queryKey: queryKeys.hasVoted(proposalId, userId) }),
       ]);
     },
+  });
+}
+
+/** Perubahan status usulan milik pengguna; diperiksa ulang tiap menit selama halaman terbuka. */
+export function useMyStatusChangesQuery(userId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.myStatusChanges(userId),
+    queryFn: () => listMyStatusChanges(userId as string),
+    enabled: userId !== null,
+    refetchInterval: 60_000,
   });
 }

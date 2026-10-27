@@ -1,5 +1,6 @@
 import { PROPOSAL_STATUSES, type ProposalStatus } from '@musrenbang/shared';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { cn } from '@/lib/cn';
 
 type StatusFilter = ProposalStatus | 'semua';
@@ -11,6 +12,10 @@ type ProposalFiltersProps = {
   onStatusChange: (value: StatusFilter) => void;
   /** Jumlah usulan per status (sudah memperhitungkan kata kunci), dan `semua` untuk totalnya. */
   counts: Record<StatusFilter, number>;
+  kategori: string;
+  onKategoriChange: (value: string) => void;
+  /** Kategori beserta jumlah usulan (sudah memperhitungkan kata kunci dan status). */
+  daftarKategori: { nama: string; jumlah: number }[];
   urutan: 'terbaru' | 'terpopuler';
   onUrutanChange: (value: 'terbaru' | 'terpopuler') => void;
   resultCount: number;
@@ -25,6 +30,9 @@ export function ProposalFilters({
   status,
   onStatusChange,
   counts,
+  kategori,
+  onKategoriChange,
+  daftarKategori,
   urutan,
   onUrutanChange,
   resultCount,
@@ -42,6 +50,24 @@ export function ProposalFilters({
         onChange={(event) => onSearchChange(event.target.value)}
         placeholder="Judul, deskripsi, kategori, atau nama pengusul"
       />
+
+      <div className="mt-4 max-w-sm">
+        <label htmlFor="filter-kategori" className="mb-1.5 block text-[13px] text-muted">
+          Kategori
+        </label>
+        <Select
+          id="filter-kategori"
+          value={kategori}
+          onChange={(event) => onKategoriChange(event.target.value)}
+        >
+          <option value="semua">Semua kategori</option>
+          {daftarKategori.map((item) => (
+            <option key={item.nama} value={item.nama}>
+              {item.nama} ({item.jumlah})
+            </option>
+          ))}
+        </Select>
+      </div>
 
       <div className="mt-4">
         <p id="label-status" className="mb-2 text-[13px] text-muted">

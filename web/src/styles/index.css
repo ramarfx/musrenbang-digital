@@ -293,6 +293,18 @@ html::-webkit-scrollbar,
   }
 }
 
+/* Daftar pemberitahuan: muncul dari pojok kanan atas tombolnya, 160ms. */
+.anim-popover {
+  transform-origin: top right;
+  animation: popover-masuk 160ms var(--ease-out);
+}
+@keyframes popover-masuk {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(-4px);
+  }
+}
+
 @keyframes load-titik {
   0%,
   80%,
@@ -446,6 +458,7 @@ html::-webkit-scrollbar,
     animation: none !important;
     opacity: 1;
   }
+  .anim-popover,
   .upvote-naik,
   .upvote-gelombang {
     animation: none !important;
