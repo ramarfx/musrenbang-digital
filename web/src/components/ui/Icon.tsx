@@ -12,18 +12,28 @@ const PATHS = {
   lokasi: 'M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11Z',
   menu: 'M4 7h16M4 12h16M4 17h16',
   tutup: 'M6 6l12 12M18 6 6 18',
+  'panah-atas': 'M12 3.5 3.5 13H9v7.5h6V13h5.5L12 3.5Z',
   buku: 'M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2V5ZM4 21h15',
 } as const;
 
 export type IconName = keyof typeof PATHS;
 
-export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
+export function Icon({
+  name,
+  size = 18,
+  filled = false,
+}: {
+  name: IconName;
+  size?: number;
+  /** Isi dengan warna teks (mis. panah upvote yang sudah ditekan). */
+  filled?: boolean;
+}) {
   return (
     <svg
       viewBox="0 0 24 24"
       width={size}
       height={size}
-      fill="none"
+      fill={filled ? 'currentColor' : 'none'}
       stroke="currentColor"
       strokeWidth={1.8}
       strokeLinecap="round"

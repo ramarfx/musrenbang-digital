@@ -36,7 +36,7 @@ export default function Admin() {
     <div className="space-y-6">
       <PageHeader
         title="Admin: kelola usulan"
-        description="Ubah status usulan di sini. Setiap perubahan dicatat otomatis ke riwayat status lewat RPC change_proposal_status."
+        description="Ubah status usulan di sini. Setiap perubahan tercatat otomatis di riwayat status usulan."
       />
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5" aria-label="Ringkasan status">

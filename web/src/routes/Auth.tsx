@@ -32,8 +32,8 @@ export default function Auth() {
         title={mode === 'daftar' ? 'Daftar akun' : 'Masuk'}
         description={
           mode === 'daftar'
-            ? 'Satu akun untuk mengusulkan, memberi suara, dan menyimpan alokasi anggaran virtual.'
-            : 'Masuk untuk mengusulkan program, memberi suara, dan menyimpan simulasi anggaran.'
+            ? 'Satu akun untuk mengusulkan, meng-upvote usulan, dan menyimpan alokasi anggaran virtual.'
+            : 'Masuk untuk mengusulkan program, meng-upvote usulan, dan menyimpan simulasi anggaran.'
         }
       />
 

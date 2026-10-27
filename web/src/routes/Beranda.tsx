@@ -1,5 +1,5 @@
 import { buttonClass } from '@/components/ui/Button';
-import type { ProposalStatus } from '@musrenbang/shared';
+import { PROPOSAL_STATUSES, type ProposalStatus } from '@musrenbang/shared';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ProposalMap } from '@/components/map/ProposalMap';
@@ -9,6 +9,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { ListSkeleton } from '@/components/ui/Skeleton';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ProposalCard } from '@/features/proposals/components/ProposalCard';
+import { TopProposals } from '@/features/proposals/components/TopProposals';
 import { ProposalFilters } from '@/features/proposals/components/ProposalFilters';
 import { useProposalsQuery } from '@/features/proposals/queries';
 import { formatAngka, formatRupiahRingkas } from '@/lib/format';
@@ -17,21 +18,42 @@ export default function Beranda() {
   const proposalsQuery = useProposalsQuery();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<ProposalStatus | 'semua'>('semua');
+  const [urutan, setUrutan] = useState<'terbaru' | 'terpopuler'>('terbaru');
 
   const proposals = proposalsQuery.data ?? [];
-  const filtered = useMemo(() => {
+  const cocokKeyword = useMemo(() => {
     const keyword = search.trim().toLowerCase();
-    return proposals.filter((proposal) => {
-      const cocokStatus = status === 'semua' || proposal.status === status;
-      const cocokKeyword =
+    return proposals.filter(
+      (proposal) =>
         keyword.length === 0 ||
         proposal.judul.toLowerCase().includes(keyword) ||
         proposal.deskripsi.toLowerCase().includes(keyword) ||
         proposal.kategori.toLowerCase().includes(keyword) ||
-        proposal.pengusul_nama.toLowerCase().includes(keyword);
-      return cocokStatus && cocokKeyword;
-    });
-  }, [proposals, search, status]);
+        proposal.pengusul_nama.toLowerCase().includes(keyword),
+    );
+  }, [proposals, search]);
+  const filtered = useMemo(() => {
+    const hasil =
+      status === 'semua'
+        ? [...cocokKeyword]
+        : cocokKeyword.filter((proposal) => proposal.status === status);
+    if (urutan === 'terpopuler') {
+      hasil.sort(
+        (a, b) =>
+          b.jumlah_suara - a.jumlah_suara ||
+          new Date(b.dibuat_pada).getTime() - new Date(a.dibuat_pada).getTime(),
+      );
+    }
+    return hasil;
+  }, [cocokKeyword, status, urutan]);
+  // Angka di tombol status mengikuti kata kunci, supaya tidak menjanjikan hasil yang kosong.
+  const counts = useMemo(() => {
+    const hasil = { semua: cocokKeyword.length } as Record<ProposalStatus | 'semua', number>;
+    for (const item of PROPOSAL_STATUSES) {
+      hasil[item] = cocokKeyword.filter((proposal) => proposal.status === item).length;
+    }
+    return hasil;
+  }, [cocokKeyword]);
 
   const totalSuara = proposals.reduce((sum, proposal) => sum + proposal.jumlah_suara, 0);
   const totalEstimasi = proposals.reduce((sum, proposal) => sum + proposal.estimasi_biaya, 0);
@@ -43,7 +65,7 @@ export default function Beranda() {
     <div className="space-y-8">
       <PageHeader
         title="Anggaran kota, diputuskan bersama."
-        description="Usulkan program, alokasikan anggaran virtual, beri suara, dan bandingkan prioritas warga dengan APBD yang sebenarnya."
+        description="Usulkan program, alokasikan anggaran virtual, upvote usulan warga, dan bandingkan prioritas warga dengan APBD yang sebenarnya."
         actions={
           <>
             <Link to="/simulator" className={buttonClass('primary')}>
@@ -71,6 +93,8 @@ export default function Beranda() {
         </Card>
       </section>
 
+      {proposalsQuery.isSuccess && <TopProposals proposals={proposals} />}
+
       <section>
         <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
           <div>
@@ -79,7 +103,7 @@ export default function Beranda() {
               {jumlahBerlokasi} usulan punya titik lokasi dari hasil filter saat ini.
             </p>
           </div>
-          <Link to="/usulan/baru" className="text-sm font-medium text-emerald-800 underline">
+          <Link to="/usulan/baru" className="text-sm font-semibold text-warga underline">
             Usulkan lokasi baru
           </Link>
         </div>
@@ -106,7 +130,7 @@ export default function Beranda() {
       <section className="space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <h2 className="text-xl font-bold">Daftar usulan</h2>
-          <Link to="/usulan/baru" className="text-sm font-medium text-emerald-800 underline">
+          <Link to="/usulan/baru" className="text-sm font-semibold text-warga underline">
             Buat usulan
           </Link>
         </div>
@@ -116,6 +140,9 @@ export default function Beranda() {
           onSearchChange={setSearch}
           status={status}
           onStatusChange={setStatus}
+          counts={counts}
+          urutan={urutan}
+          onUrutanChange={setUrutan}
           resultCount={filtered.length}
           totalCount={proposals.length}
         />
@@ -147,6 +174,18 @@ export default function Beranda() {
           <EmptyState
             title="Tidak ada usulan yang cocok"
             description="Coba kata kunci lain atau ubah filter status."
+            action={
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch('');
+                  setStatus('semua');
+                }}
+                className={buttonClass('outline')}
+              >
+                Hapus filter
+              </button>
+            }
           />
         )}
 

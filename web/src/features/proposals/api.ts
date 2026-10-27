@@ -67,6 +67,19 @@ export async function hasVoted(proposalId: number, userId: string) {
   return Boolean(data);
 }
 
+/** Id semua usulan yang sudah didukung pengguna ini, dalam satu permintaan. */
+export async function listMyVotes(userId: string) {
+  const data = await unwrap(
+    supabase.from('votes').select('proposal_id').eq('user_id', userId),
+    'daftar suara',
+  );
+  return parseWith(
+    z.array(z.object({ proposal_id: z.coerce.number().int() })),
+    data,
+    'daftar suara',
+  ).map((row) => row.proposal_id);
+}
+
 export async function toggleVote(proposalId: number, currentlyVoted: boolean) {
   const user = await requireUser();
   if (currentlyVoted) {
