@@ -21,12 +21,36 @@ pada 27 Oktober 2026. Tidak ada kredensial atau data pribadi dalam dokumen ini.
   remote belum diverifikasi. Lihat `REMOTE_INTEGRATION_TESTING.md`.
 - Pengujian tulis remote berstatus **WAITING FOR APPROVAL**.
 
+## Matriks kontrak dan tindakan integrasi
+
+History remote diperiksa kembali secara read-only pada 27 Oktober 2026: tepat enam
+migration sampai `20261027004023`. Hasil di bawah membandingkan keadaan itu dengan
+kandidat lokal 7. Status integrasi: **WAITING FOR FRONTEND**.
+
+| Area dan call site saat ini                                         | Remote enam migration                                                                                     | Kandidat migration 7                                                                                                                          | Tindakan dan risiko jika didahulukan                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Status: `features/admin/api.ts`, `routes/Admin.tsx`                 | `change_proposal_status(p_proposal_id, p_status)` mengubah status admin tanpa catatan.                    | RPC lama selalu menolak `22023`; `change_proposal_status_with_note` mewajibkan `p_catatan` dari admin.                                        | **FRONTEND ACTION REQUIRED**: form catatan, panggil RPC baru, tampilkan error dan refresh usulan/riwayat. Deploy database terlebih dahulu tanpa pembatasan memutus perubahan status.                                                                                                                                                                                                 |
+| Riwayat: `features/proposals/api.ts`, `StatusTimeline.tsx`          | View belum memiliki `catatan`; shared schema memakai default null.                                        | View mengembalikan `catatan`, termasuk snapshot legacy dengan keterangan keterbatasannya.                                                     | Tampilkan catatan yang tersedia dan riwayat kronologis, termasuk perubahan berulang. Timeline sekarang memilih satu entri per tahap dan tidak menampilkan catatan. Jangan menyimpulkan semua tahap sebelumnya benar-benar pernah terjadi.                                                                                                                                            |
+| Proposal: `ProposalForm.tsx`, `features/proposals/api.ts`           | Moderasi dan visibilitas sudah berlaku; kolom estimasi database lama menerima nol.                        | Insert/update estimasi baru harus positif; status awal tercatat otomatis.                                                                     | Form saat ini menyebut estimasi boleh kosong, tetapi shared schema sudah menolak nol. Selaraskan label dan validasi; jelaskan usulan menunggu moderasi, bukan otomatis publik.                                                                                                                                                                                                       |
+| Moderasi: `routes/Admin.tsx`                                        | `moderate_proposal(p_proposal_id, p_moderasi, p_catatan DEFAULT NULL)` tersedia untuk admin.              | Kontrak moderasi tetap.                                                                                                                       | UI admin saat ini hanya mengubah status kemajuan dan belum memanggil RPC moderasi. Tambahkan alur setujui/tolak, alasan wajib saat ditolak, serta status Menunggu. Ini celah frontend yang sudah ada sebelum migration 7.                                                                                                                                                            |
+| Statistik: `routes/Beranda.tsx`, `routes/Admin.tsx`                 | View statistik baru belum tersedia; halaman menghitung dari daftar proposal yang terlihat oleh pemanggil. | `v_public_stats` menyediakan jumlah usulan disetujui, pemberi suara unik, partisipan alokasi dan total alokasi. `v_admin_stats` khusus admin. | Pilih label sesuai metrik: jumlah pemberi suara unik berbeda dari jumlah total suara. Hitungan proposal dari view bergantung RLS dan dapat memuat usulan pribadi/admin; jangan menyebutnya jumlah publik global.                                                                                                                                                                     |
+| Gap: `features/gap/api.ts`, `routes/Bandingkan.tsx` dan komponennya | `v_gap` tanpa `jumlah_partisipan` dan `apbd_tersedia`; agregat APBD versi lama memiliki cakupan berbeda.  | Dua field tersebut tersedia; APBD dibatasi kota/tahun config dan item `verified_program` dengan URL. Rumus warga tidak berubah.               | UI sekarang menampilkan angka dan sorotan tanpa memeriksa field baru. Tangani field absen pada remote lama, nol partisipan dan APBD tidak tersedia; jangan tampilkan perbandingan/gap sebagai fakta jika salah satu sisi belum tersedia. `apbd_tersedia` hanya menandakan ada sedikitnya satu item yang memenuhi filter, bukan bukti seluruh kategori lengkap atau totalnya positif. |
+| APBD: `features/apbd/api.ts`, `routes/Apbd.tsx`, `ApbdTable.tsx`    | `select('*')` membaca semua baris yang terlihat, tanpa URL atau catatan pemetaan.                         | `sumber_url` dan `catatan_pemetaan` tersedia; item tanpa URL diturunkan dari `verified_program` menjadi `perlu_lampiran`.                     | Filter kota/tahun dan status sesuai label, tampilkan sumber serta keterbatasan. Halaman sekarang menjumlah seluruh baris dan menyebut pemetaan resmi, sehingga dapat menyesatkan untuk seed yang belum terverifikasi. Dua kategori tanpa nominal tidak disimpan sebagai baris nol oleh seed.                                                                                         |
+| Alokasi, voting, komentar                                           | `save_allocations(p_rows)`, tabel `votes` dan `comments` digunakan dengan JWT.                            | Kontrak tersebut tetap; RLS dan validasi tetap berlaku.                                                                                       | Pertahankan RPC alokasi; jangan mengirim service key atau menulis langsung alokasi. Periksa hasil yang kosong akibat RLS dan invalidasi query setelah mutasi.                                                                                                                                                                                                                        |
+
+Tidak ada backend fallback yang aman untuk panggilan status lama: database tidak
+memiliki catatan yang ditulis admin dalam request tersebut. Membuat catatan otomatis
+akan mengarang audit, sedangkan menerima transisi tanpa catatan melanggar kontrak.
+Guard provenance pada migration 7 telah diperbaiki agar baris legacy dengan sumber
+teks kosong tidak dapat menjadi `verified_program` hanya dengan menambahkan URL.
+RLS dan frontend tidak berubah pada Tahap 2A–2E.
+
 ## Validasi lokal terakhir
 
 - Supabase Auth, PostgREST, Mailpit, RLS, RPC, concurrency HTTP, dan cleanup:
   **243 lulus, 0 gagal**.
 - SQL assertions dengan tujuh migration di satu transaksi yang diakhiri rollback:
-  **153 lulus, 0 gagal**; postcheck memastikan tidak ada tabel atau akun fixture yang tertinggal.
+  **156 lulus, 0 gagal**; postcheck memastikan tidak ada tabel atau akun fixture yang tertinggal.
 - Unit tests: **51 lulus, 129 assertions**. Typecheck, lint, format terarah, dan build lulus.
 - Pemeriksaan format seluruh repository masih menemukan 103 file. Semua file formatable
   dalam delta ini lulus pemeriksaan terarah; file di luar cakupan tidak diformat massal.
@@ -152,16 +176,53 @@ sebelum migration tersebut dipasang. Backend tidak mengubah frontend pada tahap 
   identitas JWT. Constraint unik mencegah suara ganda. Warga dapat membatalkan
   suaranya sendiri.
 - Komentar: `POST /rest/v1/comments` dengan `proposal_id` dan `isi`; database
-  menentukan `user_id` dari JWT. Akses komentar mengikuti visibilitas proposal.
+  memeriksa `user_id` terhadap identitas JWT. Frontend saat ini mengirim ID pengguna
+  sesi; akses komentar mengikuti visibilitas proposal.
 - Alokasi: `POST /rest/v1/rpc/save_allocations` dengan `p_rows`, array objek
   `{ "kategori": "Pendidikan", "jumlah": 1000000 }`. RPC mengganti seluruh set
-  aktif secara atomik, memvalidasi kategori dan batas anggaran virtual Rp10.000.000.
+  aktif secara atomik, memvalidasi kategori dan batas anggaran pada `config`
+  `virtual_budget_per_warga` (nilai awal Rp10.000.000).
   Jangan menulis langsung ke tabel `allocations`.
 
 Error yang mungkin muncul di PostgREST: `42501` akses tidak sah/RLS, `22023` payload
-atau status tidak valid, `23514` constraint, `23505` duplikasi suara, dan `P0002`
+atau status tidak valid, `22003` alokasi melebihi batas, `23514` constraint,
+`23505` duplikasi suara, dan `P0002`
 proposal tidak ditemukan. Respons 200 dengan array kosong dapat berarti policy
 menyaring baris; periksa isi, bukan status HTTP saja.
+
+RPC status dan moderasi mengembalikan `void` (umumnya HTTP 204 tanpa isi); jangan
+menunggu objek proposal pada respons. Pembaruan ke status yang sama adalah no-op dan
+tidak membuat riwayat baru. Penolakan autentikasi bisa muncul sebagai HTTP 401/403;
+gunakan kode error dan konteks, jangan hanya mengandalkan satu status HTTP. Setelah
+mutasi sukses, invalidasi daftar, detail dan riwayat yang relevan.
+
+### Checklist frontend dan pesan siap kirim
+
+- [ ] Siapkan build frontend yang memahami remote lama dan kontrak migration 7;
+      matikan aksi status dan tampilan perbandingan yang bergantung kontrak baru
+      selama pergantian. Jangan mencoba RPC lama sebagai fallback setelah `22023`.
+- [ ] Input catatan admin 1–2000 karakter setelah trim, panggil RPC bercatatan,
+      tampilkan kegagalan dan riwayat; tes perubahan sama sebagai no-op.
+- [ ] Tangani moderasi admin dan alasan penolakan; pastikan warga dan anon gagal
+      melakukan aksi admin, serta usulan tersembunyi tidak muncul ke pengguna lain.
+- [ ] Tangani estimasi positif, ketersediaan Gap, status provenance dan data APBD
+      yang tidak lengkap; tampilkan statistik dengan definisi metrik yang benar.
+- [ ] Uji anon, warga A/B dan admin memakai JWT nyata terhadap kedua versi kontrak
+      yang relevan, termasuk 401/403, 22023, 23505, P0002 dan array kosong RLS.
+
+Pesan untuk developer frontend, siap disalin:
+
+> Halo, migration backend ketujuh masih lokal dan belum tersedia di Supabase
+> development. Setelah rollout, perubahan status admin harus memakai
+> `change_proposal_status_with_note` dengan `p_proposal_id`, `p_status`, dan
+> `p_catatan` yang ditulis admin. RPC lama akan menolak. Mohon siapkan input catatan,
+> tampilan riwayat, serta validasi dan pengujian untuk anon, warga, dan admin.
+> Halaman Gap perlu memeriksa `jumlah_partisipan` dan `apbd_tersedia`; status
+> ketersediaan bukan bukti semua kategori APBD lengkap. Halaman APBD perlu menyatakan
+> status sumber dan tidak menyebut seed sebagai pemetaan terverifikasi. Form usulan
+> perlu meminta estimasi positif dan menjelaskan moderasi. Lihat matriks serta
+> checklist dalam `supabase/BACKEND_HANDOFF.md`. Koordinasikan rollout sebelum
+> mengaktifkan perubahan pada development.
 
 ## APBD, provenance, dan batas data
 

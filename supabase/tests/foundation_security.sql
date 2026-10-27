@@ -126,6 +126,24 @@ SELECT pg_temp.expect_error(
   '22023', 'Item APBD wajib memiliki sumber teks'
 );
 SELECT pg_temp.expect_error(
+  $$UPDATE public.apbd_items SET status_verifikasi = 'verified_program',
+      sumber_url = 'https://example.org/apbd' WHERE id = 93000001$$,
+  '22023', 'Item legacy tanpa sumber teks tidak dapat menjadi verified hanya dengan URL'
+);
+SELECT pg_temp.check_true(
+  (SELECT status_verifikasi = 'perlu_lampiran' AND sumber = '' AND sumber_url IS NULL
+   FROM public.apbd_items WHERE id = 93000001),
+  'Kegagalan verifikasi tidak mengubah item legacy'
+);
+UPDATE public.apbd_items SET status_verifikasi = 'verified_program',
+  sumber = 'Sumber uji', sumber_url = 'https://example.org/apbd' WHERE id = 93000001;
+SELECT pg_temp.check_true(
+  (SELECT status_verifikasi = 'verified_program' AND sumber = 'Sumber uji'
+   FROM public.apbd_items WHERE id = 93000001),
+  'Item legacy dapat diverifikasi setelah sumber teks dan URL diisi'
+);
+UPDATE public.apbd_items SET status_verifikasi = 'perlu_lampiran' WHERE id = 93000001;
+SELECT pg_temp.expect_error(
   $$INSERT INTO public.proposals(judul,deskripsi,kategori,estimasi_biaya)
     VALUES ('Estimasi nol','Deskripsi cukup panjang untuk usulan nol.','Pendidikan',0)$$,
   '23514', 'Estimasi biaya nol ditolak database'

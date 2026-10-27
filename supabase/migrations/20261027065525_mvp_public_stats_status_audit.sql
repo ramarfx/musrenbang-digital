@@ -45,7 +45,7 @@ BEGIN
       RAISE EXCEPTION 'Program APBD terverifikasi wajib memiliki URL sumber.' USING ERRCODE = '22023';
     END IF;
   ELSE
-    IF NEW.sumber IS DISTINCT FROM OLD.sumber
+    IF (NEW.sumber IS DISTINCT FROM OLD.sumber OR NEW.status_verifikasi = 'verified_program')
        AND COALESCE(char_length(btrim(NEW.sumber)), 0) = 0 THEN
       RAISE EXCEPTION 'Sumber APBD wajib diisi.' USING ERRCODE = '22023';
     END IF;

@@ -31,6 +31,7 @@ $migrations = Get-ChildItem (Join-Path $repoRoot 'supabase/migrations/*.sql') | 
 foreach ($migration in $migrations) {
   if ($migration.Name -eq '20261027065525_mvp_public_stats_status_audit.sql') {
     $sqlParts.Add("INSERT INTO public.apbd_items(kategori,nominal_rp,tahun,kota,sumber,status_verifikasi) VALUES ('Pendidikan',999000000,2026,'DKI Jakarta','legacy fixture without source','verified_program');")
+    $sqlParts.Add("INSERT INTO public.apbd_items(id,kategori,nominal_rp,tahun,kota,sumber,status_verifikasi) OVERRIDING SYSTEM VALUE VALUES (93000001,'Pendidikan',1,2026,'DKI Jakarta','','perlu_lampiran');")
     $sqlParts.Add("SELECT 'LEGACY_APBD_FIXTURE_OK';")
     $sqlParts.Add(@'
 INSERT INTO public.proposals (
