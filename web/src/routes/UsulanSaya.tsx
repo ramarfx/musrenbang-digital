@@ -17,7 +17,8 @@ const TAHAP_TINDAK_LANJUT = PROPOSAL_STATUSES.indexOf('Masuk APBD');
 /**
  * Halaman Usulan Saya (PRD FR-05): usulan milik pengguna beserta status dan upvote-nya.
  * Dibaca dari daftar usulan publik yang sama dengan Beranda, disaring menurut pembuatnya.
- * Karena usulan langsung tayang tanpa moderasi, tidak ada status "Menunggu" atau alasan penolakan.
+ * Usulan baru berstatus Menunggu sampai admin menyetujui; usulan yang ditolak tetap terlihat di
+ * sini beserta alasannya.
  */
 export default function UsulanSaya() {
   const { user } = useAuth();
@@ -25,6 +26,8 @@ export default function UsulanSaya() {
   const milikku = (proposalsQuery.data ?? []).filter(
     (proposal) => user !== null && proposal.pengusul_id === user.id,
   );
+  const menunggu = milikku.filter((proposal) => proposal.moderasi === 'Menunggu').length;
+  const ditolak = milikku.filter((proposal) => proposal.moderasi === 'Ditolak').length;
   const totalUpvote = milikku.reduce((sum, proposal) => sum + proposal.jumlah_suara, 0);
   const sudahDitindaklanjuti = milikku.filter(
     (proposal) =>
@@ -35,7 +38,7 @@ export default function UsulanSaya() {
     <div className="space-y-6">
       <PageHeader
         title="Usulan saya"
-        description="Usulan yang kamu buat, beserta statusnya dan jumlah upvote dari warga."
+        description="Usulan yang kamu buat, beserta persetujuan admin, statusnya, dan jumlah upvote dari warga."
         actions={
           <Link to="/usulan/baru" className={buttonClass('primary', 'md')}>
             Buat usulan
@@ -57,7 +60,7 @@ export default function UsulanSaya() {
       {proposalsQuery.isSuccess && milikku.length === 0 && (
         <EmptyState
           title="Kamu belum membuat usulan"
-          description="Tulis satu masalah di lingkunganmu dan tandai lokasinya di peta. Usulanmu langsung tampil dan bisa di-upvote warga lain."
+          description="Tulis satu masalah di lingkunganmu dan tandai lokasinya di peta. Setelah admin menyetujuinya, usulanmu tampil publik dan bisa di-upvote warga lain."
           action={
             <Link to="/usulan/baru" className={buttonClass('primary', 'md')}>
               Buat usulan pertama
@@ -68,10 +71,20 @@ export default function UsulanSaya() {
 
       {milikku.length > 0 && (
         <>
-          <section className="stagger grid gap-3 sm:grid-cols-3" aria-label="Ringkasan usulanmu">
+          <section
+            className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+            aria-label="Ringkasan usulanmu"
+          >
             <Card>
               <p className="text-sm text-muted">Usulanmu</p>
               <p className="text-2xl font-bold tabular-nums">{formatAngka(milikku.length)}</p>
+            </Card>
+            <Card>
+              <p className="text-sm text-muted">Menunggu persetujuan</p>
+              <p className="text-2xl font-bold tabular-nums">{formatAngka(menunggu)}</p>
+              {ditolak > 0 && (
+                <p className="mt-0.5 text-[13px] text-muted">{formatAngka(ditolak)} ditolak</p>
+              )}
             </Card>
             <Card>
               <p className="text-sm text-muted">Upvote terkumpul</p>

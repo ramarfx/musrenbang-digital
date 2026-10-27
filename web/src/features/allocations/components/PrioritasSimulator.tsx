@@ -404,7 +404,7 @@ export function PrioritasSimulator() {
                   ))}
                 </ul>
                 <p className="mt-auto pt-1 text-xs text-muted">
-                  Porsi APBD dihitung dari pos yang terpetakan.{' '}
+                  Porsi APBD dihitung hanya dari kategori yang terverifikasi.{' '}
                   <Link to="/metodologi" className="font-semibold text-warga underline">
                     Lihat metodologi
                   </Link>

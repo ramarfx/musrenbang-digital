@@ -17,5 +17,7 @@ export const queryKeys = {
     ['votes', 'has-voted', proposalId, userId] as const,
   allocations: (userId: string | null) => ['allocations', userId] as const,
   gap: ['gap'] as const,
+  publicStats: ['stats', 'public'] as const,
+  adminStats: ['stats', 'admin'] as const,
   apbd: ['apbd'] as const,
 };

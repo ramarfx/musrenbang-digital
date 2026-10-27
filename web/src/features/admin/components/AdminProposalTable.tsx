@@ -1,4 +1,4 @@
-import { PROPOSAL_STATUSES, type Proposal, type ProposalStatus } from '@musrenbang/shared';
+import type { Proposal } from '@musrenbang/shared';
 import {
   createColumnHelper,
   flexRender,
@@ -11,23 +11,19 @@ import {
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
+import { ModerationBadge } from '@/features/proposals/components/ModerationBadge';
 import { formatAngka, formatRupiah, formatTanggal } from '@/lib/format';
 import { StatusBadge } from '@/features/proposals/components/StatusBadge';
 
 type AdminProposalTableProps = {
   proposals: Proposal[];
-  onStatusChange: (proposal: Proposal, status: ProposalStatus) => void;
-  isUpdating: boolean;
+  /** Membuka pop-up ubah status; catatan wajib diisi di sana. */
+  onUbahStatus: (proposal: Proposal) => void;
 };
 
 const columnHelper = createColumnHelper<Proposal>();
 
-export function AdminProposalTable({
-  proposals,
-  onStatusChange,
-  isUpdating,
-}: AdminProposalTableProps) {
+export function AdminProposalTable({ proposals, onUbahStatus }: AdminProposalTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'dibuat_pada', desc: true }]);
   const [globalFilter, setGlobalFilter] = useState('');
 
@@ -58,26 +54,23 @@ export function AdminProposalTable({
         header: 'Suara',
         cell: (info) => formatAngka(info.getValue()),
       }),
+      columnHelper.accessor('moderasi', {
+        header: 'Moderasi',
+        cell: (info) => <ModerationBadge moderasi={info.getValue()} />,
+      }),
       columnHelper.accessor('status', {
         header: 'Status',
         cell: (info) => (
-          <div className="space-y-1">
+          <div className="space-y-2">
             <StatusBadge status={info.getValue()} />
-            <Select
+            <button
+              type="button"
+              onClick={() => onUbahStatus(info.row.original)}
               aria-label={`Ubah status ${info.row.original.judul}`}
-              value={info.getValue()}
-              disabled={isUpdating}
-              onChange={(event) =>
-                onStatusChange(info.row.original, event.target.value as ProposalStatus)
-              }
-              className="min-w-36 py-1.5 text-xs"
+              className="block h-8 rounded-lg border border-border bg-surface px-3 text-[13px] font-semibold transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
             >
-              {PROPOSAL_STATUSES.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </Select>
+              Ubah status
+            </button>
           </div>
         ),
       }),
@@ -86,7 +79,7 @@ export function AdminProposalTable({
         cell: (info) => formatTanggal(info.getValue()),
       }),
     ],
-    [isUpdating, onStatusChange],
+    [onUbahStatus],
   );
 
   const table = useReactTable({
@@ -163,8 +156,8 @@ export function AdminProposalTable({
       </div>
 
       <p className="text-xs text-stone-500">
-        Menampilkan {table.getRowModel().rows.length} dari {proposals.length} usulan. Perubahan
-        status dicatat otomatis di riwayat.
+        Menampilkan {table.getRowModel().rows.length} dari {proposals.length} usulan. Setiap
+        perubahan status memakai catatan dan tercatat di riwayat.
       </p>
     </div>
   );

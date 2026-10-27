@@ -11,7 +11,9 @@ import { formatBesarPanjang, setaraRupiah, type GapRingkasan } from '../lib';
  * dan tidak menampilkan angka.
  */
 export function GapLead({ ringkasan }: { ringkasan: GapRingkasan }) {
-  const { sorotan, teratas, adaWarga, totalApbd } = ringkasan;
+  const { sorotan, teratas, adaWarga, totalApbd, apbdTersedia, jumlahApbdTerverifikasi } =
+    ringkasan;
+  const tanpaApbd = apbdTersedia === false || jumlahApbdTerverifikasi === 0;
 
   return (
     <div className="stagger grid gap-6 lg:grid-cols-2">
@@ -37,14 +39,16 @@ export function GapLead({ ringkasan }: { ringkasan: GapRingkasan }) {
           <>
             <p className="mt-3 max-w-[48ch] text-xl leading-snug font-semibold tracking-[-0.01em]">
               {adaWarga
-                ? 'Belum ada program dengan data APBD yang bisa dibandingkan.'
+                ? tanpaApbd
+                  ? 'Selisih dengan APBD belum bisa dihitung karena belum ada data APBD terverifikasi.'
+                  : 'Belum ada program dengan data APBD yang bisa dibandingkan.'
                 : 'Belum ada pilihan warga yang terkumpul. Yang tampil baru sisi APBD.'}
             </p>
             <Link
               to="/simulator"
               className={`${buttonClass('outline', 'md', 'mt-5 border-transparent')} w-fit`}
             >
-              Isi simulator anggaran
+              Urutkan prioritasmu
             </Link>
           </>
         )}

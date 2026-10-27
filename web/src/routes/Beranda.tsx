@@ -14,17 +14,24 @@ import { TopProposals } from '@/features/proposals/components/TopProposals';
 import { ProposalFilters } from '@/features/proposals/components/ProposalFilters';
 import { useCategoriesQuery } from '@/features/categories/queries';
 import { useProposalsQuery } from '@/features/proposals/queries';
+import { usePublicStatsQuery } from '@/features/stats/queries';
 import { formatAngka, formatRupiahRingkas } from '@/lib/format';
 
 export default function Beranda() {
   const proposalsQuery = useProposalsQuery();
+  const statsQuery = usePublicStatsQuery();
+  const stats = statsQuery.data ?? null;
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<ProposalStatus | 'semua'>('semua');
   const [kategori, setKategori] = useState('semua');
   const [urutan, setUrutan] = useState<'terbaru' | 'terpopuler'>('terbaru');
   const categoriesQuery = useCategoriesQuery();
 
-  const proposals = proposalsQuery.data ?? [];
+  // Pengguna yang masuk juga menerima usulan miliknya yang belum disetujui; daftar publik tidak boleh memuatnya.
+  const proposals = useMemo(
+    () => (proposalsQuery.data ?? []).filter((proposal) => proposal.moderasi === 'Disetujui'),
+    [proposalsQuery.data],
+  );
   const cocokKeyword = useMemo(() => {
     const keyword = search.trim().toLowerCase();
     return proposals.filter(
@@ -98,15 +105,33 @@ export default function Beranda() {
         }
       />
 
-      <section className="stagger grid gap-3 sm:grid-cols-3" aria-label="Ringkasan partisipasi">
+      {/* Angka dari view statistik server (migrasi 7); kalau belum ada, dihitung dari daftar usulan yang terbaca. */}
+      <section
+        className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+        aria-label="Ringkasan partisipasi"
+      >
         <Card>
-          <p className="text-sm text-stone-500">Usulan warga</p>
-          <p className="text-2xl font-bold tabular-nums">{formatAngka(proposals.length)}</p>
+          <p className="text-sm text-stone-500">Usulan disetujui</p>
+          <p className="text-2xl font-bold tabular-nums">
+            {formatAngka(stats?.jumlah_usulan_disetujui ?? proposals.length)}
+          </p>
         </Card>
         <Card>
-          <p className="text-sm text-stone-500">Suara terkumpul</p>
-          <p className="text-2xl font-bold tabular-nums">{formatAngka(totalSuara)}</p>
+          <p className="text-sm text-stone-500">
+            {stats ? 'Warga yang memberi upvote' : 'Upvote terkumpul'}
+          </p>
+          <p className="text-2xl font-bold tabular-nums">
+            {formatAngka(stats?.jumlah_pemberi_suara ?? totalSuara)}
+          </p>
         </Card>
+        {stats && (
+          <Card>
+            <p className="text-sm text-stone-500">Warga yang mengurutkan prioritas</p>
+            <p className="text-2xl font-bold tabular-nums">
+              {formatAngka(stats.jumlah_partisipan_alokasi)}
+            </p>
+          </Card>
+        )}
         <Card>
           <p className="text-sm text-stone-500">Total estimasi usulan</p>
           <p className="text-2xl font-bold tabular-nums">{formatRupiahRingkas(totalEstimasi)}</p>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
 import { cn } from '@/lib/cn';
+import type { StatusData } from '@/features/apbd/lib';
 import { formatPersen } from '@/lib/format';
 import { formatSelisih } from '@/lib/selisih';
 import { formatBesarSingkat, setaraRupiah, type GapRingkasan, type GapRow } from '../lib';
@@ -10,6 +11,8 @@ import { formatBesarSingkat, setaraRupiah, type GapRingkasan, type GapRow } from
 type Props = {
   ringkasan: GapRingkasan;
   onPilih: (row: GapRow) => void;
+  /** Status data APBD per kategori dari halaman APBD; kosong bila belum termuat. */
+  statusApbd?: Record<string, StatusData>;
 };
 
 /** Satu baris bar dua arah: garis tengah = porsi APBD, ke kanan = warga ingin lebih besar. */
@@ -60,7 +63,12 @@ function BarDuaArah({
  * untuk membuka rincian di pop-up. Kategori tanpa data APBD tampil "data menyusul"
  * dan tidak dibandingkan.
  */
-export function GapComparison({ ringkasan, onPilih }: Props) {
+export function GapComparison({ ringkasan, onPilih, statusApbd = {} }: Props) {
+  // Kategori tanpa angka terverifikasi: bedakan "belum terverifikasi" dari "belum ada data".
+  const keteranganApbd = (kategori: string) =>
+    statusApbd[kategori] === 'belum_terverifikasi'
+      ? 'APBD belum terverifikasi'
+      : 'Data APBD belum ada';
   const { maks, adaWarga, totalApbd } = ringkasan;
   // Bawaan: urutan sama dengan simulator (PRD). Pilihan kedua: selisih terbesar dulu.
   const [urutan, setUrutan] = useState<'simulator' | 'selisih'>('simulator');
@@ -157,7 +165,7 @@ export function GapComparison({ ringkasan, onPilih }: Props) {
                       <span className="block text-[12.5px] text-muted md:hidden">
                         {row.adaApbd
                           ? `Warga ${formatPersen(row.persen_warga)} · APBD ${formatPersen(row.persen_apbd)}`
-                          : 'Data APBD menyusul'}
+                          : keteranganApbd(row.kategori)}
                       </span>
                     </span>
                   </span>
@@ -166,7 +174,7 @@ export function GapComparison({ ringkasan, onPilih }: Props) {
                   {row.adaApbd ? (
                     <BarDuaArah row={row} maks={maks} index={index} aktif={aktif} />
                   ) : (
-                    <span className="text-[13px] text-muted">Data APBD menyusul</span>
+                    <span className="text-[13px] text-muted">{keteranganApbd(row.kategori)}</span>
                   )}
                 </td>
                 <td className="hidden pl-3 text-right md:table-cell">

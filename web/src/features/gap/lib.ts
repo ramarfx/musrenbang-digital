@@ -17,6 +17,15 @@ export type GapRingkasan = {
   adaWarga: boolean;
   /** Selisih absolut terbesar, untuk skala bar (minimal 1). */
   maks: number;
+  /** Jumlah warga yang sudah menyimpan urutan. Kosong bila server belum menyediakannya. */
+  jumlahPartisipan: number | undefined;
+  /**
+   * Apakah ada data APBD terverifikasi sama sekali. Kosong bila server belum menyediakannya.
+   * Nilai true bukan bukti semua kategori lengkap: lihat `jumlahApbdTerverifikasi`.
+   */
+  apbdTersedia: boolean | undefined;
+  /** Berapa kategori yang punya angka APBD terverifikasi (ikut dibandingkan). */
+  jumlahApbdTerverifikasi: number;
 };
 
 /**
@@ -55,6 +64,9 @@ export function siapkanGap(
     totalApbd: semua.reduce((sum, row) => sum + row.nominal_apbd, 0),
     adaWarga,
     maks: Math.max(1, ...berdata.map((row) => Math.abs(row.gap_poin_persen))),
+    jumlahPartisipan: items[0]?.jumlah_partisipan,
+    apbdTersedia: items[0]?.apbd_tersedia,
+    jumlahApbdTerverifikasi: berdata.length,
   };
 }
 

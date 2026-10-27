@@ -61,10 +61,11 @@ export default function Metodologi() {
           dicocokkan ke lampiran.
         </p>
         <p>
-          Delapan dari sepuluh kategori terisi. Dua kategori, Keamanan dan Penerangan serta
-          Teknologi dan Layanan Digital, belum terisi dan ditampilkan sebagai &quot;data
-          menyusul&quot;. Pergub 44/2025 tercatat sudah diubah oleh Pergub 10/2026; angka di sini
-          belum dicocokkan dengan perubahan itu.
+          Tiap kategori punya salah satu dari tiga status: terverifikasi (ada tautan sumber), belum
+          terverifikasi (ada angka awal, belum resmi), atau data belum ada. Hanya kategori
+          terverifikasi yang ikut dibandingkan dengan pilihan warga. Angka yang belum terverifikasi
+          tidak dipakai di perbandingan. Pergub 44/2025 tercatat sudah diubah oleh Pergub 10/2026;
+          angka di sini belum dicocokkan dengan perubahan itu.
         </p>
         <p>
           Rincian nominal, sumber, dan status tiap kategori ada di halaman{' '}
@@ -107,9 +108,9 @@ export default function Metodologi() {
       <Section title="Batas yang perlu diketahui">
         <ul className="list-disc space-y-2 pl-5">
           <li>
-            Persentase APBD dihitung terhadap total yang terpetakan, bukan terhadap total belanja
-            daerah resmi. Kategori yang nominalnya lebih lengkap terpetakan akan terlihat lebih
-            besar.
+            Persentase APBD dihitung terhadap total kategori yang terverifikasi, bukan terhadap
+            total belanja daerah resmi. Kalau hanya sebagian kategori yang terverifikasi, porsi APBD
+            hanya mencerminkan sebagian itu, dan halaman Bandingkan menyebutkannya.
           </li>
           <li>
             Belum ada verifikasi KTP atau NIK, jadi satu orang bisa membuat beberapa akun. Ini

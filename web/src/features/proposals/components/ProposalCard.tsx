@@ -3,6 +3,7 @@ import { Icon } from '@/components/ui/Icon';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
 import { formatRupiahRingkas, formatTanggal } from '@/lib/format';
 import { Link } from 'react-router-dom';
+import { ModerationBadge } from './ModerationBadge';
 import { UpvoteButton } from './UpvoteButton';
 import { StatusBadge } from './StatusBadge';
 
@@ -48,7 +49,10 @@ export function ProposalCard({ proposal }: { proposal: Proposal }) {
             <p className="text-[13px] text-muted">{proposal.kategori}</p>
           </div>
         </div>
-        <StatusBadge status={proposal.status} />
+        <div className="flex flex-none flex-col items-end gap-1.5">
+          {proposal.moderasi !== 'Disetujui' && <ModerationBadge moderasi={proposal.moderasi} />}
+          <StatusBadge status={proposal.status} />
+        </div>
       </div>
 
       <p className="mt-3 line-clamp-2 text-sm text-ink/80">{proposal.deskripsi}</p>
@@ -68,17 +72,25 @@ export function ProposalCard({ proposal }: { proposal: Proposal }) {
         </div>
       </dl>
 
-      <div className="relative z-10 mt-4 flex flex-wrap items-center gap-2">
-        <UpvoteButton proposalId={proposal.id} jumlah={proposal.jumlah_suara} />
-        <Link
-          to={`/usulan/${proposal.id}#komentar`}
-          className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-surface px-3 text-[13px] font-semibold text-ink transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.95] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
-        >
-          <Icon name="usulan" size={16} />
-          Komentar
-        </Link>
-        <span className="ml-auto text-[12.5px] text-muted">oleh {proposal.pengusul_nama}</span>
-      </div>
+      {proposal.moderasi !== 'Disetujui' ? (
+        <p className="mt-4 rounded-xl bg-active px-3.5 py-2.5 text-[13px] text-muted">
+          {proposal.moderasi === 'Menunggu'
+            ? 'Menunggu persetujuan admin sebelum tampil publik.'
+            : `Ditolak${proposal.catatan_moderasi ? `: ${proposal.catatan_moderasi}` : '.'}`}
+        </p>
+      ) : (
+        <div className="relative z-10 mt-4 flex flex-wrap items-center gap-2">
+          <UpvoteButton proposalId={proposal.id} jumlah={proposal.jumlah_suara} />
+          <Link
+            to={`/usulan/${proposal.id}#komentar`}
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-surface px-3 text-[13px] font-semibold text-ink transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.95] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
+          >
+            <Icon name="usulan" size={16} />
+            Komentar
+          </Link>
+          <span className="ml-auto text-[12.5px] text-muted">oleh {proposal.pengusul_nama}</span>
+        </div>
+      )}
     </article>
   );
 }

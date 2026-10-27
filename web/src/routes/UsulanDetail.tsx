@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
 import { LokasiUsulan } from '@/components/map/LokasiUsulan';
 import { CommentSection } from '@/features/comments/components/CommentSection';
+import { ModerationBadge } from '@/features/proposals/components/ModerationBadge';
 import { StatusBadge } from '@/features/proposals/components/StatusBadge';
 import { StatusTimeline } from '@/features/proposals/components/StatusTimeline';
 import { VotePanel } from '@/features/proposals/components/VotePanel';
@@ -76,6 +77,7 @@ export default function UsulanDetail() {
   }
 
   const history = historyQuery.data ?? [];
+  const disetujui = proposal.moderasi === 'Disetujui';
 
   return (
     <div className="space-y-6">
@@ -96,9 +98,23 @@ export default function UsulanDetail() {
               <p className="text-sm text-muted">{proposal.kategori}</p>
             </div>
           </div>
-          <StatusBadge status={proposal.status} />
+          <div className="flex flex-wrap items-center gap-2">
+            {!disetujui && <ModerationBadge moderasi={proposal.moderasi} />}
+            <StatusBadge status={proposal.status} />
+          </div>
         </div>
       </div>
+
+      {!disetujui && (
+        <p
+          role="status"
+          className="rounded-2xl bg-mustard-pucat px-4 py-3 text-sm text-mustard-tua"
+        >
+          {proposal.moderasi === 'Menunggu'
+            ? 'Usulan ini menunggu persetujuan admin. Sampai disetujui, hanya kamu dan admin yang bisa melihatnya, dan belum bisa di-upvote atau dikomentari.'
+            : `Usulan ini ditolak${proposal.catatan_moderasi ? `: ${proposal.catatan_moderasi}` : '.'} Hanya kamu dan admin yang bisa melihatnya.`}
+        </p>
+      )}
 
       <Card>
         <h2 className="text-lg font-bold text-ink">Perjalanan usulan</h2>
@@ -151,12 +167,12 @@ export default function UsulanDetail() {
           </Card>
 
           <div id="komentar" className="scroll-mt-6 lg:scroll-mt-28">
-            <CommentSection proposalId={proposal.id} />
+            {disetujui && <CommentSection proposalId={proposal.id} />}
           </div>
         </div>
 
         <aside className="stagger space-y-6 lg:sticky lg:top-6 lg:self-start">
-          <VotePanel proposal={proposal} />
+          {disetujui && <VotePanel proposal={proposal} />}
           <Card>
             <h2 className="text-lg font-bold text-ink">Riwayat perubahan</h2>
             {history.length === 0 ? (
@@ -172,6 +188,9 @@ export default function UsulanDetail() {
                     <p className="text-[12.5px] text-muted">
                       {formatTanggalWaktu(item.diubah_pada)} · {item.diubah_oleh_nama ?? 'Sistem'}
                     </p>
+                    {item.catatan && (
+                      <p className="mt-1 text-[13px] text-ink">Catatan: {item.catatan}</p>
+                    )}
                   </li>
                 ))}
               </ul>

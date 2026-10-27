@@ -1,7 +1,7 @@
 import { describeGap, type ApbdItem } from '@musrenbang/shared';
 import { Link } from 'react-router-dom';
 import { Modal } from '@/components/ui/Modal';
-import { labelVerifikasi, rapikanSumber } from '@/features/apbd/lib';
+import { LABEL_STATUS_DATA, rapikanSumber, statusData } from '@/features/apbd/lib';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
 import { getCategoryInfo } from '@/features/categories/info';
 import { formatPersen, formatRupiah } from '@/lib/format';
@@ -135,10 +135,10 @@ export function GapDetailDialog({ row, onClose, ringkasan, apbd }: Props) {
                 <dt className="text-muted">Status data</dt>
                 <dd className="font-semibold">
                   {sumber
-                    ? labelVerifikasi(sumber.status_verifikasi)
+                    ? LABEL_STATUS_DATA[statusData(sumber)]
                     : row.adaApbd
-                      ? 'Dipetakan dari program'
-                      : 'Perlu lampiran'}
+                      ? 'Terverifikasi'
+                      : 'Data belum ada'}
                 </dd>
                 <dt className="text-muted">Sumber</dt>
                 <dd className="text-muted">
@@ -146,7 +146,7 @@ export function GapDetailDialog({ row, onClose, ringkasan, apbd }: Props) {
                 </dd>
               </dl>
               <p className="mt-4 border-t border-rule pt-3 text-[12.5px] text-muted">
-                Persentase APBD dihitung dari pos yang terpetakan.{' '}
+                Persentase APBD dihitung hanya dari kategori yang terverifikasi.{' '}
                 <Link to="/metodologi" className="font-semibold text-warga underline">
                   Lihat metodologi
                 </Link>

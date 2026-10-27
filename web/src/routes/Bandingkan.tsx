@@ -4,9 +4,11 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { PageLoader } from '@/components/ui/PageLoader';
+import { statusData } from '@/features/apbd/lib';
 import { useApbdQuery } from '@/features/apbd/queries';
 import { useCategoriesQuery } from '@/features/categories/queries';
 import { useAppConfigQuery } from '@/features/config/queries';
+import { GapCatatanData } from '@/features/gap/components/GapCatatanData';
 import { GapComparison } from '@/features/gap/components/GapComparison';
 import { GapDetailDialog } from '@/features/gap/components/GapDetailDialog';
 import { GapLead } from '@/features/gap/components/GapLead';
@@ -24,6 +26,13 @@ export default function Bandingkan() {
   const urutanKategori = useMemo(
     () => categoriesQuery.data?.map((kategori) => kategori.nama) ?? [],
     [categoriesQuery.data],
+  );
+  const statusApbd = useMemo(
+    () =>
+      Object.fromEntries(
+        (apbdQuery.data ?? []).map((item) => [item.kategori, statusData(item)] as const),
+      ),
+    [apbdQuery.data],
   );
   const ringkasan = useMemo(
     () => siapkanGap(gapQuery.data ?? [], urutanKategori),
@@ -79,8 +88,9 @@ export default function Bandingkan() {
 
       {gapQuery.isSuccess && ringkasan.rows.length > 0 && (
         <>
+          <GapCatatanData ringkasan={ringkasan} />
           <GapLead ringkasan={ringkasan} />
-          <GapComparison ringkasan={ringkasan} onPilih={setDipilih} />
+          <GapComparison ringkasan={ringkasan} onPilih={setDipilih} statusApbd={statusApbd} />
         </>
       )}
 
