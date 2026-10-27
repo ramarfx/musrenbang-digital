@@ -1,12 +1,20 @@
 import { SQL } from 'bun';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { cleanupManifest } from '../remote-integration/cleanup';
+import { apiHeaders } from '../remote-integration/http';
+import { snapshotApplicationTables } from '../remote-integration/snapshot';
+import { runTrackedWrite } from '../remote-integration/tracking';
+import { writeManifestAtomically } from '../remote-integration/manifest';
+import type { FixtureManifest } from '../remote-integration/safety';
 
 export const apiUrl = 'http://127.0.0.1:55421';
 const mailUrl = 'http://127.0.0.1:55424';
 const databaseUrl = process.env.INTEGRATION_DATABASE_URL;
 const anonKey = process.env.INTEGRATION_ANON_KEY;
-if (!databaseUrl || !anonKey) throw new Error('Jalankan melalui scripts/test-integration.ps1.');
+const serviceRoleKey = process.env.INTEGRATION_SERVICE_ROLE_KEY;
+if (!databaseUrl || !anonKey || !serviceRoleKey)
+  throw new Error('Jalankan melalui scripts/test-integration.ps1.');
 const target = new URL(databaseUrl);
 if (target.hostname !== '127.0.0.1' || target.port !== '55422' || target.pathname !== '/postgres') {
   throw new Error('Runner hanya menerima database integration lokal pada port 55422.');
@@ -18,10 +26,31 @@ export type Session = { access_token: string; refresh_token: string; user: { id:
 type HttpResult<T> = { status: number; data: T };
 const results: { name: string; passed: boolean }[] = [];
 export const fixtures = {
-  users: [] as string[],
-  proposals: [] as number[],
   messages: [] as string[],
 };
+export const fixtureManifest: FixtureManifest = {
+  version: 1,
+  environment: 'local-integration',
+  projectRef: 'musrenbang-integration',
+  runId,
+  createdAt: new Date().toISOString(),
+  status: 'running',
+  users: [],
+  proposals: [],
+  cleanup: { proposals: false, users: false },
+};
+const fixtureDirectory = join(import.meta.dir, '../../.tmp/integration-fixtures');
+const fixturePath = join(fixtureDirectory, `${runId}.json`);
+
+export async function persistFixtureManifest() {
+  await mkdir(fixtureDirectory, { recursive: true });
+  await writeManifestAtomically(fixturePath, fixtureManifest);
+}
+
+export async function beginFixtureRun() {
+  fixtureManifest.baseline = await snapshotApplicationTables(db);
+  await persistFixtureManifest();
+}
 
 export function check(name: string, condition: boolean) {
   results.push({ name, passed: condition });
@@ -37,12 +66,7 @@ export async function request<T = unknown>(
 ): Promise<HttpResult<T>> {
   const options: RequestInit = {
     method,
-    headers: {
-      apikey: anonKey!,
-      Authorization: `Bearer ${actor?.token ?? anonKey}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation',
-    },
+    headers: apiHeaders(anonKey!, actor?.token),
     redirect: 'manual',
     signal: AbortSignal.timeout(15000),
   };
@@ -55,6 +79,20 @@ export async function request<T = unknown>(
       `RPC ${path.split('/').at(-1)} HTTP ${response.status}${code ? ` SQLSTATE ${code}` : ''}`,
     );
   }
+  return { status: response.status, data: (text ? JSON.parse(text) : null) as T };
+}
+
+export async function adminRequest<T = unknown>(
+  path: string,
+  method = 'GET',
+): Promise<HttpResult<T>> {
+  const response = await fetch(apiUrl + path, {
+    method,
+    headers: apiHeaders(serviceRoleKey!),
+    redirect: 'manual',
+    signal: AbortSignal.timeout(15000),
+  });
+  const text = await response.text();
   return { status: response.status, data: (text ? JSON.parse(text) : null) as T };
 }
 
@@ -95,14 +133,31 @@ export async function signup(
   metadata: Record<string, string>,
 ): Promise<Actor> {
   const email = `integration-${runId}-${label}@example.test`;
-  const signupResponse = await request<{
-    id?: string;
-    user?: { id: string };
-    access_token?: string;
-  }>('/auth/v1/signup', null, 'POST', { email, password, data: metadata });
+  const fixture: FixtureManifest['users'][number] = {
+    label: label as 'warga-a' | 'warga-b' | 'admin' | 'race',
+    email,
+  };
+  fixtureManifest.users.push(fixture);
+  const signupResponse = await runTrackedWrite({
+    entry: fixture,
+    persist: persistFixtureManifest,
+    create: () =>
+      request<{
+        id?: string;
+        user?: { id: string };
+        access_token?: string;
+      }>('/auth/v1/signup', null, 'POST', {
+        email,
+        password,
+        data: { ...metadata, musrenbang_test_run_id: runId },
+      }),
+    record: (entry, result) => {
+      const id = result.data.id ?? result.data.user?.id;
+      if (result.status === 200 && id) entry.id = id;
+    },
+  });
   const id = signupResponse.data.id ?? signupResponse.data.user?.id;
   check(`Auth signup ${label}`, signupResponse.status === 200 && Boolean(id));
-  fixtures.users.push(id!);
   check(
     `Signup ${label} belum menerbitkan sesi sebelum konfirmasi`,
     !signupResponse.data.access_token,
@@ -159,10 +214,24 @@ export async function signup(
 }
 
 export async function cleanup() {
-  // Hanya ID yang dibuat run ini. Hapus usulan sebelum akun agar tidak meninggalkan
-  // usulan dengan pengusul NULL akibat ON DELETE SET NULL.
-  for (const id of fixtures.proposals) await db`DELETE FROM public.proposals WHERE id=${id}`;
-  for (const id of fixtures.users) await db`DELETE FROM auth.users WHERE id=${id}::uuid`;
+  await cleanupManifest(fixtureManifest, {
+    executeRemoteWrites: true,
+    confirmFixtureCleanup: true,
+    api: async <T>(path: string, method = 'GET') => {
+      const result = await adminRequest<T>(path, method);
+      return { status: result.status, data: result.data };
+    },
+    persist: persistFixtureManifest,
+  });
+  const finalSnapshot = await snapshotApplicationTables(db);
+  const matches = Object.keys(fixtureManifest.baseline ?? {}).every(
+    (table) =>
+      fixtureManifest.baseline?.[table]?.count === finalSnapshot[table]?.count &&
+      fixtureManifest.baseline?.[table]?.fingerprint === finalSnapshot[table]?.fingerprint,
+  );
+  check('Baseline count/fingerprint pulih setelah cleanup lokal', matches);
+  fixtureManifest.finalSnapshot = finalSnapshot;
+  await persistFixtureManifest();
   if (fixtures.messages.length) {
     const response = await fetch(`${mailUrl}/api/v1/messages`, {
       method: 'DELETE',

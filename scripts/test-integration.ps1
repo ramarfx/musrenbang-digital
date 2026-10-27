@@ -15,6 +15,7 @@ Get-ChildItem (Join-Path $repoRoot 'supabase/migrations/*.sql') | ForEach-Object
 }
 
 $previousAnon = $env:INTEGRATION_ANON_KEY
+$previousServiceRole = $env:INTEGRATION_SERVICE_ROLE_KEY
 $previousDatabase = $env:INTEGRATION_DATABASE_URL
 try {
   Write-Output 'Memulai Supabase integration lokal: database, Auth, REST, gateway, dan Mailpit.'
@@ -51,10 +52,12 @@ try {
   if ($statusExitCode -ne 0) { throw 'Status Supabase lokal tidak tersedia.' }
   $status = ($statusOutput -join "`n") | ConvertFrom-Json
   if ($status.API_URL -ne 'http://127.0.0.1:55421' -or
+      -not $status.SERVICE_ROLE_KEY -or
       $status.DB_URL -notmatch '@127\.0\.0\.1:55422/postgres$') {
     throw 'Alamat layanan tidak sesuai proyek integration lokal.'
   }
   $env:INTEGRATION_ANON_KEY = $status.ANON_KEY
+  $env:INTEGRATION_SERVICE_ROLE_KEY = $status.SERVICE_ROLE_KEY
   $env:INTEGRATION_DATABASE_URL = $status.DB_URL
   $previousErrorAction = $ErrorActionPreference
   $ErrorActionPreference = 'Continue'
@@ -76,7 +79,10 @@ try {
   if ($testExitCode -ne 0) { throw 'Tes integrasi gagal. Lihat ringkasan tanpa kredensial di .tmp/integration-results/.' }
 } finally {
   $env:INTEGRATION_ANON_KEY = $previousAnon
+  $env:INTEGRATION_SERVICE_ROLE_KEY = $previousServiceRole
   $env:INTEGRATION_DATABASE_URL = $previousDatabase
+  $statusOutput = $null
+  $status = $null
   if (-not $KeepRunning) {
     $previousErrorAction = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'

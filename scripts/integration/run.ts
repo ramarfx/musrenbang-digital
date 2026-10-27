@@ -1,11 +1,15 @@
 import { concurrency } from './concurrency';
+import type { FixtureManifest } from '../remote-integration/safety';
+import { runTrackedWrite } from '../remote-integration/tracking';
 import {
   apiUrl,
+  beginFixtureRun,
   check,
   cleanup,
   db,
   denied,
-  fixtures,
+  fixtureManifest,
+  persistFixtureManifest,
   request,
   rows,
   runId,
@@ -16,25 +20,35 @@ import {
 } from './harness';
 
 async function proposal(actor: Actor, label: string) {
-  const response = await request<{ id: number; status: string; moderasi: string }[]>(
-    '/rest/v1/proposals',
-    actor,
-    'POST',
-    {
-      judul: `Integration ${label} ${runId}`,
-      deskripsi: 'Usulan fixture untuk pengujian keamanan integrasi lokal.',
-      kategori: 'Pendidikan',
-      latitude: -6.2,
-      longitude: 106.8,
-      estimasi_biaya: 1000000,
-      pengusul_id: actor.id,
+  const title = `Integration ${label} ${runId}`;
+  const fixture: FixtureManifest['proposals'][number] = { label, title, ownerId: actor.id };
+  fixtureManifest.proposals.push(fixture);
+  const response = await runTrackedWrite({
+    entry: fixture,
+    persist: persistFixtureManifest,
+    create: () =>
+      request<{ id: number; status: string; moderasi: string }[]>(
+        '/rest/v1/proposals',
+        actor,
+        'POST',
+        {
+          judul: title,
+          deskripsi: `Usulan fixture untuk pengujian keamanan integrasi lokal ${runId}.`,
+          kategori: 'Pendidikan',
+          latitude: -6.2,
+          longitude: 106.8,
+          estimasi_biaya: 1000000,
+          pengusul_id: actor.id,
+        },
+      ),
+    record: (entry, result) => {
+      if (result.status === 201 && result.data?.[0]?.id) entry.id = result.data[0].id;
     },
-  );
+  });
   check(
     `Usulan ${label} tersimpan melalui API`,
     response.status === 201 && response.data.length === 1,
   );
-  fixtures.proposals.push(response.data[0].id);
   check(
     `Status awal ${label} dipaksakan database`,
     response.data[0].status === 'Diajukan' && response.data[0].moderasi === 'Menunggu',
@@ -50,6 +64,11 @@ async function run() {
     migrations.map((row: { version: string }) => row.version).join(',') ===
       '20261026090000,20261026090100,20261026090200,20261026090300,20261026195414,20261027004023',
   );
+  await beginFixtureRun();
+  const allocationBaseline = await db<{ total: number }[]>`
+    SELECT COALESCE(sum(jumlah), 0)::bigint AS total FROM public.allocations
+  `;
+  const baselineAllocationTotal = Number(allocationBaseline[0]?.total ?? 0);
   const settings = await request<{ mailer_autoconfirm: boolean }>('/auth/v1/settings');
   check(
     'Auth lokal mewajibkan konfirmasi email',
@@ -285,6 +304,10 @@ async function run() {
       })
     ).data.length === 0,
   );
+  const trackedProposal = fixtureManifest.proposals.find((item) => item.id === p);
+  if (!trackedProposal) throw new Error('Proposal fixture tidak tercatat sebelum edit admin.');
+  trackedProposal.allowedTitles = ['Judul diperbarui oleh admin'];
+  await persistFixtureManifest();
   check(
     'Admin tetap dapat mengedit',
     (
@@ -432,12 +455,21 @@ async function run() {
   const allocationTotal = (data: Record<string, unknown>[]) =>
     data.reduce((sum, row) => sum + Number(row.total_alokasi_warga), 0);
   check(
-    'v_gap mempertahankan agregat lintas warga untuk anon',
-    allocationTotal(gapAnon) === 11000000,
+    `v_gap agregat anon=${allocationTotal(gapAnon)} tetap mencakup dua warga`,
+    allocationTotal(gapAnon) === baselineAllocationTotal + 11000000,
   );
-  check('v_gap tidak berubah menjadi agregat per pemanggil A', allocationTotal(gapA) === 11000000);
-  check('v_gap tidak berubah menjadi agregat per pemanggil B', allocationTotal(gapB) === 11000000);
-  check('v_gap tetap lengkap untuk admin', allocationTotal(gapAdmin) === 11000000);
+  check(
+    `v_gap agregat wargaA=${allocationTotal(gapA)} tetap lintas warga`,
+    allocationTotal(gapA) === baselineAllocationTotal + 11000000,
+  );
+  check(
+    `v_gap agregat wargaB=${allocationTotal(gapB)} tetap lintas warga`,
+    allocationTotal(gapB) === baselineAllocationTotal + 11000000,
+  );
+  check(
+    `v_gap agregat admin=${allocationTotal(gapAdmin)} tetap lengkap`,
+    allocationTotal(gapAdmin) === baselineAllocationTotal + 11000000,
+  );
   check(
     'v_gap menghasilkan nilai identik untuk keempat konteks',
     JSON.stringify(gapAnon) === JSON.stringify(gapA) &&
@@ -490,6 +522,37 @@ async function run() {
   );
   const privateRpc = await request('/rest/v1/rpc/can_read_proposal', a, 'POST', { p_id: p });
   check('Helper private tidak diekspos sebagai RPC', privateRpc.status === 404);
+  const httpRaces = await Promise.all([
+    request('/rest/v1/rpc/save_allocations', a, 'POST', {
+      p_rows: [
+        { kategori: 'Pendidikan', jumlah: 6000000 },
+        { kategori: 'Kesehatan', jumlah: 4000000 },
+      ],
+    }),
+    request('/rest/v1/rpc/save_allocations', a, 'POST', {
+      p_rows: [
+        { kategori: 'Pendidikan', jumlah: 7000000 },
+        { kategori: 'Kesehatan', jumlah: 3000000 },
+      ],
+    }),
+  ]);
+  check(
+    'Dua RPC alokasi HTTP bersamaan berhasil',
+    httpRaces.every((response) => response.status === 204),
+  );
+  const httpRaceRows = await rows(`allocations?user_id=eq.${a.id}`, a);
+  const httpRaceTotal = httpRaceRows.reduce((sum, row) => sum + Number(row.jumlah), 0);
+  const httpRaceSet = httpRaceRows
+    .map((row) => `${row.kategori}:${row.jumlah}`)
+    .sort()
+    .join('|');
+  check(
+    'Dua RPC HTTP meninggalkan satu set alokasi utuh dalam batas budget',
+    httpRaceTotal === 10000000 &&
+      ['Kesehatan:3000000|Pendidikan:7000000', 'Kesehatan:4000000|Pendidikan:6000000'].includes(
+        httpRaceSet,
+      ),
+  );
   await concurrency(a);
 
   const refresh = await request<Session>('/auth/v1/token?grant_type=refresh_token', null, 'POST', {
@@ -530,6 +593,7 @@ async function run() {
 let failure: unknown;
 try {
   if (process.argv.includes('--concurrency-only')) {
+    await beginFixtureRun();
     const actor = await signup('race', `Local!${crypto.randomUUID()}aZ9`, { nama: 'Race fixture' });
     await concurrency(actor);
   } else {
