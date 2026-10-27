@@ -34,7 +34,11 @@ const formSchema = z.object({
     .string()
     .trim()
     .regex(/^\d*$/, 'Isi angka rupiah tanpa titik atau koma.')
-    .max(15, 'Angka terlalu panjang.'),
+    .max(15, 'Angka terlalu panjang.')
+    .refine(
+      (nilai) => Number(nilai || 0) > 0,
+      'Estimasi biaya wajib diisi dan lebih besar dari nol.',
+    ),
   latitude: z.number().min(-90).max(90).nullable(),
   longitude: z.number().min(-180).max(180).nullable(),
 });
@@ -87,7 +91,7 @@ export function ProposalForm() {
 
     mutation.mutate(parsed.data, {
       onSuccess: (id) => {
-        toast.success('Usulan berhasil dikirim.');
+        toast.success('Usulan terkirim. Admin akan memeriksanya sebelum tampil publik.');
         navigate(`/usulan/${id}`);
       },
       onError: (error) => {
@@ -174,7 +178,8 @@ export function ProposalForm() {
             label="Estimasi biaya (rupiah)"
             htmlFor="estimasi"
             error={form.formState.errors.estimasi_biaya?.message}
-            hint="Boleh dikosongkan bila belum tahu."
+            hint="Perkiraan kasar saja, tanpa titik atau koma. Harus lebih dari nol."
+            required
           >
             <Input
               id="estimasi"

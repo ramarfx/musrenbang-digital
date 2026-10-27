@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { LoginInput, RegisterInput } from '@musrenbang/shared';
 import { queryKeys } from '@/lib/query-keys';
-import { getProfile, getSession, signIn, signUp } from './api';
+import { getProfile, getSession, signIn, signInWithGoogle, signUp } from './api';
 
 export function useSessionQuery() {
   return useQuery({
@@ -47,4 +47,8 @@ export function useSignUpMutation() {
       }
     },
   });
+}
+
+export function useGoogleSignInMutation() {
+  return useMutation({ mutationFn: signInWithGoogle });
 }

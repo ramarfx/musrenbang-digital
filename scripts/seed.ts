@@ -11,6 +11,7 @@ import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
+import { assertSeedSchemaReady } from './seed-preflight';
 
 /**
  * Parser CSV minimal yang tahan terhadap koma di dalam field ber-tanda kutip.
@@ -105,15 +106,28 @@ for (const column of requiredColumns) {
 
 const columnIndex = (name: string) => header.indexOf(name);
 const apbdItems: ApbdSeed[] = [];
+let skippedApbdWithoutAmount = 0;
 
 for (const row of rows.slice(1)) {
   if (row.length < 2 || !row[columnIndex('kategori')]) continue;
+  if (!row[columnIndex('nominal_rp')]?.trim()) {
+    skippedApbdWithoutAmount += 1;
+    continue;
+  }
   const parsed = apbdSeedSchema.safeParse({
     kategori: row[columnIndex('kategori')]?.trim(),
-    nominal_rp: Number(row[columnIndex('nominal_rp')]?.trim() || 0),
+    nominal_rp: Number(row[columnIndex('nominal_rp')]?.trim()),
     tahun: Number(row[columnIndex('tahun')]),
     kota: row[columnIndex('kota')]?.trim(),
     sumber: row[columnIndex('sumber')] ?? '',
+    sumber_url:
+      header.includes('sumber_url') && row[columnIndex('sumber_url')]?.trim()
+        ? row[columnIndex('sumber_url')]?.trim()
+        : null,
+    catatan_pemetaan:
+      header.includes('catatan_pemetaan') && row[columnIndex('catatan_pemetaan')]?.trim()
+        ? row[columnIndex('catatan_pemetaan')]?.trim()
+        : null,
     status_verifikasi: row[columnIndex('status_verifikasi')] ?? 'perlu_lampiran',
   });
   if (!parsed.success) {
@@ -134,6 +148,28 @@ if (!proposalsResult.success) {
   process.exit(1);
 }
 const proposals: ProposalSeed[] = proposalsResult.data;
+
+// ---------------------------------------------------------------------------
+// Pastikan seluruh kontrak migration MVP ada sebelum menyentuh data. Tanpa guard
+// ini schema enam migration dapat menghapus APBD lalu gagal saat insert kolom baru.
+// ---------------------------------------------------------------------------
+
+const [apbdSchema, historySchema, gapSchema] = await Promise.all([
+  supabase.from('apbd_items').select('sumber_url,catatan_pemetaan').limit(0),
+  supabase.from('proposal_status_history').select('catatan').limit(0),
+  supabase.from('v_gap').select('jumlah_partisipan,apbd_tersedia').limit(0),
+]);
+
+try {
+  assertSeedSchemaReady([
+    { resource: 'apbd_items provenance', error: apbdSchema.error },
+    { resource: 'proposal status notes', error: historySchema.error },
+    { resource: 'v_gap statistics', error: gapSchema.error },
+  ]);
+} catch (error) {
+  console.error(error instanceof Error ? error.message : 'Schema seed tidak siap.');
+  process.exit(1);
+}
 
 // ---------------------------------------------------------------------------
 // Tulis ke Supabase (service role melewati RLS)
@@ -200,5 +236,6 @@ if (proposalError) {
 }
 
 console.log(
-  `Seed selesai: ${categoryNames.length} kategori, ${apbdItems.length} apbd_items, ${proposals.length} usulan contoh.`,
+  `Seed selesai: ${categoryNames.length} kategori, ${apbdItems.length} apbd_items, ` +
+    `${proposals.length} usulan contoh; ${skippedApbdWithoutAmount} baris APBD tanpa nominal dilewati.`,
 );

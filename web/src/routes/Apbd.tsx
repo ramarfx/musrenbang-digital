@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { PageLoader } from '@/components/ui/PageLoader';
 import { ApbdTable } from '@/features/apbd/components/ApbdTable';
 import { useApbdQuery } from '@/features/apbd/queries';
+import { PERGUB_APBD_URL, statusData } from '@/features/apbd/lib';
 import { useAppConfigQuery } from '@/features/config/queries';
 import { formatRupiah } from '@/lib/format';
 
@@ -13,28 +14,79 @@ export default function Apbd() {
   const apbdQuery = useApbdQuery();
   const configQuery = useAppConfigQuery();
   const items = apbdQuery.data ?? [];
-  const total = items.reduce((sum, item) => sum + item.nominal_rp, 0);
   const kota = items[0]?.kota ?? configQuery.data?.kota ?? 'DKI Jakarta';
   const tahun = items[0]?.tahun ?? configQuery.data?.tahunAnggaran ?? 2026;
+
+  // Tiga keadaan data (kontrak backend): hanya yang terverifikasi masuk perbandingan.
+  const terverifikasi = items.filter((item) => statusData(item) === 'terverifikasi');
+  const belumTerverifikasi = items.filter((item) => statusData(item) === 'belum_terverifikasi');
+  const kosong = items.filter((item) => statusData(item) === 'kosong');
+  const totalTerverifikasi = terverifikasi.reduce((sum, item) => sum + item.nominal_rp, 0);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title={`APBD ${kota} ${tahun}`}
-        description="Angka kategori adalah hasil pemetaan dari pos APBD resmi. Total di bawah adalah total pos yang terisi di seed, bukan total belanja daerah resmi."
+        description="Hanya angka yang terverifikasi dan bertautan sumber yang dipakai di halaman Bandingkan. Angka lain tetap ditampilkan di sini supaya jelas statusnya, tetapi belum resmi."
       />
 
+      {items.length > 0 && (
+        <section className="stagger grid gap-3 sm:grid-cols-3" aria-label="Status data APBD">
+          <Card>
+            <p className="text-sm text-muted">Terverifikasi</p>
+            <p className="text-2xl font-bold tabular-nums">{terverifikasi.length} kategori</p>
+            <p className="mt-1 text-[13px] text-muted">
+              {terverifikasi.length > 0
+                ? `Total ${formatRupiah(totalTerverifikasi)}, ikut dibandingkan.`
+                : 'Belum ada, jadi Bandingkan belum bisa menghitung selisih.'}
+            </p>
+          </Card>
+          <Card>
+            <p className="text-sm text-muted">Belum terverifikasi</p>
+            <p className="text-2xl font-bold tabular-nums">{belumTerverifikasi.length} kategori</p>
+            <p className="mt-1 text-[13px] text-muted">
+              Ada angka, tetapi bukan angka resmi dan belum ikut dibandingkan.
+            </p>
+          </Card>
+          <Card>
+            <p className="text-sm text-muted">Data belum ada</p>
+            <p className="text-2xl font-bold tabular-nums">{kosong.length} kategori</p>
+            <p className="mt-1 text-[13px] text-muted">Belum ada angka sama sekali.</p>
+          </Card>
+        </section>
+      )}
+
       <Card>
-        <p className="text-sm text-stone-500">Total pos yang terisi</p>
-        <p className="text-2xl font-bold tabular-nums">{formatRupiah(total)}</p>
-        <p className="mt-2 text-sm text-stone-500">
-          Kategori dengan nominal nol ditampilkan sebagai “data menyusul” dan tidak dikarang.
-          Bandingkan dengan prioritas warga di{' '}
-          <Link to="/bandingkan" className="font-medium text-emerald-800 underline">
-            halaman Gap
-          </Link>
-          .
-        </p>
+        <h2 className="text-lg font-bold">Dari mana angka ini</h2>
+        <ul className="mt-3 max-w-[68ch] list-disc space-y-2 pl-5 text-sm text-ink">
+          <li>
+            <b>Terverifikasi</b>: angkanya bertautan ke sumbernya dan telah ditandai terverifikasi
+            di data. Hanya ini yang masuk perbandingan dengan pilihan warga.
+          </li>
+          <li>
+            <b>Belum terverifikasi</b>: angka awal dari pemberitaan tentang APBD {tahun}. Belum
+            dicocokkan ke lampiran resmi, jadi jangan dibaca sebagai angka resmi.
+          </li>
+          <li>
+            <b>Data belum ada</b>: tidak dirinci di sumber yang kami punya, dan tidak dikarang.
+          </li>
+          <li>
+            Total belanja daerah resmi Rp74.285.299.931.740 ada di{' '}
+            <a
+              href={PERGUB_APBD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-warga underline"
+            >
+              Pergub DKI Jakarta No. 44 Tahun 2025
+            </a>
+            . Rincian per urusan ada di lampiran yang belum kami dapat.{' '}
+            <Link to="/metodologi" className="font-semibold text-warga underline">
+              Lihat metodologi
+            </Link>
+            .
+          </li>
+        </ul>
       </Card>
 
       {apbdQuery.isPending && <PageLoader label="Memuat data APBD..." />}

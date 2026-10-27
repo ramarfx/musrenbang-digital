@@ -1,12 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registerSchema, type RegisterInput } from '@musrenbang/shared';
 import { useForm } from 'react-hook-form';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useWelcomeSplash } from '@/components/brand/WelcomeSplash';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 import { useSignUpMutation } from '../queries';
 
 type LoginLocationState = { from?: string } | null;
@@ -16,6 +18,7 @@ export function RegisterForm({ onNeedsLogin }: { onNeedsLogin: () => void }) {
   const location = useLocation();
   const from = (location.state as LoginLocationState)?.from ?? '/';
   const mutation = useSignUpMutation();
+  const splash = useWelcomeSplash();
   const form = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
     defaultValues: { nama: '', email: '', password: '' },
@@ -25,6 +28,7 @@ export function RegisterForm({ onNeedsLogin }: { onNeedsLogin: () => void }) {
     mutation.mutate(values, {
       onSuccess: (data) => {
         if (data.session) {
+          splash.play();
           toast.success('Akun dibuat. Selamat bergabung!');
           navigate(from, { replace: true });
           return;
@@ -75,9 +79,8 @@ export function RegisterForm({ onNeedsLogin }: { onNeedsLogin: () => void }) {
         hint="Minimal 8 karakter. Jangan gunakan password yang sama dengan akun lain."
         required
       >
-        <Input
+        <PasswordInput
           id="register-password"
-          type="password"
           autoComplete="new-password"
           placeholder="Minimal 8 karakter"
           invalid={Boolean(form.formState.errors.password)}
@@ -90,13 +93,6 @@ export function RegisterForm({ onNeedsLogin }: { onNeedsLogin: () => void }) {
       <Button type="submit" className="w-full" isLoading={mutation.isPending}>
         Daftar
       </Button>
-
-      <p className="text-center text-sm text-stone-600">
-        Sudah punya akun?{' '}
-        <Link to="/login" className="font-medium text-emerald-800 underline">
-          Masuk
-        </Link>
-      </p>
     </form>
   );
 }

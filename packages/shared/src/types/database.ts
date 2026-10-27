@@ -4,6 +4,7 @@ import type { Comment, CommentRow, VoteRow } from '../schemas/comment';
 import type { ConfigRow } from '../schemas/config';
 import type { GapItem } from '../schemas/gap';
 import type { Profile } from '../schemas/profile';
+import type { AdminStats, PublicStats } from '../schemas/stats';
 import type {
   Proposal,
   ProposalRow,
@@ -40,14 +41,18 @@ type ProfileInsert = {
 
 type ProposalInsert = {
   judul: string;
-  deskripsi?: string;
+  deskripsi: string;
   kategori: string;
   lokasi?: string | null;
   latitude?: number | null;
   longitude?: number | null;
-  estimasi_biaya?: number;
+  estimasi_biaya: number;
   pengusul_id?: string | null;
   status?: ProposalRow['status'];
+  moderasi?: ProposalRow['moderasi'];
+  catatan_moderasi?: string | null;
+  dimoderasi_oleh?: string | null;
+  dimoderasi_pada?: string | null;
 };
 
 type ProposalUpdate = Partial<ProposalInsert>;
@@ -57,6 +62,7 @@ type StatusHistoryInsert = {
   status_lama?: string | null;
   status_baru: string;
   diubah_oleh?: string | null;
+  catatan?: string | null;
 };
 
 type CommentInsert = {
@@ -108,11 +114,21 @@ export type Database = {
       v_proposals: ViewDefinition<Proposal>;
       v_comments: ViewDefinition<Comment>;
       v_proposal_status_history: ViewDefinition<StatusHistory>;
+      v_public_stats: ViewDefinition<PublicStats>;
+      v_admin_stats: ViewDefinition<AdminStats>;
     };
     Functions: {
+      moderate_proposal: FunctionDefinition<
+        { p_proposal_id: number; p_moderasi: string; p_catatan?: string | null },
+        undefined
+      >;
       save_allocations: FunctionDefinition<{ p_rows: Json }, undefined>;
       change_proposal_status: FunctionDefinition<
         { p_proposal_id: number; p_status: string },
+        undefined
+      >;
+      change_proposal_status_with_note: FunctionDefinition<
+        { p_proposal_id: number; p_status: string; p_catatan: string },
         undefined
       >;
       is_admin: FunctionDefinition<Record<string, never>, boolean>;

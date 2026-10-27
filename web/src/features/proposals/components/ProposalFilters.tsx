@@ -1,58 +1,132 @@
 import { PROPOSAL_STATUSES, type ProposalStatus } from '@musrenbang/shared';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { cn } from '@/lib/cn';
+
+type StatusFilter = ProposalStatus | 'semua';
 
 type ProposalFiltersProps = {
   search: string;
   onSearchChange: (value: string) => void;
-  status: ProposalStatus | 'semua';
-  onStatusChange: (value: ProposalStatus | 'semua') => void;
+  status: StatusFilter;
+  onStatusChange: (value: StatusFilter) => void;
+  /** Jumlah usulan per status (sudah memperhitungkan kata kunci), dan `semua` untuk totalnya. */
+  counts: Record<StatusFilter, number>;
+  kategori: string;
+  onKategoriChange: (value: string) => void;
+  /** Kategori beserta jumlah usulan (sudah memperhitungkan kata kunci dan status). */
+  daftarKategori: { nama: string; jumlah: number }[];
+  urutan: 'terbaru' | 'terpopuler';
+  onUrutanChange: (value: 'terbaru' | 'terpopuler') => void;
   resultCount: number;
   totalCount: number;
 };
+
+const OPTIONS: StatusFilter[] = ['semua', ...PROPOSAL_STATUSES];
 
 export function ProposalFilters({
   search,
   onSearchChange,
   status,
   onStatusChange,
+  counts,
+  kategori,
+  onKategoriChange,
+  daftarKategori,
+  urutan,
+  onUrutanChange,
   resultCount,
   totalCount,
 }: ProposalFiltersProps) {
   return (
-    <div className="flex flex-wrap items-end gap-3 rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
-      <div className="min-w-52 flex-1">
-        <label htmlFor="cari-usulan" className="mb-1 block text-sm font-medium text-stone-700">
-          Cari usulan
-        </label>
-        <Input
-          id="cari-usulan"
-          type="search"
-          value={search}
-          onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Judul, deskripsi, atau kategori..."
-        />
-      </div>
-      <div className="w-48">
-        <label htmlFor="filter-status" className="mb-1 block text-sm font-medium text-stone-700">
-          Status
+    <div className="rounded-3xl border border-border bg-surface p-5">
+      <label htmlFor="cari-usulan" className="mb-1.5 block text-[13px] text-muted">
+        Cari usulan
+      </label>
+      <Input
+        id="cari-usulan"
+        type="search"
+        value={search}
+        onChange={(event) => onSearchChange(event.target.value)}
+        placeholder="Judul, deskripsi, kategori, atau nama pengusul"
+      />
+
+      <div className="mt-4 max-w-sm">
+        <label htmlFor="filter-kategori" className="mb-1.5 block text-[13px] text-muted">
+          Kategori
         </label>
         <Select
-          id="filter-status"
-          value={status}
-          onChange={(event) => onStatusChange(event.target.value as ProposalStatus | 'semua')}
+          id="filter-kategori"
+          value={kategori}
+          onChange={(event) => onKategoriChange(event.target.value)}
         >
-          <option value="semua">Semua status</option>
-          {PROPOSAL_STATUSES.map((item) => (
-            <option key={item} value={item}>
-              {item}
+          <option value="semua">Semua kategori</option>
+          {daftarKategori.map((item) => (
+            <option key={item.nama} value={item.nama}>
+              {item.nama} ({item.jumlah})
             </option>
           ))}
         </Select>
       </div>
-      <p className="ml-auto pb-2 text-sm text-stone-500">
-        Menampilkan {resultCount} dari {totalCount} usulan
-      </p>
+
+      <div className="mt-4">
+        <p id="label-status" className="mb-2 text-[13px] text-muted">
+          Status
+        </p>
+        <div role="group" aria-labelledby="label-status" className="flex flex-wrap gap-2">
+          {OPTIONS.map((option) => {
+            const aktif = status === option;
+            return (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={aktif}
+                onClick={() => onStatusChange(option)}
+                className={cn(
+                  'inline-flex h-9 items-center gap-2 rounded-xl border px-3.5 text-[13px] font-semibold transition-[scale,background-color,border-color,color] duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga',
+                  aktif
+                    ? 'border-ink bg-ink text-white'
+                    : 'border-border bg-surface text-ink hover:bg-active',
+                )}
+              >
+                {option === 'semua' ? 'Semua' : option}
+                <span
+                  className={cn(
+                    'rounded-md px-1.5 text-[12px] font-medium tabular-nums',
+                    aktif ? 'bg-white/20 text-white' : 'bg-pasir text-muted',
+                  )}
+                >
+                  {counts[option]}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-[13px] text-muted" aria-live="polite">
+          Menampilkan {resultCount} dari {totalCount} usulan
+        </p>
+        <div role="group" aria-label="Urutkan usulan" className="flex gap-1.5">
+          {(['terbaru', 'terpopuler'] as const).map((pilihan) => (
+            <button
+              key={pilihan}
+              type="button"
+              aria-pressed={urutan === pilihan}
+              onClick={() => onUrutanChange(pilihan)}
+              className={cn(
+                'h-8 rounded-lg px-3.5 text-[13px] font-semibold transition-[scale,background-color,color] duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga',
+                urutan === pilihan
+                  ? 'bg-ink text-white'
+                  : 'text-muted hover:bg-active hover:text-ink',
+              )}
+            >
+              {pilihan === 'terbaru' ? 'Terbaru' : 'Terpopuler'}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

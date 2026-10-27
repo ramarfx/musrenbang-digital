@@ -25,8 +25,8 @@ export function GapChart({ items }: { items: GapItem[] }) {
             <YAxis type="category" dataKey="kategori" width={170} tick={{ fontSize: 12 }} />
             <Tooltip formatter={(value) => formatPersen(Number(value))} />
             <Legend />
-            <Bar dataKey="persen_warga" name="Warga" fill="#065f46" radius={[0, 4, 4, 0]} />
-            <Bar dataKey="persen_apbd" name="APBD" fill="#d97706" radius={[0, 4, 4, 0]} />
+            <Bar dataKey="persen_warga" name="Warga" fill="#047857" radius={[0, 4, 4, 0]} />
+            <Bar dataKey="persen_apbd" name="APBD" fill="#14222B" radius={[0, 4, 4, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

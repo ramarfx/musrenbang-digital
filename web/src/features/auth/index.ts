@@ -3,4 +3,10 @@ export { LoginForm } from './components/LoginForm';
 export { RegisterForm } from './components/RegisterForm';
 export { RequireAdmin } from './components/RequireAdmin';
 export { RequireAuth } from './components/RequireAuth';
-export { useProfileQuery, useSessionQuery, useSignInMutation, useSignUpMutation } from './queries';
+export {
+  useGoogleSignInMutation,
+  useProfileQuery,
+  useSessionQuery,
+  useSignInMutation,
+  useSignUpMutation,
+} from './queries';

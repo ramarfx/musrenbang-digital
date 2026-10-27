@@ -1,7 +1,7 @@
 import type { Proposal } from '@musrenbang/shared';
-import '@/lib/leaflet';
+import { ATTRIBUTION_PREFIX } from '@/lib/leaflet';
 import { Link } from 'react-router-dom';
-import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
+import { AttributionControl, MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
 
 type ProposalMapProps = {
   proposals: Proposal[];
@@ -21,8 +21,10 @@ export function ProposalMap({ proposals, className = 'h-96' }: ProposalMapProps)
       center={JAKARTA_CENTER}
       zoom={11}
       scrollWheelZoom={false}
-      className={`${className} w-full rounded-xl border border-stone-200`}
+      attributionControl={false}
+      className={`peta-hangat ${className} isolate w-full rounded-3xl border border-border`}
     >
+      <AttributionControl prefix={ATTRIBUTION_PREFIX} />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"

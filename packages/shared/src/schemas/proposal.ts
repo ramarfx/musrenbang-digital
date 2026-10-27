@@ -1,8 +1,25 @@
 import { z } from 'zod';
-import { PROPOSAL_STATUSES, TEXT_LIMITS } from '../constants';
+import { PROPOSAL_MODERATION_STATUSES, PROPOSAL_STATUSES, TEXT_LIMITS } from '../constants';
 import { idSchema, timestampSchema, uuidSchema } from './common';
 
 export const proposalStatusSchema = z.enum(PROPOSAL_STATUSES);
+export const proposalModerationSchema = z.enum(PROPOSAL_MODERATION_STATUSES);
+
+export const proposalModerationInputSchema = z
+  .object({
+    proposalId: idSchema,
+    moderasi: proposalModerationSchema,
+    catatan: z.string().trim().max(2_000).nullable().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.moderasi === 'Ditolak' && !value.catatan) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['catatan'],
+        message: 'Penolakan wajib disertai alasan.',
+      });
+    }
+  });
 
 /** Baris tabel `proposals` (tanpa kolom turunan). */
 export const proposalRowSchema = z.object({
@@ -16,6 +33,10 @@ export const proposalRowSchema = z.object({
   estimasi_biaya: z.coerce.number().int().nonnegative(),
   pengusul_id: uuidSchema.nullable(),
   status: proposalStatusSchema,
+  moderasi: proposalModerationSchema,
+  catatan_moderasi: z.string().nullable(),
+  dimoderasi_oleh: uuidSchema.nullable(),
+  dimoderasi_pada: timestampSchema.nullable(),
   dibuat_pada: timestampSchema,
   diubah_pada: timestampSchema,
 });
@@ -60,7 +81,7 @@ export const proposalInputSchema = z
     estimasi_biaya: z
       .number()
       .int('Estimasi biaya harus bilangan bulat.')
-      .min(0, 'Estimasi biaya tidak boleh negatif.')
+      .positive('Estimasi biaya harus lebih besar dari nol.')
       .max(TEXT_LIMITS.estimasiMaks, 'Estimasi biaya terlalu besar.'),
   })
   .superRefine((value, ctx) => {
@@ -80,6 +101,14 @@ export const proposalStatusUpdateSchema = z.object({
   status: proposalStatusSchema,
 });
 
+export const proposalStatusUpdateWithNoteSchema = proposalStatusUpdateSchema.extend({
+  catatan: z
+    .string()
+    .trim()
+    .min(1, 'Catatan perubahan status wajib diisi.')
+    .max(2_000, 'Catatan perubahan status maksimal 2000 karakter.'),
+});
+
 export const statusHistoryRowSchema = z.object({
   id: idSchema,
   proposal_id: idSchema,
@@ -87,6 +116,8 @@ export const statusHistoryRowSchema = z.object({
   status_baru: z.string(),
   diubah_oleh: uuidSchema.nullable(),
   diubah_pada: timestampSchema,
+  // View remote lama belum menyediakan kolom catatan sebelum migration 7.
+  catatan: z.string().nullable().default(null),
 });
 
 export const statusHistorySchema = statusHistoryRowSchema.omit({ diubah_oleh: true }).extend({
@@ -101,7 +132,7 @@ export const proposalSeedSchema = z.object({
   lokasi: z.string().nullable().optional(),
   latitude: z.number().min(-90).max(90).nullable().optional(),
   longitude: z.number().min(-180).max(180).nullable().optional(),
-  estimasi_biaya: z.number().int().nonnegative(),
+  estimasi_biaya: z.number().int().positive(),
   status: proposalStatusSchema.default('Diajukan'),
 });
 
@@ -109,6 +140,8 @@ export type ProposalRow = z.infer<typeof proposalRowSchema>;
 export type Proposal = z.infer<typeof proposalSchema>;
 export type ProposalInput = z.infer<typeof proposalInputSchema>;
 export type ProposalStatusUpdate = z.infer<typeof proposalStatusUpdateSchema>;
+export type ProposalStatusUpdateWithNote = z.infer<typeof proposalStatusUpdateWithNoteSchema>;
+export type ProposalModerationInput = z.infer<typeof proposalModerationInputSchema>;
 export type ProposalSeed = z.infer<typeof proposalSeedSchema>;
 export type StatusHistoryRow = z.infer<typeof statusHistoryRowSchema>;
 export type StatusHistory = z.infer<typeof statusHistorySchema>;

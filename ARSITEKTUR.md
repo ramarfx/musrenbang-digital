@@ -241,23 +241,30 @@ Migrasi harus dijalankan berurutan karena saling bergantung:
 2. **`rls`** — mengaktifkan RLS, membuat policy, dan memberi GRANT ke peran API.
 3. **`views`** — read model yang dipakai frontend.
 4. **`rpc`** — fungsi transaksional untuk invariant lintas baris.
+5. **`foundation_security`**: moderasi terpisah, pembatasan visibilitas lintas tabel/view,
+   provisioning profil tepercaya, dan pengamanan jalur tulis alokasi.
+6. **`security_advisor_hardening`**: view invoker dan helper baca terbatas di schema
+   `private`. Terpasang pada Supabase development.
+7. **`mvp_public_stats_status_audit`**: provenance APBD, estimasi usulan positif,
+   catatan status, statistik publik/admin, dan filter APBD. Kandidat lokal; belum
+   diterapkan pada remote.
 
-Semua migrasi ditulis idempoten (`CREATE TABLE IF NOT EXISTS`, `DROP POLICY IF EXISTS`,
-`CREATE OR REPLACE`) agar aman diulang saat pengembangan.
+Migration dijalankan sekali sesuai migration history. Jangan mengulang atau
+mengedit migration yang sudah diterapkan; perubahan berikutnya memakai file baru.
 
 ### 6.2 Tabel
 
-| Tabel                     | Isi                                                                                 |
-| ------------------------- | ----------------------------------------------------------------------------------- |
-| `profiles`                | `id` → `auth.users`, email unik, nama, peran (`warga`/`admin`), waktu dibuat        |
-| `categories`              | 10 kategori dari Lampiran B PRD                                                     |
-| `apbd_items`              | Kategori, nominal rupiah, tahun, kota, sumber, status verifikasi                    |
-| `proposals`               | Judul, deskripsi, kategori, lokasi teks, lat/long, estimasi biaya, pengusul, status |
-| `proposal_status_history` | Usulan, status lama/baru, admin yang mengubah, waktu. Append-only                   |
-| `votes`                   | User, usulan, waktu. `UNIQUE(user_id, proposal_id)`                                 |
-| `comments`                | Usulan, user, isi, waktu                                                            |
-| `allocations`             | User, kategori, jumlah. `UNIQUE(user_id, kategori)`                                 |
-| `config`                  | Key-value: `kota`, `tahun_anggaran`, `virtual_budget_per_warga`                     |
+| Tabel                     | Isi                                                                                                      |
+| ------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `profiles`                | `id` → `auth.users`, email unik, nama, peran (`warga`/`admin`), waktu dibuat                             |
+| `categories`              | 10 kategori dari Lampiran B PRD                                                                          |
+| `apbd_items`              | Kategori, nominal rupiah, tahun, kota, sumber, status verifikasi, URL dan catatan pemetaan (migration 7) |
+| `proposals`               | Judul, deskripsi, kategori, lokasi teks, lat/long, estimasi biaya, pengusul, tahap, moderasi             |
+| `proposal_status_history` | Usulan, status lama/baru, aktor, waktu, catatan (migration 7). Append-only                               |
+| `votes`                   | User, usulan, waktu. `UNIQUE(user_id, proposal_id)`                                                      |
+| `comments`                | Usulan, user, isi, waktu                                                                                 |
+| `allocations`             | User, kategori, jumlah. `UNIQUE(user_id, kategori)`                                                      |
+| `config`                  | Key-value: `kota`, `tahun_anggaran`, `virtual_budget_per_warga`                                          |
 
 Constraint penting:
 
@@ -275,17 +282,44 @@ APBD per kategori/tahun.
 
 ### 6.3 Read model (view)
 
-Frontend membaca view, bukan join manual. View dibuat dengan
-`security_invoker = false` **secara sadar**: view berjalan dengan hak pemilik sehingga
-bisa membaca lintas baris untuk agregat dan nama penulis. View hanya mengekspos kolom
-aman; tabel dasar tetap dilindungi RLS.
+Frontend membaca view, bukan join manual. Setelah migration keenam, empat view inti
+memakai `security_invoker = true` dan `security_barrier = true`; baris sumber tunduk
+pada RLS pemanggil. Migration ketujuh menambah view statistik publik dan admin dengan
+invoker yang sama. Helper `SECURITY DEFINER` dalam schema `private` mempertahankan
+nama penulis dan jumlah suara tanpa membuka profil lengkap atau identitas pemilih.
+Lookup nama hanya memberi profil sendiri/admin atau nama yang terkait usulan,
+komentar, atau riwayat yang boleh dibaca pemanggil. Hitungan suara juga memeriksa
+visibilitas usulan di dalam helper, termasuk ketika dipanggil langsung melalui SQL.
+Agregat alokasi memakai helper kategori/total lintas warga agar `v_gap` tidak berubah
+menjadi statistik milik pemanggil saja. Schema `private` tidak diekspos Data API.
 
-| View                        | Kolom penting                                                                 | Dipakai untuk                           |
-| --------------------------- | ----------------------------------------------------------------------------- | --------------------------------------- |
-| `v_proposals`               | Semua kolom usulan + `pengusul_nama` + `jumlah_suara`                         | Daftar, detail, admin                   |
-| `v_comments`                | `id`, `proposal_id`, `isi`, `dibuat_pada`, `penulis_nama`                     | Komentar publik (tanpa `user_id`/email) |
-| `v_proposal_status_history` | Status lama/baru, waktu, `diubah_oleh_nama`                                   | Linimasa status                         |
-| `v_gap`                     | `kategori`, `persen_warga`, `persen_apbd`, `gap_poin_persen`, nominal agregat | Halaman Bandingkan                      |
+Pada migration ketujuh, `v_gap` membatasi APBD ke kota/tahun dari `config` dan hanya
+menghitung item `verified_program` yang memiliki URL sumber. Alokasi warga tetap
+diagregasi lintas pengguna lewat helper privat, bukan hanya baris yang terlihat oleh
+pemanggil.
+
+`v_gap` dan `v_public_stats` masih berisiko mengungkap preferensi saat partisipan
+sedikit. Pengguna dapat mengurangi agregat dengan alokasinya sendiri, dan perubahan
+jumlah partisipan dari waktu ke waktu dapat mengungkap kontribusi peserta baru. PRD
+belum menetapkan waktu publikasi atau ambang privasi; opsi dan trade-off menunggu
+keputusan produk di `supabase/BACKEND_HANDOFF.md`.
+
+Advisor lokal CLI v2.122.0 memakai bundle lint yang belum memuat 0028/0029.
+Hasil kosongnya bukan bukti bahwa warning fungsi hilang. Eksekusi definisi lint
+resmi 0028/0029 pada database lokal tetap menemukan tiga RPC publik yang dapat
+dieksekusi authenticated sebagai definer, dan tidak menemukan fungsi definer
+publik yang dapat dieksekusi anon. Tiga RPC itu sengaja dipertahankan dengan
+otorisasi eksplisit, search_path kosong, serta worker privat tanpa hak EXECUTE
+untuk role aplikasi.
+
+| View                        | Kolom penting                                                         | Dipakai untuk                           |
+| --------------------------- | --------------------------------------------------------------------- | --------------------------------------- |
+| `v_proposals`               | Semua kolom usulan + `pengusul_nama` + `jumlah_suara`                 | Daftar, detail, admin                   |
+| `v_comments`                | `id`, `proposal_id`, `isi`, `dibuat_pada`, `penulis_nama`             | Komentar publik (tanpa `user_id`/email) |
+| `v_proposal_status_history` | Status lama/baru, waktu, `diubah_oleh_nama`                           | Linimasa status                         |
+| `v_gap`                     | Persentase, gap, nominal, jumlah partisipan, ketersediaan APBD        | Halaman Bandingkan                      |
+| `v_public_stats`            | Jumlah usulan disetujui, pemilih, partisipan alokasi, total alokasi   | Statistik publik                        |
+| `v_admin_stats`             | Jumlah pengguna/usulan, status moderasi/kemajuan, total suara/alokasi | Statistik admin, hanya admin            |
 
 `v_proposals` tetap mengekspos `pengusul_id` agar UI dapat mengetahui pemilik, tetapi
 tidak mengekspos email. `v_comments` sengaja tidak mengekspos `user_id`.
@@ -302,25 +336,41 @@ tidak mengekspos email. `v_comments` sengaja tidak mengekspos `user_id`.
 - Menghapus seluruh alokasi user lalu memasukkan payload baru dalam satu transaksi,
   sehingga kategori yang dikosongkan ikut hilang.
 
-**`change_proposal_status(p_proposal_id bigint, p_status text)`**
+**`moderate_proposal(p_proposal_id bigint, p_moderasi text, p_catatan text)`**
+
+- Memastikan pemanggil admin, memvalidasi moderasi, dan mewajibkan alasan untuk
+  `Ditolak`. Identitas dan waktu moderasi ditentukan database.
+- Moderasi tidak mengubah tahapan kemajuan proposal.
+
+**`change_proposal_status_with_note(p_proposal_id bigint, p_status text, p_catatan text)`**
 
 - Memastikan user login dan `is_admin()`.
 - Memvalidasi status terhadap daftar resmi.
 - Mengunci baris usulan (`FOR UPDATE`), kembali tanpa perubahan bila status sama.
-- Mengubah status dan menulis `proposal_status_history` dalam satu transaksi.
+- Memerlukan catatan 1–2000 karakter, mengubah status, dan menulis riwayat dalam satu transaksi.
+- Migration 7 mempertahankan RPC lama sebagai jalur kompatibilitas yang saat ini
+  menolak permintaan tanpa catatan. Frontend yang ada masih memanggil RPC lama;
+  pembaruan kontrak frontend diperlukan sebelum migration 7 diterapkan.
 
-Kedua fungsi memakai `SECURITY DEFINER`, `SET search_path = ''`, dan hanya diberi
-`EXECUTE` untuk `authenticated` (bukan `anon`).
+`save_allocations` dan `moderate_proposal` adalah RPC `SECURITY DEFINER` dengan
+validasi UID/peran, `search_path` kosong, dan `EXECUTE` hanya untuk `authenticated`.
+RPC perubahan status publik memakai invoker dan mendelegasikan ke worker privat yang
+memvalidasi admin serta menulis riwayat atomik. Semua helper privat tidak dapat
+dipanggil anon; helper agregat yang diperlukan view hanya mengembalikan nilai agregat.
 
 ### 6.5 Fungsi dan trigger
 
-| Objek                     | Fungsi                                                                |
-| ------------------------- | --------------------------------------------------------------------- |
-| `is_admin()`              | Cek peran admin tanpa memicu rekursi RLS pada `profiles`              |
-| `set_updated_at()`        | Mengisi `diubah_pada` pada update                                     |
-| `handle_new_user()`       | Membuat baris `profiles` otomatis saat `auth.users` bertambah         |
-| `guard_proposal_status()` | Menolak perubahan status oleh non-admin selain lewat service role/RPC |
-| `guard_profile_role()`    | Menolak warga mengubah `peran` atau `email` miliknya sendiri          |
+| Objek                              | Fungsi                                                                           |
+| ---------------------------------- | -------------------------------------------------------------------------------- |
+| `is_admin()`                       | Cek peran admin tanpa memicu rekursi RLS pada `profiles`                         |
+| `set_updated_at()`                 | Mengisi `diubah_pada` pada update                                                |
+| `handle_new_user()`                | Membuat baris `profiles` otomatis saat `auth.users` bertambah                    |
+| `guard_proposal_status()`          | Menolak perubahan status oleh non-admin selain lewat service role/RPC            |
+| `guard_profile_role()`             | Menolak warga mengubah `peran` atau `email` miliknya sendiri                     |
+| `guard_apbd_provenance()`          | Menolak sumber kosong dan item `verified_program` tanpa URL sumber (migration 7) |
+| `guard_proposal_estimate()`        | Menolak estimasi baru yang nol atau negatif (migration 7)                        |
+| `record_initial_proposal_status()` | Menulis riwayat awal saat proposal dibuat (migration 7)                          |
+| `record_proposal_status_change()`  | Menulis catatan dan aktor dari konteks RPC tepercaya (migration 7)               |
 
 Trigger `on_auth_user_created` membuat profil otomatis. Nama diambil dari metadata
 `nama`, fallback ke bagian sebelum `@` pada email. Frontend tidak lagi melakukan insert
@@ -330,40 +380,41 @@ profil manual setelah sign up.
 
 ### 7.1 Matriks akses
 
-| Tabel                     | Anon (publik) | Warga login                      | Admin              |
-| ------------------------- | ------------- | -------------------------------- | ------------------ |
-| `profiles`                | —             | baca/ubah baris sendiri          | semua baris        |
-| `categories`              | baca          | baca                             | semua operasi      |
-| `apbd_items`              | baca          | baca                             | semua operasi      |
-| `config`                  | baca          | baca                             | semua operasi      |
-| `proposals`               | baca          | insert/update milik sendiri      | semua operasi      |
-| `proposal_status_history` | baca          | —                                | insert (lewat RPC) |
-| `votes`                   | —             | baca/insert/delete milik sendiri | semua operasi      |
-| `comments`                | baca          | insert milik sendiri             | semua operasi      |
-| `allocations`             | —             | semua operasi milik sendiri      | baca semua         |
-| `v_*` (view)              | baca          | baca                             | baca               |
+| Tabel/view                | Anon (publik)                         | Warga login                                                               | Admin                                         |
+| ------------------------- | ------------------------------------- | ------------------------------------------------------------------------- | --------------------------------------------- |
+| `profiles`                | tidak dapat membaca                   | baca sendiri, ubah nama sendiri                                           | baca semua, ubah terbatas oleh trigger        |
+| `categories`, `config`    | baca                                  | baca                                                                      | kelola                                        |
+| `apbd_items`              | baca                                  | baca                                                                      | kelola; provenance dijaga trigger (migrasi 7) |
+| `proposals`               | hanya moderasi `Disetujui`            | publik disetujui + semua milik sendiri; buat/edit sendiri saat `Menunggu` | baca/kelola semua                             |
+| `proposal_status_history` | hanya usulan yang dapat dibaca publik | riwayat publik + milik sendiri                                            | baca semua; tulis lewat RPC/trigger           |
+| `votes`                   | tidak dapat membaca                   | baca/tulis suara sendiri pada usulan disetujui                            | baca semua; tulis tidak diperlukan langsung   |
+| `comments`                | usulan yang terlihat                  | baca usulan terlihat, buat komentar sendiri pada usulan disetujui         | hapus/kelola sesuai policy                    |
+| `allocations`             | tidak dapat membaca                   | baca alokasi sendiri; simpan lewat RPC saja                               | baca semua; tidak menulis lewat API           |
+| `v_*`                     | view publik sesuai moderasi/agregat   | sama dengan publik; admin view hanya admin                                | baca view publik dan `v_admin_stats`          |
 
 Catatan:
 
-- `proposal_status_history` tidak punya policy `UPDATE`/`DELETE`, sehingga append-only.
+- `proposal_status_history` tidak punya hak tulis langsung untuk peran API; trigger
+  RPC menulis status dan catatan secara atomik.
 - Warga tidak dapat menghapus komentar; hanya admin yang bisa lewat policy `ALL`.
 - Warga tidak dapat membaca baris suara orang lain; agregat suara tersedia lewat
   `v_proposals`.
 - Warga tidak dapat membaca alokasi warga lain; agregat tersedia lewat `v_gap`.
-- Perubahan status oleh pemilik usulan ditolak trigger meskipun policy `UPDATE` milik
-  sendiri mengizinkan update kolom lain.
+- Perubahan tahap usulan langsung ditolak trigger, termasuk untuk admin; admin harus
+  memanggil RPC yang membuat audit note.
 
 ### 7.2 GRANT dan RLS
 
 RLS menyaring baris; GRANT membuka pintu PostgREST. Migrasi `rls` memberi:
 
 - `USAGE` pada schema `public` untuk `anon` dan `authenticated`.
-- `SELECT` pada semua tabel untuk `anon` dan `authenticated` (baris tetap disaring RLS).
-- Hak tulis spesifik untuk `authenticated`; policy yang menentukan baris mana yang boleh
-  ditulis.
-- `USAGE, SELECT` pada sequence untuk `authenticated`.
-- `EXECUTE` pada `is_admin()` untuk kedua peran; `EXECUTE` RPC hanya untuk
-  `authenticated`.
+- `SELECT` hanya pada tabel/view yang memang diperlukan; RLS tetap menyaring baris.
+- Hak tulis kolom/tabel minimum untuk `authenticated`; `allocations` tidak memiliki hak
+  tulis API, dan policy menentukan baris yang boleh dibaca/diubah.
+- Hak sequence hanya untuk kebutuhan insert yang sah.
+- Pemeriksaan peran `is_admin()` tersedia untuk kedua role API. RPC tulis berprivilege
+  hanya dapat dieksekusi `authenticated`; helper trigger dan worker privat tidak dapat
+  dieksekusi langsung melalui API.
 
 Service role key melewati RLS dan hanya dipakai `scripts/seed.ts`.
 
@@ -402,10 +453,11 @@ Rumus:
 
 ```
 total_warga      = SUM(allocations.jumlah)
-total_apbd       = SUM(apbd_items.nominal_rp)
+total_apbd       = SUM(apbd_items.nominal_rp untuk kota/tahun terpilih,
+                       status verified_program, dan URL sumber tersedia)
 
 warga(k)         = SUM(allocations.jumlah) WHERE kategori = k
-apbd(k)          = SUM(apbd_items.nominal_rp) WHERE kategori = k
+apbd(k)          = SUM(item APBD terverifikasi yang lolos filter di atas) WHERE kategori = k
 
 persen_warga(k)  = total_warga > 0 ? round(warga(k) * 100 / total_warga, 2) : 0
 persen_apbd(k)   = total_apbd  > 0 ? round(apbd(k)  * 100 / total_apbd,  2) : 0
@@ -428,9 +480,15 @@ Kasus kosong: bila belum ada alokasi warga, `persen_warga` = 0 untuk semua kateg
 dan halaman tetap menampilkan sisi APBD. Bila APBD kosong, `persen_apbd` = 0. Tidak ada
 angka yang dikarang.
 
-Batasan saat ini: `v_gap` menjumlahkan seluruh `apbd_items` tanpa filter tahun/kota.
-Karena seed hanya memuat satu kota dan satu tahun (DKI Jakarta 2026), ini aman untuk
-demo. Bila data multi-tahun ditambahkan, view perlu parameter/filter tahun.
+`v_gap` memakai rasio jumlah nominal seluruh alokasi (`SUM kategori / SUM semua
+alokasi`), bukan rata-rata persentase individu. PRD belum konsisten: FR-09 menyebut
+rata-rata alokasi tiap pengguna, sedangkan Bab 10.2 menjumlahkan nominal per kategori
+dan D.5 mengizinkan alokasi parsial. Dampaknya, rasio jumlah memberi bobot lebih besar
+pada warga yang menyimpan nominal lebih besar. Contoh: seorang warga mengalokasikan
+Rp10 juta ke kategori A dan seorang lagi Rp1 juta ke kategori B menghasilkan 90,91%
+vs 9,09%; rata-rata persentase per pengguna menghasilkan 50% vs 50%. Rumus belum
+diubah sampai pemilik produk memilih metodologi. Migrasi ketujuh sudah membatasi APBD
+ke `config.kota`, `config.tahun_anggaran`, `verified_program`, dan URL sumber.
 
 ## 10. Autentikasi dan otorisasi
 
@@ -449,12 +507,18 @@ demo. Bila data multi-tahun ditambahkan, view perlu parameter/filter tahun.
 
 ## 11. Data seed
 
-- Kota/tahun: DKI Jakarta, APBD murni 2026. Total belanja daerah resmi
-  Rp74.285.299.931.740 (Pergub DKI Jakarta No. 44 Tahun 2025).
-- Sumber APBD: `supabase/seed/apbd-jakarta-2026.csv`, hasil pemetaan pos APBD resmi.
-  8 dari 10 kategori terisi angka terverifikasi; 2 kategori (Keamanan dan Penerangan;
-  Teknologi dan Layanan Digital) dimuat nominal 0 dengan status `perlu_lampiran` dan
-  ditampilkan sebagai “data menyusul”.
+- Kota/tahun konfigurasi: DKI Jakarta, 2026. Perda 4/2025 menetapkan APBD murni;
+  Pergub 10/2026 mengubah penjabaran APBD dan berstatus berlaku. Perubahan APBD
+  disetujui sebagai Ranperda pada September 2026; ringkasan seed bukan data final
+  APBD Perubahan.
+- Sumber APBD: `supabase/seed/apbd-jakarta-2026.csv`. Delapan kategori memiliki angka
+  riset awal, dua kategori tanpa nominal dan dilewati seed. Seluruh baris berstatus
+  `perlu_lampiran`; URL yang tersedia adalah halaman ringkasan, bukan lampiran rincian
+  yang membuktikan pemetaan ke sepuluh kategori. Angka tersebut tidak masuk `v_gap`
+  dan tidak boleh disebut komposisi APBD program terverifikasi.
+- PRD D.2 juga meminta belanja rutin/administratif ditampilkan terpisah. Model dan
+  sumber rincian rutin belum tersedia. Pemetaan program/rutin menunggu lampiran resmi
+  serta keputusan data; jangan menyamakannya dengan total belanja daerah.
 - Usulan contoh: `supabase/seed/proposals-contoh.json` (20 usulan), divalidasi
   `proposalSeedSchema`, dimuat tanpa `pengusul_id` sehingga tampil sebagai “Warga”.
 - Alur `bun run seed`:
@@ -532,20 +596,23 @@ Catatan deployment:
 ### Sudah selesai
 
 - Workspace Bun dengan `web`, `packages/shared`, `scripts`, dan `supabase`.
-- Skema database + constraint + index + trigger.
-- RLS, GRANT, dan guard peran/status.
-- Read model `v_proposals`, `v_comments`, `v_proposal_status_history`, `v_gap`.
-- RPC `save_allocations` dan `change_proposal_status`.
+- Enam migration fondasi, RLS, view, RPC, moderasi, dan hardening telah terpasang pada development.
+- Migration ketujuh untuk provenance, audit note, statistik, dan filter APBD telah disiapkan lokal; belum diterapkan remote.
+- Read model usulan, komentar, riwayat, Gap, statistik publik, dan statistik admin tersedia di migration lokal.
+- RPC `save_allocations`, `moderate_proposal`, dan perubahan status bercatatan.
 - Kontrak Zod shared, tipe `Database`, dan helper gap.
 - Frontend feature-based: seluruh halaman, form, tabel admin, peta, grafik, auth.
 - Seed tervalidasi Zod untuk APBD + 20 usulan.
-- Test unit untuk skema dan logika gap; lint, format, typecheck, build, test lulus.
+- Unit, SQL, dan HTTP integration tests tersedia. Hasil unit test sendiri tidak membuktikan RLS aman.
 
 ### Belum / menunggu
 
-- Proyek Supabase nyata belum dibuat; migrasi dan seed belum dijalankan.
-- 2 kategori APBD masih kosong; lengkapi dari Lampiran Pergub 44/2025 atau tampilkan
-  “data menyusul” secara jujur.
+- Migration ketujuh belum dipasang pada remote. Remote masih memiliki enam migration.
+- Migrasi ketujuh mengubah RPC admin status menjadi kontrak bercatatan, sedangkan
+  frontend saat ini masih memanggil RPC lama tanpa catatan. Frontend perlu mengirim
+  `p_catatan` sebelum migrasi tersebut disetujui untuk deployment.
+- Data APBD seed belum menjadi pemetaan program terverifikasi; lampiran resmi dan
+  pemisahan belanja rutin D.2 masih perlu.
 - Halaman kelola APBD untuk admin belum ada; pengelolaan masih lewat SQL/dashboard.
 - Belum ada UI edit/hapus usulan milik sendiri (RLS sudah mengizinkan update).
 - Belum ada pagination; daftar usulan saat ini memuat semua baris (cukup untuk 20
@@ -555,8 +622,75 @@ Catatan deployment:
 
 ### Langkah berikutnya
 
-1. Buat proyek Supabase dan jalankan empat migrasi berurutan.
-2. Isi `.env` dan `web/.env`, lalu `bun run seed`.
-3. Daftar akun, jadikan admin lewat SQL, uji loop demo 2–3 menit tanpa error.
-4. Lengkapi dua kategori APBD yang kosong bila sumber resmi tersedia.
-5. Polish kecil: pagination daftar, pengelolaan APBD di UI, dan uji ke pengguna.
+1. Validasi penuh migration ketujuh di Supabase lokal dan tinjau hasil sebelum commit.
+2. Selesaikan keputusan metodologi Gap, privasi agregat, dan rancangan belanja rutin.
+3. Koordinasikan perubahan RPC bercatatan dengan anggota frontend.
+4. Sediakan data resmi per program/rutin serta pemetaan dan URL sumber yang dapat diaudit.
+5. Jalankan pengujian remote hanya setelah prasyarat dan persetujuan tulis terpisah.
+
+## 16. Aturan keamanan Tahap 1
+
+Bagian ini memperbarui matriks akses awal di atas setelah migration
+`20261026195414_foundation_security.sql` dijalankan. Moderasi `Menunggu`, `Disetujui`,
+dan `Ditolak` terpisah dari lima tahap kemajuan. Data lama mendapat `Menunggu` tanpa
+penghapusan atau persetujuan otomatis.
+
+- Publik hanya membaca usulan `Disetujui`. Pemilik membaca seluruh usulan sendiri;
+  admin membaca seluruh usulan. Tabel dan view memakai batas visibilitas yang sama,
+  termasuk komentar dan riwayat status.
+- Warga membuat usulan dengan status `Diajukan` dan moderasi `Menunggu`. Edit hanya
+  diizinkan untuk isi usulan sendiri saat `Menunggu`; identitas, pemilik, waktu
+  pembuatan, status, dan metadata moderasi dilindungi trigger.
+- RPC `moderate_proposal` hanya untuk admin. Penolakan wajib beralasan, sementara
+  identitas dan waktu pemeriksa ditentukan sistem. Persetujuan moderasi tidak
+  otomatis mengubah tahap kemajuan.
+- Profil dibuat oleh trigger Auth dengan role `warga`; role dari user metadata
+  diabaikan. Akun lama tanpa profil mendapat backfill tanpa menimpa profil yang ada.
+  API hanya dapat mengubah nama profil sendiri, termasuk ketika akun berperan admin.
+  Pemberian role admin tetap melalui pengelola SQL.
+- API tidak memiliki hak tulis langsung pada `allocations`. RPC publik mengunci
+  profil pengguna lalu memanggil validator lama dalam schema `private`. Penguncian
+  juga berlaku ketika pengguna belum memiliki baris alokasi.
+- Hak bawaan tabel/view dicabut dan diberikan kembali secara terbatas. Fungsi
+  trigger dan validator internal tidak dapat dipanggil role API. Schema `private`
+  tidak boleh dimasukkan ke exposed schemas Data API.
+- Migration fondasi mempertahankan rumus Gap. Migration ketujuh mengubah filter APBD
+  ke kota/tahun terpilih dan item `verified_program` dengan URL sumber. Pilihan antara
+  rasio jumlah nominal dan rata-rata persentase per pengguna tetap belum diputuskan.
+
+Tes SQL menggunakan role PostgreSQL `anon` dan `authenticated` dengan claims warga
+A, warga B, dan admin. Ini menguji RLS, constraint, trigger, view, dan RPC pada
+PostgreSQL asli. Layanan login HTTP dan PostgREST tidak dijalankan dalam mode tes
+ringan, sehingga cakupan tersebut tidak dinyatakan lulus oleh tes SQL ini.
+
+## 17. Integrasi lokal Tahap 1C
+
+`scripts/test-integration.ps1` menyiapkan proyek Supabase lokal terpisah dan
+menjalankan `scripts/integration/run.ts`. Konfigurasi minimal ada pada
+`supabase/integration/config.toml`. Tujuh migration yang ada dipasang secara
+persisten hanya pada proyek lokal, dengan migration history standar CLI.
+
+Tes memakai signup, konfirmasi email Mailpit, login, refresh, dan logout Auth.
+JWT hasil Auth dipakai langsung pada PostgREST untuk memeriksa akses tabel, view,
+moderasi, suara, komentar, riwayat, serta alokasi. Tes concurrency mengamati lock
+profil dari dua koneksi berbeda dan memeriksa set akhir beserta batas budget.
+
+Runner tidak mencetak kredensial atau body Auth. Laporan hanya berisi label
+assertion dan kode diagnostik. Data fixture dibersihkan berdasarkan ID run,
+sedangkan schema dan migration history lokal tetap tersedia untuk pengulangan.
+Tidak ada deployment frontend, perubahan rumus Gap, atau penerapan remote dalam
+Tahap 1C. Keberhasilan tes lokal tidak menggantikan smoke test konfigurasi remote
+setelah pemasangan development yang disetujui secara terpisah.
+
+## 18. Konteks CLI development
+
+`supabase/config.toml` menyiapkan konteks migration dengan PostgreSQL 17 dan seed
+nonaktif. File ini tidak menyimpan kredensial atau mengubah Auth/Data API remote.
+Konfigurasi integration lokal tetap berada di `supabase/integration/config.toml`.
+Metadata link CLI tersimpan dalam `supabase/.temp/` yang diabaikan Git. Ref target
+harus diperiksa sebelum dry-run/pemasangan. Prosedur lengkap dan pemeriksaan objek
+database ada di `supabase/DEPLOYMENT.md`; penerapan remote perlu persetujuan terpisah.
+
+Per 27 Oktober 2026, remote development masih memiliki enam migration. Migration
+ketujuh, perubahan APBD, view statistik, dan catatan status hanya ada lokal. Tidak
+ada remote write testing atau fixture remote yang dilakukan.

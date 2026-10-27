@@ -7,6 +7,8 @@ export const queryKeys = {
   profile: (userId: string | null) => ['profile', userId] as const,
   config: ['config'] as const,
   categories: ['categories'] as const,
+  myStatusChanges: (userId: string | null) => ['notifications', 'status', userId] as const,
+  myVotes: (userId: string | null) => ['votes', 'mine', userId] as const,
   proposals: ['proposals'] as const,
   proposal: (proposalId: number) => ['proposals', 'detail', proposalId] as const,
   proposalHistory: (proposalId: number) => ['proposals', 'history', proposalId] as const,
@@ -15,5 +17,7 @@ export const queryKeys = {
     ['votes', 'has-voted', proposalId, userId] as const,
   allocations: (userId: string | null) => ['allocations', userId] as const,
   gap: ['gap'] as const,
+  publicStats: ['stats', 'public'] as const,
+  adminStats: ['stats', 'admin'] as const,
   apbd: ['apbd'] as const,
 };

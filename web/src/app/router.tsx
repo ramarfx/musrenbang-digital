@@ -1,4 +1,3 @@
-import { PageLoader } from '@/components/ui/PageLoader';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { RequireAdmin, RequireAuth } from '@/features/auth';
 import { lazy, Suspense, type ReactNode } from 'react';
@@ -13,10 +12,13 @@ const BuatUsulan = lazy(() => import('@/routes/BuatUsulan'));
 const UsulanDetail = lazy(() => import('@/routes/UsulanDetail'));
 const Auth = lazy(() => import('@/routes/Auth'));
 const Admin = lazy(() => import('@/routes/Admin'));
+const Metodologi = lazy(() => import('@/routes/Metodologi'));
+const UsulanSaya = lazy(() => import('@/routes/UsulanSaya'));
 const NotFound = lazy(() => import('@/routes/NotFound'));
 
 function page(element: ReactNode) {
-  return <Suspense fallback={<PageLoader />}>{element}</Suspense>;
+  // Layar sambutan menutupi muatan pertama; setelah itu halaman cukup kosong sesaat.
+  return <Suspense fallback={null}>{element}</Suspense>;
 }
 
 export const router = createBrowserRouter([
@@ -29,11 +31,20 @@ export const router = createBrowserRouter([
       { path: 'bandingkan', element: page(<Bandingkan />) },
       { path: 'apbd', element: page(<Apbd />) },
       { path: 'simulator', element: page(<Simulator />) },
+      { path: 'metodologi', element: page(<Metodologi />) },
       {
         path: 'usulan/baru',
         element: page(
           <RequireAuth>
             <BuatUsulan />
+          </RequireAuth>,
+        ),
+      },
+      {
+        path: 'usulan-saya',
+        element: page(
+          <RequireAuth>
+            <UsulanSaya />
           </RequireAuth>,
         ),
       },
