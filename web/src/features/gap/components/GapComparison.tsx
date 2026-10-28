@@ -164,7 +164,7 @@ export function GapComparison({ ringkasan, onPilih, statusApbd = {} }: Props) {
                       </button>
                       <span className="block text-[12.5px] text-muted md:hidden">
                         {row.adaApbd
-                          ? `Warga ${formatPersen(row.persen_warga)} · APBD ${formatPersen(row.persen_apbd)}`
+                          ? `Warga ${adaWarga ? formatPersen(row.persen_warga) : 'belum ada'} · APBD ${formatPersen(row.persen_apbd)}`
                           : keteranganApbd(row.kategori)}
                       </span>
                     </span>
@@ -178,7 +178,11 @@ export function GapComparison({ ringkasan, onPilih, statusApbd = {} }: Props) {
                   )}
                 </td>
                 <td className="hidden pl-3 text-right md:table-cell">
-                  {formatPersen(row.persen_warga)}
+                  {adaWarga ? (
+                    formatPersen(row.persen_warga)
+                  ) : (
+                    <span className="text-[13px] text-muted">Belum ada</span>
+                  )}
                 </td>
                 <td className="hidden pl-3 text-right md:table-cell">
                   {row.adaApbd ? (

@@ -11,9 +11,9 @@ import { formatBesarPanjang, setaraRupiah, type GapRingkasan } from '../lib';
  * dan tidak menampilkan angka.
  */
 export function GapLead({ ringkasan }: { ringkasan: GapRingkasan }) {
-  const { sorotan, teratas, adaWarga, totalApbd, apbdTersedia, jumlahApbdTerverifikasi } =
+  const { sorotan, teratas, adaWarga, totalApbd, statusVerifikasiServer, jumlahApbdTerverifikasi } =
     ringkasan;
-  const tanpaApbd = apbdTersedia === false || jumlahApbdTerverifikasi === 0;
+  const tanpaApbd = statusVerifikasiServer !== 'terverifikasi' || jumlahApbdTerverifikasi === 0;
 
   return (
     <div className="stagger grid gap-6 lg:grid-cols-2">
@@ -40,7 +40,9 @@ export function GapLead({ ringkasan }: { ringkasan: GapRingkasan }) {
             <p className="mt-3 max-w-[48ch] text-xl leading-snug font-semibold tracking-[-0.01em]">
               {adaWarga
                 ? tanpaApbd
-                  ? 'Selisih dengan APBD belum bisa dihitung karena belum ada data APBD terverifikasi.'
+                  ? statusVerifikasiServer === 'tidak_diketahui'
+                    ? 'Selisih dengan APBD belum bisa ditampilkan karena status verifikasi data APBD belum tersedia dari server.'
+                    : 'Selisih dengan APBD belum bisa dihitung karena belum ada data APBD terverifikasi.'
                   : 'Belum ada program dengan data APBD yang bisa dibandingkan.'
                 : 'Belum ada pilihan warga yang terkumpul. Yang tampil baru sisi APBD.'}
             </p>

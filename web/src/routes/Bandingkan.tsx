@@ -41,7 +41,9 @@ export default function Bandingkan() {
   const config = configQuery.data;
 
   const unduhCsv = () => {
-    const blob = new Blob([buatCsv(ringkasan.rows)], { type: 'text/csv;charset=utf-8' });
+    const blob = new Blob([buatCsv(ringkasan.rows, ringkasan.adaWarga)], {
+      type: 'text/csv;charset=utf-8',
+    });
     const url = URL.createObjectURL(blob);
     const tautan = document.createElement('a');
     tautan.href = url;
@@ -81,8 +83,8 @@ export default function Bandingkan() {
 
       {gapQuery.isSuccess && ringkasan.rows.length === 0 && (
         <EmptyState
-          title="Belum ada data gap"
-          description="Pastikan migrasi dan seed APBD sudah dimuat ke Supabase."
+          title="Perbandingan belum tersedia"
+          description="Data perbandingan belum tersedia atau masih dalam proses verifikasi."
         />
       )}
 
@@ -99,6 +101,7 @@ export default function Bandingkan() {
         onClose={() => setDipilih(null)}
         ringkasan={ringkasan}
         apbd={apbdQuery.data ?? []}
+        konfigurasi={config}
       />
     </div>
   );
