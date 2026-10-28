@@ -147,9 +147,38 @@ describe('siapkanGap, tujuh migrasi tanpa data terverifikasi', () => {
 });
 
 describe('buatCsv', () => {
+  const kolom = (csv: string, baris: number) => csv.trim().split('\n')[baris]?.split(',') ?? [];
+
   test('tidak memuat kolom nominal alokasi warga', () => {
     const csv = buatCsv(siapkanGap([item('A', 1, 1, baru(2, true))]).rows);
     expect(csv).not.toContain('total_alokasi_warga_rp');
-    expect(csv.startsWith('﻿kategori,')).toBe(true);
+    expect(csv.startsWith('\uFEFFkategori,')).toBe(true);
+  });
+
+  test('nol partisipan: warga dan selisih kosong, bukan 0 atau -100', () => {
+    const ringkasan = siapkanGap([
+      item('A', -100, 5_000, { ...baru(0, true), persen_warga: 0, persen_apbd: 100 }),
+    ]);
+    const baris = kolom(buatCsv(ringkasan.rows, ringkasan.adaWarga), 1);
+    expect(baris[1]).toBe('');
+    expect(baris[3]).toBe('');
+    expect(baris[2]).toBe('100');
+  });
+
+  test('ada partisipan: selisih nol yang valid ditulis sebagai 0, bukan kosong', () => {
+    const ringkasan = siapkanGap([item('A', 0, 5_000, baru(3, true))]);
+    const baris = kolom(buatCsv(ringkasan.rows, ringkasan.adaWarga), 1);
+    expect(baris[3]).toBe('0');
+  });
+
+  test('ada partisipan dan selisih negatif tetap ditulis apa adanya', () => {
+    const ringkasan = siapkanGap([item('A', -20, 5_000, baru(3, true))]);
+    expect(kolom(buatCsv(ringkasan.rows, ringkasan.adaWarga), 1)[3]).toBe('-20');
+  });
+
+  test('APBD tidak terverifikasi: porsi, selisih, dan nominal kosong', () => {
+    const ringkasan = siapkanGap([item('A', 5, 9_000)]);
+    const baris = kolom(buatCsv(ringkasan.rows, ringkasan.adaWarga), 1);
+    expect(baris.slice(2)).toEqual(['', '', '', 'menyusul']);
   });
 });

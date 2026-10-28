@@ -4,7 +4,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { PageLoader } from '@/components/ui/PageLoader';
-import { statusData } from '@/features/apbd/lib';
+import { statusKategori } from '@/features/apbd/lib';
 import { useApbdQuery } from '@/features/apbd/queries';
 import { useCategoriesQuery } from '@/features/categories/queries';
 import { useAppConfigQuery } from '@/features/config/queries';
@@ -27,19 +27,19 @@ export default function Bandingkan() {
     () => categoriesQuery.data?.map((kategori) => kategori.nama) ?? [],
     [categoriesQuery.data],
   );
-  const statusApbd = useMemo(
-    () =>
-      Object.fromEntries(
-        (apbdQuery.data ?? []).map((item) => [item.kategori, statusData(item)] as const),
-      ),
-    [apbdQuery.data],
-  );
+  const config = configQuery.data;
+  // Status per kategori dari semua barisnya pada kota dan tahun terpilih, bukan dari baris terakhir.
+  const statusApbd = useMemo(() => {
+    const konfigurasi = config && { kota: config.kota, tahun: config.tahunAnggaran };
+    const kategori = new Set((apbdQuery.data ?? []).map((item) => item.kategori));
+    return Object.fromEntries(
+      [...kategori].map((nama) => [nama, statusKategori(apbdQuery.data ?? [], nama, konfigurasi)]),
+    );
+  }, [apbdQuery.data, config]);
   const ringkasan = useMemo(
     () => siapkanGap(gapQuery.data ?? [], urutanKategori),
     [gapQuery.data, urutanKategori],
   );
-  const config = configQuery.data;
-
   const unduhCsv = () => {
     const blob = new Blob([buatCsv(ringkasan.rows, ringkasan.adaWarga)], {
       type: 'text/csv;charset=utf-8',

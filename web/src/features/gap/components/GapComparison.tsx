@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
 import { cn } from '@/lib/cn';
-import type { StatusData } from '@/features/apbd/lib';
+import type { StatusKategori } from '@/features/apbd/lib';
 import { formatPersen } from '@/lib/format';
 import { formatSelisih } from '@/lib/selisih';
 import { formatBesarSingkat, setaraRupiah, type GapRingkasan, type GapRow } from '../lib';
@@ -12,7 +12,7 @@ type Props = {
   ringkasan: GapRingkasan;
   onPilih: (row: GapRow) => void;
   /** Status data APBD per kategori dari halaman APBD; kosong bila belum termuat. */
-  statusApbd?: Record<string, StatusData>;
+  statusApbd?: Record<string, StatusKategori>;
 };
 
 /** Satu baris bar dua arah: garis tengah = porsi APBD, ke kanan = warga ingin lebih besar. */
@@ -65,10 +65,12 @@ function BarDuaArah({
  */
 export function GapComparison({ ringkasan, onPilih, statusApbd = {} }: Props) {
   // Kategori tanpa angka terverifikasi: bedakan "belum terverifikasi" dari "belum ada data".
-  const keteranganApbd = (kategori: string) =>
-    statusApbd[kategori] === 'belum_terverifikasi'
-      ? 'APBD belum terverifikasi'
-      : 'Data APBD belum ada';
+  const keteranganApbd = (kategori: string) => {
+    const status = statusApbd[kategori];
+    if (status === 'belum_terverifikasi') return 'APBD belum terverifikasi';
+    if (status === 'sebagian') return 'APBD sebagian terverifikasi';
+    return 'Data APBD belum ada';
+  };
   const { maks, adaWarga, totalApbd } = ringkasan;
   // Bawaan: urutan sama dengan simulator (PRD). Pilihan kedua: selisih terbesar dulu.
   const [urutan, setUrutan] = useState<'simulator' | 'selisih'>('simulator');
