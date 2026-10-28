@@ -1,73 +1,31 @@
 # Checklist remote development
 
-## Kondisi remote saat ini
+## Kondisi dan rencana rollout
 
-Target tetap hanya `musrenbang-digital-backend` (`dogyibbzwfslspflsidm`). Pemeriksaan
-terakhir pada 27 Oktober 2026 menunjukkan enam migration fondasi sudah terpasang;
-`20261027065525_mvp_public_stats_status_audit.sql` masih kandidat lokal. Tidak ada
-izin untuk memasangnya melalui catatan ini. Pemasangan baru memerlukan persetujuan
-eksplisit terpisah setelah review lokal dan koordinasi kontrak frontend.
+Pemeriksaan read-only 28 Oktober 2026: target `dogyibbzwfslspflsidm` memiliki
+tepat enam migration, sembilan tabel ber-RLS, dan Security Advisor 0 ERROR serta
+3 WARN RPC authenticated. Migration 7 dan 8 hanya lokal. Status: **NO-GO** sampai
+koordinasi frontend, evaluasi data dan persetujuan deployment terpisah selesai.
+Frontend main `5e3728c` memanggil RPC bercatatan yang belum tersedia pada remote saat ini.
+Runner pengujian remote menargetkan delapan migration dan menolak history lain.
 
-Status baca terakhir: proyek aktif, Data API dan signup aktif, konfirmasi email
-wajib, GraphQL tidak diekspos. Security Advisor menunjukkan 0 ERROR dan 3 WARN pada
-RPC `SECURITY DEFINER` authenticated yang telah diaudit. `SITE_URL`, redirect
-allowlist, rincian SMTP, rate limit, dan fingerprint penuh belum terverifikasi.
+1. Verifikasi target, history, checksum, backup dan dampak terhadap data aktual.
+   Migration 7 mengubah provenance dan riwayat legacy; migration 8 hanya menangani
+   profil baru. Tinjau profil legacy per ID tanpa perbaikan massal.
+2. Tinjau Gap, APBD, session cache dan kontrak frontend; semua data seed APBD belum
+   terverifikasi sebagai program resmi. Jangan menjalankan seed sebagai workaround.
+3. Lakukan dry-run CLI baru sebelum deployment dan pastikan hanya migration 7 dan 8
+   direncanakan, tanpa seed, reset atau Vault. Dry-run lama bukan bukti untuk migration 8.
+4. Deployment dan perubahan pembatasan akses memerlukan persetujuan terpisah.
+   Jangan mengasumsikan seluruh migration atomik. Jika gagal, hentikan dan tinjau
+   schema dan history tanpa reset atau manipulasi history.
+5. Setelah deployment yang disetujui, periksa history, RLS, grants, views, trigger,
+   RPC, schema private, Advisor dan smoke test baca. Uji tulis Auth/API remote hanya
+   dengan persetujuan terpisah, fixture terbatas, baseline dan cleanup terverifikasi.
 
-Migration ketujuh mengubah kontrak RPC status menjadi bercatatan dan menambah kolom
-provenance APBD/view statistik yang belum ada pada remote. Frontend saat ini masih
-memanggil RPC status lama; integrasi frontend perlu disiapkan sebelum migration
-ketujuh dipertimbangkan untuk deployment.
-
-## Rencana rollout kandidat migration 7
-
-Status: **WAITING FOR FRONTEND** dan belum ada persetujuan deployment. Pemeriksaan
-read-only pada 27 Oktober 2026 mengonfirmasi project ref dan enam history hingga
-`20261027004023_security_advisor_hardening`; migration 7 belum tercatat. SHA-256
-file lokal yang ditinjau adalah
-`1C2130EF879789C7662E6B3A0D234D7CD762444D906734D4D280018D23013FFC`.
-Hitung ulang pada mesin operator sebelum dry-run; perbedaan newline pada checkout
-dapat memengaruhi checksum file dan harus diselidiki sebelum membandingkan hasil.
-Guard provenance telah diperbaiki sesudah dry-run lama; dry-run lama tidak
-memvalidasi isi file yang sekarang dan harus diulang sebelum deployment.
-
-1. Siapkan frontend yang sudah diuji untuk catatan status, moderasi, ketersediaan
-   Gap, estimasi positif, dan provenance APBD sesuai `BACKEND_HANDOFF.md`. Sediakan
-   kemampuan menonaktifkan aksi perubahan status serta tampilan perbandingan yang
-   bergantung pada kontrak baru selama pergantian. Tanpa kemampuan itu, gunakan
-   jendela pemeliharaan yang disetujui. Jangan membuka celah untuk RPC lama tanpa
-   catatan atau menganggap tampilan angka nol sebagai data tersedia.
-2. Pastikan dokumentasi dan keputusan produk tentang data APBD, kategori yang belum
-   lengkap, serta privasi agregat ditinjau. Semua seed saat ini `perlu_lampiran`;
-   `apbd_tersedia` hanya menyatakan sedikitnya satu item cocok, bukan kelengkapan
-   seluruh kategori. Jangan seed atau mengubah data untuk memaksakan kesiapan.
-3. Minta persetujuan deployment terpisah. Pada waktu pelaksanaan, verifikasi project
-   ref, branch, checksum, backup yang dapat dipulihkan, aktivitas pengguna, schema,
-   history, dan pengaturan akses terkini. Catat kondisi awal akses; perubahan akses
-   remote memerlukan persetujuan tersendiri. Migration 7 mengubah label verifikasi
-   lama tanpa URL dan menambah riwayat baseline, sehingga evaluasi dampak data
-   aktual sebelum penerapan. Hentikan bila ada drift atau konflik.
-4. Dengan akses yang telah disetujui untuk dibatasi, ulangi dry-run CLI yang sesuai
-   versi terpasang dan pastikan hanya `20261027065525_mvp_public_stats_status_audit.sql`
-   direncanakan, tanpa seed, reset atau Vault. Jalankan migration hanya setelah
-   persetujuan dan pemeriksaan tersebut. Jika gagal, hentikan, catat schema/history,
-   pertahankan pembatasan yang diperlukan dan minta review pemulihan; jangan reset
-   atau memanipulasi history.
-5. Verifikasi read-only history tujuh versi, RLS, grants, trigger, fungsi dan view
-   invoker, eksposur schema private, Security Advisor, serta hasil agregat dan flags
-   dengan data yang ada. Tinjau dampak perubahan provenance dan baseline riwayat.
-   Lakukan smoke test GET API dengan anon key dan JWT yang sudah ada bila tersedia;
-   jangan membuat fixture tanpa persetujuan pengujian tulis yang terpisah.
-6. Pasang/aktifkan frontend yang sudah divalidasi dalam jendela terkoordinasi,
-   uji bahwa fungsi yang bergantung kontrak baru tersedia dan tidak ada penyajian
-   data APBD yang menyesatkan. Pulihkan akses sesuai kondisi awal hanya setelah
-   pemeriksaan keamanan dan integrasi berhasil. Uji ulang operasi baca setelah akses
-   dipulihkan. Jika pemeriksaan gagal, pertahankan pembatasan dan lakukan review.
-7. Pengujian Auth/API yang membuat data dan concurrency remote memerlukan persetujuan
-   terpisah, dua alamat email uji yang dapat menerima konfirmasi, mekanisme admin
-   tepercaya, SITE_URL/redirect allowlist, SMTP/sender, rate limit, baseline dan
-   fingerprint, serta cleanup dan recovery per Run ID seperti dijelaskan dalam
-   `REMOTE_INTEGRATION_TESTING.md`. Semua prasyarat tersebut harus diverifikasi lagi;
-   status provider email aktif saja tidak membuktikan pengiriman berhasil.
+SITE_URL, redirect allowlist, SMTP, rate limit, Google OAuth dan fingerprint penuh
+remote belum terverifikasi. Jangan menganggap OAuth sungguhan lulus berdasarkan
+fixture metadata lokal.
 
 Setelah otorisasi pengujian tulis tersedia, verifikasi signup/konfirmasi, login,
 refresh/logout, provisioning, anon/warga A/B/admin, moderasi, riwayat, voting,

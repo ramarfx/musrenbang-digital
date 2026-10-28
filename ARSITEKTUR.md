@@ -349,8 +349,8 @@ tidak mengekspos email. `v_comments` sengaja tidak mengekspos `user_id`.
 - Mengunci baris usulan (`FOR UPDATE`), kembali tanpa perubahan bila status sama.
 - Memerlukan catatan 1–2000 karakter, mengubah status, dan menulis riwayat dalam satu transaksi.
 - Migration 7 mempertahankan RPC lama sebagai jalur kompatibilitas yang saat ini
-  menolak permintaan tanpa catatan. Frontend yang ada masih memanggil RPC lama;
-  pembaruan kontrak frontend diperlukan sebelum migration 7 diterapkan.
+  menolak permintaan tanpa catatan. Frontend main sudah memanggil RPC baru; remote
+  enam migration belum menyediakannya dan rollout perlu koordinasi.
 
 `save_allocations` dan `moderate_proposal` adalah RPC `SECURITY DEFINER` dengan
 validasi UID/peran, `search_path` kosong, dan `EXECUTE` hanya untuk `authenticated`.
@@ -608,9 +608,9 @@ Catatan deployment:
 ### Belum / menunggu
 
 - Migration ketujuh belum dipasang pada remote. Remote masih memiliki enam migration.
-- Migrasi ketujuh mengubah RPC admin status menjadi kontrak bercatatan, sedangkan
-  frontend saat ini masih memanggil RPC lama tanpa catatan. Frontend perlu mengirim
-  `p_catatan` sebelum migrasi tersebut disetujui untuk deployment.
+- Migration 7 dan 8 belum dipasang di remote. Frontend main memanggil RPC status
+  bercatatan yang belum tersedia pada remote enam migration. Migration 8 memilih
+  nama metadata `nama`, `full_name`, `name`, lalu `Warga`; role tetap `warga`.
 - Data APBD seed belum menjadi pemetaan program terverifikasi; lampiran resmi dan
   pemisahan belanja rutin D.2 masih perlu.
 - Halaman kelola APBD untuk admin belum ada; pengelolaan masih lewat SQL/dashboard.
@@ -622,7 +622,7 @@ Catatan deployment:
 
 ### Langkah berikutnya
 
-1. Validasi penuh migration ketujuh di Supabase lokal dan tinjau hasil sebelum commit.
+1. Tinjau hasil validasi lokal migration 7 dan 8 serta koordinasikan rollout.
 2. Selesaikan keputusan metodologi Gap, privasi agregat, dan rancangan belanja rutin.
 3. Koordinasikan perubahan RPC bercatatan dengan anggota frontend.
 4. Sediakan data resmi per program/rutin serta pemetaan dan URL sumber yang dapat diaudit.

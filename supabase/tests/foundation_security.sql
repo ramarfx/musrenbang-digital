@@ -69,6 +69,55 @@ SELECT pg_temp.check_true(
   'Migration 7 tidak mengira transisi Diajukan yang lebih baru sebagai status awal'
 );
 
+-- Fixture metadata OAuth-shaped dijalankan pada transaksi lokal dan dibersihkan.
+INSERT INTO auth.users(id, email, raw_user_meta_data) VALUES
+  ('44444444-4444-4444-8444-444444444441', 'profile-email@example.invalid',
+   '{"nama":"  Nama Email  ","full_name":"Bukan Nama","name":"Bukan Nama","peran":"admin"}'),
+  ('44444444-4444-4444-8444-444444444442', 'profile-google-full@example.invalid',
+   '{"nama":"   ","full_name":"  Nama Google  ","name":"Nama Lain","role":"admin"}'),
+  ('44444444-4444-4444-8444-444444444443', 'profile-google-name@example.invalid',
+   '{"full_name":"  ","name":"  Nama Cadangan  ","peran":"admin"}'),
+  ('44444444-4444-4444-8444-444444444444', 'profile-malformed@example.invalid',
+   '{"nama":{"text":"Admin"},"full_name":42,"name":["Admin"],"role":"admin"}'),
+  ('44444444-4444-4444-8444-444444444445', 'profile-empty@example.invalid', '{}');
+SELECT pg_temp.check_true(
+  (SELECT nama = 'Nama Email' AND peran = 'warga' FROM public.profiles
+   WHERE id = '44444444-4444-4444-8444-444444444441'),
+  'Profil email memprioritaskan nama dan mengabaikan metadata peran'
+);
+SELECT pg_temp.check_true(
+  (SELECT nama = 'Nama Google' AND peran = 'warga' FROM public.profiles
+   WHERE id = '44444444-4444-4444-8444-444444444442'),
+  'Metadata Google full_name digunakan ketika nama kosong tanpa mengangkat role'
+);
+SELECT pg_temp.check_true(
+  (SELECT nama = 'Nama Cadangan' AND peran = 'warga' FROM public.profiles
+   WHERE id = '44444444-4444-4444-8444-444444444443'),
+  'Metadata name digunakan ketika nama dan full_name kosong'
+);
+SELECT pg_temp.check_true(
+  (SELECT nama = 'Warga' AND peran = 'warga' FROM public.profiles
+   WHERE id = '44444444-4444-4444-8444-444444444444'),
+  'Metadata nama bukan string memakai default aman dan role warga'
+);
+SELECT pg_temp.check_true(
+  (SELECT nama = 'Warga' AND peran = 'warga' FROM public.profiles
+   WHERE id = '44444444-4444-4444-8444-444444444445'),
+  'Metadata kosong memakai default warga'
+);
+SELECT pg_temp.check_true(
+  NOT has_function_privilege('anon', 'public.handle_new_user()', 'EXECUTE')
+  AND NOT has_function_privilege('authenticated', 'public.handle_new_user()', 'EXECUTE'),
+  'Trigger provisioning tidak dapat dipanggil langsung oleh role API'
+);
+DELETE FROM auth.users WHERE id IN (
+  '44444444-4444-4444-8444-444444444441',
+  '44444444-4444-4444-8444-444444444442',
+  '44444444-4444-4444-8444-444444444443',
+  '44444444-4444-4444-8444-444444444444',
+  '44444444-4444-4444-8444-444444444445'
+);
+
 -- Metadata peran palsu tidak boleh menentukan role profil.
 INSERT INTO auth.users(id, email, raw_user_meta_data) VALUES
   ('11111111-1111-4111-8111-111111111111', 'foundation-a@example.invalid', '{"nama":"Warga A","peran":"admin","role":"admin"}'),

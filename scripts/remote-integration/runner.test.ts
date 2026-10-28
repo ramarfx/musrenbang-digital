@@ -42,8 +42,11 @@ function manifestFixture(): FixtureManifest {
 }
 
 describe('remote runner safety gates', () => {
-  test('membedakan enam migration remote dari kandidat ketujuh lokal', () => {
+  test('membedakan enam migration remote dari target delapan migration', () => {
     expect(DEPLOYED_REMOTE_MIGRATIONS).toHaveLength(6);
+    expect(WRITE_TEST_MIGRATIONS).toHaveLength(8);
+    expect(classifyRemoteMigrationHistory(WRITE_TEST_MIGRATIONS.slice(0, 7))).toBe('unexpected');
+    expect(() => assertExpectedMigrationHistory(WRITE_TEST_MIGRATIONS.slice(0, 7))).toThrow();
     expect(classifyRemoteMigrationHistory(DEPLOYED_REMOTE_MIGRATIONS)).toBe('deployed-baseline');
     expect(classifyRemoteMigrationHistory(WRITE_TEST_MIGRATIONS)).toBe('mvp-migration-present');
     expect(() => assertExpectedMigrationHistory(WRITE_TEST_MIGRATIONS)).not.toThrow();

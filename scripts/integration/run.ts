@@ -1,3 +1,4 @@
+import { createClient } from '@supabase/supabase-js';
 import { concurrency } from './concurrency';
 import type { FixtureManifest } from '../remote-integration/safety';
 import { runTrackedWrite } from '../remote-integration/tracking';
@@ -70,9 +71,9 @@ async function run() {
   const migrations =
     await db`SELECT version FROM supabase_migrations.schema_migrations ORDER BY version`;
   check(
-    'Tujuh migration tercatat persisten pada database lokal',
+    'Delapan migration tercatat persisten pada database lokal',
     migrations.map((row: { version: string }) => row.version).join(',') ===
-      '20261026090000,20261026090100,20261026090200,20261026090300,20261026195414,20261027004023,20261027065525',
+      '20261026090000,20261026090100,20261026090200,20261026090300,20261026195414,20261027004023,20261027065525,20261028135103',
   );
   await beginFixtureRun();
   const allocationBaseline = await db<{ total: number }[]>`
@@ -86,7 +87,7 @@ async function run() {
   );
   const password = `Local!${crypto.randomUUID()}aZ9`;
   const a = await signup('warga-a', password, { nama: 'Warga A', peran: 'admin', role: 'admin' });
-  const b = await signup('warga-b', password, { nama: 'Warga B' });
+  const b = await signup('warga-b', password, { nama: '  ', full_name: '  Warga B Google  ', name: 'Nama Cadangan', peran: 'admin', role: 'admin' });
   const admin = await signup('admin', password, { nama: 'Admin Fixture' });
   for (const actor of [a, b, admin]) {
     const profile = await rows(`profiles?id=eq.${actor.id}`, actor);
@@ -98,6 +99,11 @@ async function run() {
   check(
     'Metadata pendaftaran tidak meningkatkan peran A',
     (await rows(`profiles?id=eq.${a.id}`, a))[0].peran === 'warga',
+  );
+  const googleMetadataProfile = await rows('profiles?id=eq.' + b.id, b);
+  check(
+    'Signup Auth dengan metadata berbentuk Google memakai full_name dan tetap warga',
+    googleMetadataProfile[0]?.nama === 'Warga B Google' && googleMetadataProfile[0]?.peran === 'warga',
   );
   await db`UPDATE public.profiles SET peran='admin' WHERE id=${admin.id}::uuid`;
   check(
@@ -332,6 +338,29 @@ async function run() {
       })
     ).status === 200,
   );
+  for (const [label, actor] of [
+    ['Anon', null],
+    ['Warga A', a],
+    ['Warga B', b],
+  ] as const) {
+    await denied(label + ' tidak dapat memanggil RPC status bercatatan', '/rest/v1/rpc/change_proposal_status_with_note', actor, 'POST', {
+      p_proposal_id: p,
+      p_status: 'Diverifikasi',
+      p_catatan: 'Percobaan tidak berwenang',
+    });
+  }
+  const emptyStatusNote = await request<{ code?: string }>(
+    '/rest/v1/rpc/change_proposal_status_with_note',
+    admin,
+    'POST',
+    { p_proposal_id: p, p_status: 'Diverifikasi', p_catatan: '   ' },
+  );
+  check(
+    'RPC status admin menolak catatan kosong melalui HTTP',
+    emptyStatusNote.status === 400 && emptyStatusNote.data.code === '22023',
+  );
+  const beforeValidStatus = await rows('proposals?id=eq.' + p + '&select=status', admin);
+  check('Penolakan RPC tidak mengubah status', beforeValidStatus[0]?.status === 'Diajukan');
   check(
     'RPC status admin berhasil dengan catatan wajib',
     (
@@ -417,7 +446,7 @@ async function run() {
   const commentId = comment.data[0].id;
   check(
     'View invoker tetap menyediakan nama penulis komentar',
-    (await rows(`v_comments?id=eq.${commentId}`, null))[0]?.penulis_nama === 'Warga B',
+    (await rows(`v_comments?id=eq.${commentId}`, null))[0]?.penulis_nama === 'Warga B Google',
   );
   check(
     'Admin menghapus komentar',
@@ -667,6 +696,24 @@ async function run() {
     'Login kembali setelah logout berhasil',
     relogin.status === 200 && relogin.data.user.id === a.id,
   );
+  const sessionClient = createClient(apiUrl, process.env.INTEGRATION_ANON_KEY!, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
+  const loginA = await sessionClient.auth.signInWithPassword({ email: a.email, password });
+  check('Client sesi masuk sebagai A', !loginA.error && loginA.data.user?.id === a.id);
+  const ownA = await sessionClient.from('profiles').select('id').eq('id', a.id);
+  check('Client sesi A membaca profil A', !ownA.error && ownA.data?.length === 1);
+  const logoutA = await sessionClient.auth.signOut({ scope: 'local' });
+  check('Client sesi keluar dari A', !logoutA.error);
+  const loginB = await sessionClient.auth.signInWithPassword({ email: b.email, password });
+  check('Client sesi yang sama masuk sebagai B', !loginB.error && loginB.data.user?.id === b.id);
+  const hiddenA = await sessionClient.from('profiles').select('id').eq('id', a.id);
+  const ownBProfile = await sessionClient.from('profiles').select('id').eq('id', b.id);
+  check('Setelah pergantian sesi B tidak membaca profil A', !hiddenA.error && hiddenA.data?.length === 0);
+  check('Setelah pergantian sesi B membaca profil sendiri', !ownBProfile.error && ownBProfile.data?.length === 1);
+  const logoutB = await sessionClient.auth.signOut({ scope: 'local' });
+  check('Client sesi keluar dari B', !logoutB.error);
+
   // Access JWT lama dapat hidup sampai expiry; tidak mengklaim logout langsung
   // mencabut seluruh access token stateless pada PostgREST.
   check('API yang dipakai tetap localhost', new URL(apiUrl).hostname === '127.0.0.1');

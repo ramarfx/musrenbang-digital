@@ -1,5 +1,9 @@
 # Remote Auth dan API integration testing
 
+Runner membedakan baseline enam migration dan target tulis delapan migration.
+Mode tulis menolak history lain, termasuk tujuh migration. Status remote terakhir
+harus diverifikasi ulang sebelum tindakan. Tidak ada izin pengujian tulis dalam catatan ini.
+
 Runner remote terpisah dari `scripts/test-integration.ps1` dan
 `scripts/integration/*`. Runner lokal tetap dibatasi ke `127.0.0.1:55421`.
 Runner remote mengizinkan satu target development: project
@@ -32,8 +36,9 @@ Management API tidak tersedia. `REMOTE_DATABASE_URL` juga belum disediakan, sehi
 preflight itu tidak menghasilkan fingerprint database lengkap. Jangan menafsirkan
 status provider aktif sebagai bukti SMTP mengirim ke mailbox uji.
 
-Mode tulis runner saat ini mensyaratkan tujuh migration termasuk
-`20261027065525_mvp_public_stats_status_audit`. Remote masih memiliki enam; karena itu
+Mode tulis runner mensyaratkan delapan migration termasuk
+`20261027065525_mvp_public_stats_status_audit` dan `20261028135103_auth_profile_metadata`.
+Remote terakhir diketahui memiliki enam; karena itu
 mode tulis akan berhenti pada pemeriksaan history. Jangan menerapkan migration hanya
 untuk melewati gate ini; migration memerlukan review dan persetujuan deployment
 terpisah terlebih dahulu.

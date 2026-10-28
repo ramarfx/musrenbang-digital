@@ -212,9 +212,9 @@ async function readOnlyBaseline(options: { requireDatabase: boolean; enforceHist
   }
   try {
     assertExpectedMigrationHistory(versions, WRITE_TEST_MIGRATIONS);
-    check('History remote cocok dengan tujuh migration yang diuji', true);
+    check('History remote cocok dengan delapan migration yang diuji', true);
   } catch (error) {
-    check('History remote cocok dengan tujuh migration yang diuji', false);
+    check('History remote cocok dengan delapan migration yang diuji', false);
     throw error;
   }
   preflightBaseline = await snapshot();

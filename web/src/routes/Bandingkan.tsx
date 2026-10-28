@@ -98,6 +98,11 @@ export default function Bandingkan() {
 
       <GapDetailDialog
         row={dipilih}
+        statusKategoriApbd={
+          apbdQuery.isSuccess && config && dipilih
+            ? (statusApbd[dipilih.kategori] ?? 'kosong')
+            : undefined
+        }
         onClose={() => setDipilih(null)}
         ringkasan={ringkasan}
         apbd={apbdQuery.data ?? []}
