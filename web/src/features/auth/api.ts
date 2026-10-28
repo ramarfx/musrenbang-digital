@@ -46,41 +46,33 @@ export async function getProfile(userId: string): Promise<Profile | null> {
   return parseWith(profileSchema, data, 'profil');
 }
 
-function namaDariUser(user: User): string {
-  // Akun email memakai `nama`; akun Google membawa `full_name` atau `name`.
-  for (const kunci of ['nama', 'full_name', 'name'] as const) {
-    const nilai = user.user_metadata?.[kunci];
-    if (typeof nilai === 'string' && nilai.trim().length > 0) return nilai.trim();
-  }
-  return user.email?.split('@')[0] ?? 'Warga';
-}
-
 /**
- * Trigger database sudah membuat profil saat sign up. Fungsi ini menjadi
- * jaring pengaman untuk akun lama yang dibuat sebelum trigger dipasang.
+ * Profil dibuat oleh trigger database saat akun terdaftar; API tidak boleh INSERT ke `profiles`
+ * (ditolak RLS sejak migrasi foundation_security). Di sini profil hanya dibaca, dengan beberapa
+ * kali coba ulang singkat kalau-kalau baris trigger belum terbaca tepat setelah masuk.
  */
 async function ensureProfile(user: User): Promise<Profile> {
-  const existing = await getProfile(user.id);
-  if (existing) return existing;
+  for (let percobaan = 0; percobaan < 3; percobaan += 1) {
+    const profil = await getProfile(user.id);
+    if (profil) return profil;
+    await new Promise((selesai) => setTimeout(selesai, 400));
+  }
+  throw new AppError(
+    'Profil akunmu belum tersedia di server. Coba masuk lagi sebentar lagi, atau hubungi admin.',
+  );
+}
 
+/** Warga hanya boleh mengubah namanya sendiri; email dan peran dijaga trigger dan RLS. */
+export async function updateProfileName(userId: string, nama: string): Promise<Profile> {
+  const bersih = parseWith(registerSchema.shape.nama, nama, 'nama');
   const { data, error } = await supabase
     .from('profiles')
-    .insert({
-      id: user.id,
-      email: user.email ?? `${user.id}@unknown.local`,
-      nama: namaDariUser(user),
-    })
+    .update({ nama: bersih })
+    .eq('id', userId)
     .select('*')
-    .single();
-
-  if (error) {
-    if (error.code === '23505') {
-      const raced = await getProfile(user.id);
-      if (raced) return raced;
-    }
-    throw toAppError(error, 'Gagal membuat profil.');
-  }
-
+    .maybeSingle();
+  if (error) throw toAppError(error, 'Gagal menyimpan nama.');
+  if (!data) throw new AppError('Profil tidak ditemukan. Coba masuk lagi.');
   return parseWith(profileSchema, data, 'profil');
 }
 

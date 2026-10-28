@@ -9,4 +9,5 @@ export {
   useSessionQuery,
   useSignInMutation,
   useSignUpMutation,
+  useUpdateProfileNameMutation,
 } from './queries';

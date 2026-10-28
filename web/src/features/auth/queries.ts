@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { LoginInput, RegisterInput } from '@musrenbang/shared';
 import { queryKeys } from '@/lib/query-keys';
-import { getProfile, getSession, signIn, signInWithGoogle, signUp } from './api';
+import { getProfile, getSession, signIn, signInWithGoogle, signUp, updateProfileName } from './api';
 
 export function useSessionQuery() {
   return useQuery({
@@ -51,4 +51,14 @@ export function useSignUpMutation() {
 
 export function useGoogleSignInMutation() {
   return useMutation({ mutationFn: signInWithGoogle });
+}
+
+export function useUpdateProfileNameMutation(userId: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (nama: string) => updateProfileName(userId as string, nama),
+    onSuccess: (profil) => {
+      queryClient.setQueryData(queryKeys.profile(profil.id), profil);
+    },
+  });
 }
