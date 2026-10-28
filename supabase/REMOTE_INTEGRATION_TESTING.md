@@ -1,5 +1,10 @@
 # Remote Auth dan API integration testing
 
+Pemeriksaan runner saat ini mengharapkan tepat tujuh migration. Setelah migration 8
+terpasang, runner akan berhenti secara fail-safe dan memerlukan pembaruan serta
+review terpisah sebelum pengujian tulis remote. Remote saat ini masih enam migration.
+
+
 Runner remote terpisah dari `scripts/test-integration.ps1` dan
 `scripts/integration/*`. Runner lokal tetap dibatasi ke `127.0.0.1:55421`.
 Runner remote mengizinkan satu target development: project

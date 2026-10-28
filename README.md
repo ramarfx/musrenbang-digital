@@ -209,8 +209,8 @@ Urutan sebelum commit: `bun run format`, lalu `bun run check`.
    invalidasi cache konsisten setelah vote, komentar, alokasi, atau perubahan status.
 7. **Status usulan hanya berubah lewat RPC** agar riwayat status selalu tercatat.
    Remote enam migration masih menggunakan `change_proposal_status`; migration lokal
-   7 menyediakan `change_proposal_status_with_note` dan kontrak frontend perlu
-   mengirim catatan sebelum migration itu dipertimbangkan untuk deployment.
+   7 menyediakan `change_proposal_status_with_note`; frontend main sudah memanggil
+   RPC itu, tetapi remote belum menyediakannya.
 
 ## Validasi dan error
 
@@ -225,8 +225,9 @@ Urutan sebelum commit: `bun run format`, lalu `bun run check`.
 
 Fondasi Auth, RLS, RPC, dan enam migration sudah diuji lokal dan terpasang pada
 development. Migration ketujuh beserta perubahan kontrak lokal sudah diuji, tetapi
-belum diterapkan remote. Sebagian kontrak frontend masih perlu disesuaikan sebelum
-migration ketujuh dipasang. Tersedianya kode bukan bukti seluruh kriteria PRD lulus.
+belum diterapkan remote. Migration kedelapan lokal menangani fallback nama profil
+Auth baru tanpa mengubah role. Gap, APBD dan cache sesi masih perlu ditinjau sebelum
+rollout terkoordinasi. Tersedianya kode bukan bukti seluruh kriteria PRD lulus.
 
 Catatan jujur untuk demo:
 
