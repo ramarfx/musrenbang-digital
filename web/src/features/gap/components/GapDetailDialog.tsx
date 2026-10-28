@@ -1,7 +1,12 @@
 import { describeGap, type ApbdItem } from '@musrenbang/shared';
 import { Link } from 'react-router-dom';
 import { Modal } from '@/components/ui/Modal';
-import { rapikanSumber, sumberKategori, type SumberKategori } from '@/features/apbd/lib';
+import {
+  rapikanSumber,
+  sumberKategori,
+  type SumberKategori,
+  type StatusKategori,
+} from '@/features/apbd/lib';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
 import { getCategoryInfo } from '@/features/categories/info';
 import { formatPersen, formatRupiah } from '@/lib/format';
@@ -16,6 +21,7 @@ type Props = {
   apbd: ApbdItem[];
   /** Kota dan tahun yang dipakai v_gap. Tanpa ini sumber pembentuk agregat tidak bisa dipastikan. */
   konfigurasi: { kota: string; tahunAnggaran: number } | undefined;
+  statusKategoriApbd?: StatusKategori;
 };
 
 /** Batang perbandingan satu sisi (warga atau APBD) pada skala yang sama. */
@@ -59,7 +65,7 @@ function SumberAgregat({ row, sumber }: { row: GapRow; sumber: SumberKategori | 
     return (
       <p>
         {row.adaApbd
-          ? 'Baris sumber pembentuk angka ini belum bisa ditelusuri dari data yang tersedia.'
+          ? 'Sumber yang sesuai belum tersedia untuk ditampilkan.'
           : 'Belum dicantumkan.'}
       </p>
     );
@@ -67,9 +73,16 @@ function SumberAgregat({ row, sumber }: { row: GapRow; sumber: SumberKategori | 
   return (
     <>
       {row.adaApbd && daftar.length > 1 && (
-        <p className="mb-1.5">Angka ini dijumlahkan dari {daftar.length} baris sumber:</p>
+        <p className="mb-1.5">
+          Ada {daftar.length} sumber terverifikasi yang sesuai dengan filter:
+        </p>
       )}
       {!row.adaApbd && <p className="mb-1.5">Sumber yang dicantumkan, belum terverifikasi:</p>}
+      {row.adaApbd && (
+        <p className="mb-1.5">
+          Sumber sesuai filter; keterkaitan persis dengan agregat belum dapat dipastikan.
+        </p>
+      )}
       <ul className="space-y-1.5">
         {daftar.map((item) => (
           <li key={item.id}>
@@ -98,7 +111,14 @@ function SumberAgregat({ row, sumber }: { row: GapRow; sumber: SumberKategori | 
  * Pop-up rincian satu program di halaman Bandingkan: pilihan warga lawan porsi APBD,
  * kalimat penjelasan otomatis, nominal, dan sumber data beserta status verifikasinya.
  */
-export function GapDetailDialog({ row, onClose, ringkasan, apbd, konfigurasi }: Props) {
+export function GapDetailDialog({
+  row,
+  onClose,
+  ringkasan,
+  apbd,
+  konfigurasi,
+  statusKategoriApbd,
+}: Props) {
   const sumber = row
     ? sumberKategori(
         apbd,
@@ -192,10 +212,22 @@ export function GapDetailDialog({ row, onClose, ringkasan, apbd, konfigurasi }: 
                 <dt className="text-muted">Status data</dt>
                 <dd className="font-semibold">
                   {row.adaApbd
-                    ? 'Terverifikasi'
+                    ? 'Angka agregat berasal dari data terverifikasi'
                     : sumber && sumber.belumTerverifikasi.length > 0
                       ? 'Belum terverifikasi'
                       : 'Data belum ada'}
+                </dd>
+                <dt className="text-muted">Kelengkapan kategori</dt>
+                <dd className="font-semibold">
+                  {statusKategoriApbd === 'sebagian'
+                    ? 'Sebagian terverifikasi; ada data yang belum terverifikasi'
+                    : statusKategoriApbd === 'terverifikasi'
+                      ? 'Baris bernominal yang tersedia terverifikasi'
+                      : statusKategoriApbd === 'belum_terverifikasi'
+                        ? 'Belum terverifikasi'
+                        : statusKategoriApbd === 'kosong'
+                          ? 'Data belum ada'
+                          : 'Belum dapat dipastikan'}
                 </dd>
                 <dt className="text-muted">Sumber</dt>
                 <dd className="text-muted">
@@ -203,7 +235,7 @@ export function GapDetailDialog({ row, onClose, ringkasan, apbd, konfigurasi }: 
                 </dd>
               </dl>
               <p className="mt-4 border-t border-rule pt-3 text-[12.5px] text-muted">
-                Persentase APBD dihitung hanya dari kategori yang terverifikasi.{' '}
+                Persentase APBD dihitung dari baris terverifikasi, bukan semua baris kategori.{' '}
                 <Link to="/metodologi" className="font-semibold text-warga underline">
                   Lihat metodologi
                 </Link>

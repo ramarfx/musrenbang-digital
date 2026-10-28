@@ -8,16 +8,16 @@ pada 27 Oktober 2026. Tidak ada kredensial atau data pribadi dalam dokumen ini.
 
 Pemeriksaan read-only pada 28 Oktober 2026 menargetkan hanya `dogyibbzwfslspflsidm`.
 Remote memiliki enam migration; migration 7 dan 8 masih lokal dan belum disetujui
-untuk deployment. Frontend pada main `ffc0e74` memanggil RPC bercatatan yang belum
+untuk deployment. Frontend pada main `5e3728c` memanggil RPC bercatatan yang belum
 ada pada remote enam migration. Rollout terkoordinasi masih diperlukan.
 
-| Area | Kondisi dan tindakan |
-| --- | --- |
-| Status dan moderasi | Form status bercatatan dan RPC moderasi sudah ada. RPC status baru tersedia setelah migration 7. |
-| Profil | Migration 8 memilih nama metadata `nama`, `full_name`, `name`, lalu `Warga`; role selalu `warga`. Profil lama tidak diperbaiki otomatis. |
-| Gap | Nol partisipan dan ketersediaan APBD harus ditampilkan dengan benar; periksa juga filter kota dan tahun. |
-| APBD | Seed belum diverifikasi sebagai data program resmi; jangan menyarankan seed destruktif sebagai tindakan pengguna. |
-| Sesi | Pergantian akun melalui client Auth diuji lokal; invalidasi cache React Query lintas sesi belum terbukti. |
+| Area                | Kondisi dan tindakan                                                                                                                     |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Status dan moderasi | Form status bercatatan dan RPC moderasi sudah ada. RPC status baru tersedia setelah migration 7.                                         |
+| Profil              | Migration 8 memilih nama metadata `nama`, `full_name`, `name`, lalu `Warga`; role selalu `warga`. Profil lama tidak diperbaiki otomatis. |
+| Gap                 | Nol partisipan dan CSV ditangani; kategori campuran dibedakan dari angka agregat terverifikasi.                                          |
+| APBD                | Seed belum diverifikasi sebagai data program resmi; jangan menyarankan seed destruktif sebagai tindakan pengguna.                        |
+| Sesi                | Pergantian akun melalui client Auth diuji lokal; invalidasi cache React Query lintas sesi belum terbukti.                                |
 
 Validasi lokal: 162 assertion SQL dan 258 pemeriksaan integrasi lulus, termasuk
 Auth, RLS, RPC, concurrency dan cleanup. Signup dengan metadata berbentuk Google
@@ -28,6 +28,11 @@ Security Advisor remote melaporkan 0 ERROR dan 3 WARN RPC privileged authenticat
 Untuk profil lama yang salah atau hilang, identifikasi kandidat secara read-only,
 verifikasi identitas dan siapkan backup. Perbaikan per ID memerlukan persetujuan
 terpisah dan pemeriksaan hasil; jangan menaikkan role atau memperbaiki massal.
+
+Sumber pada detail hanya kandidat berdasarkan kategori, kota, tahun dan status.
+View dan daftar sumber diambil terpisah, sehingga bukan bukti snapshot atau daftar ID
+pembentuk agregat yang persis. Baris nominal nol juga diperlakukan berbeda pada
+filter tampilan dan SQL. Kontrak sumber atomik memerlukan keputusan bersama.
 
 ## Auth dan profil
 

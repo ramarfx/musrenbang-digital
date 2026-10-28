@@ -164,6 +164,11 @@ export function GapComparison({ ringkasan, onPilih, statusApbd = {} }: Props) {
                       >
                         {row.kategori}
                       </button>
+                      {statusApbd[row.kategori] === 'sebagian' && (
+                        <span className="block text-[12.5px] text-muted">
+                          APBD sebagian terverifikasi; angka hanya mencakup data terverifikasi.
+                        </span>
+                      )}
                       <span className="block text-[12.5px] text-muted md:hidden">
                         {row.adaApbd
                           ? `Warga ${adaWarga ? formatPersen(row.persen_warga) : 'belum ada'} · APBD ${formatPersen(row.persen_apbd)}`

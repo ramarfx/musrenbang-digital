@@ -6,7 +6,8 @@ Pemeriksaan read-only 28 Oktober 2026: target `dogyibbzwfslspflsidm` memiliki
 tepat enam migration, sembilan tabel ber-RLS, dan Security Advisor 0 ERROR serta
 3 WARN RPC authenticated. Migration 7 dan 8 hanya lokal. Status: **NO-GO** sampai
 koordinasi frontend, evaluasi data dan persetujuan deployment terpisah selesai.
-Frontend main memanggil RPC bercatatan yang belum tersedia pada remote saat ini.
+Frontend main `5e3728c` memanggil RPC bercatatan yang belum tersedia pada remote saat ini.
+Runner pengujian remote menargetkan delapan migration dan menolak history lain.
 
 1. Verifikasi target, history, checksum, backup dan dampak terhadap data aktual.
    Migration 7 mengubah provenance dan riwayat legacy; migration 8 hanya menangani
