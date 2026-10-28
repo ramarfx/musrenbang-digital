@@ -35,6 +35,9 @@ export function buildNav(isAdmin: boolean, sudahMasuk = false): NavGroup[] {
     title: 'Tentang',
     items: [{ to: '/metodologi', label: 'Metodologi', icon: 'buku' }],
   });
+  if (sudahMasuk) {
+    groups.push({ title: 'Akun', items: [{ to: '/profil', label: 'Profil', icon: 'profil' }] });
+  }
   if (isAdmin) {
     groups.push({
       title: 'Admin',
@@ -144,18 +147,44 @@ export function UserRow({ dark }: { dark: boolean }) {
         dark ? 'bg-ink/40' : 'border border-border bg-surface',
       )}
     >
-      <span
-        aria-hidden="true"
-        className="grid size-8 flex-none place-items-center rounded-full bg-ink text-xs font-bold text-hijau-terang"
-      >
-        {user ? initials(name) : 'W'}
-      </span>
-      <span className="min-w-0 flex-1 leading-tight">
-        <span className="block truncate text-[14px] font-bold">{user ? name : 'Warga'}</span>
-        <span className={cn('block text-xs', dark ? 'text-white/75' : 'text-muted')}>
-          {user ? (isAdmin ? 'Admin' : 'Warga') : 'Belum masuk'}
-        </span>
-      </span>
+      {user ? (
+        <Link
+          to="/profil"
+          aria-label="Buka profil"
+          className={cn(
+            '-m-1 flex min-w-0 flex-1 items-center gap-2.5 rounded-[14px] p-1 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2',
+            dark ? 'hover:bg-white/10' : 'hover:bg-active',
+          )}
+        >
+          <span
+            aria-hidden="true"
+            className="grid size-8 flex-none place-items-center rounded-full bg-ink text-xs font-bold text-hijau-terang"
+          >
+            {user ? initials(name) : 'W'}
+          </span>
+          <span className="min-w-0 flex-1 leading-tight">
+            <span className="block truncate text-[14px] font-bold">{user ? name : 'Warga'}</span>
+            <span className={cn('block text-xs', dark ? 'text-white/75' : 'text-muted')}>
+              {user ? (isAdmin ? 'Admin' : 'Warga') : 'Belum masuk'}
+            </span>
+          </span>
+        </Link>
+      ) : (
+        <>
+          <span
+            aria-hidden="true"
+            className="grid size-8 flex-none place-items-center rounded-full bg-ink text-xs font-bold text-hijau-terang"
+          >
+            {user ? initials(name) : 'W'}
+          </span>
+          <span className="min-w-0 flex-1 leading-tight">
+            <span className="block truncate text-[14px] font-bold">{user ? name : 'Warga'}</span>
+            <span className={cn('block text-xs', dark ? 'text-white/75' : 'text-muted')}>
+              {user ? (isAdmin ? 'Admin' : 'Warga') : 'Belum masuk'}
+            </span>
+          </span>
+        </>
+      )}
       {user && <NotificationBell dark={dark} tempat={dark ? 'samping' : 'atas'} />}
       {user ? (
         <button
