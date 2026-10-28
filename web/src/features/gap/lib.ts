@@ -20,6 +20,12 @@ export type GapRingkasan = {
   /** Jumlah warga yang sudah menyimpan urutan. Kosong bila server belum menyediakannya. */
   jumlahPartisipan: number | undefined;
   /**
+   * Apakah server membuktikan status verifikasi APBD. Pada database enam migration kolom
+   * `apbd_tersedia` tidak ada: nominal positif di sana bukan bukti terverifikasi, jadi tidak
+   * ada kategori yang dibandingkan dan angkanya tidak disebut resmi.
+   */
+  statusVerifikasiServer: 'terverifikasi' | 'tidak_ada' | 'tidak_diketahui';
+  /**
    * Apakah ada data APBD terverifikasi sama sekali. Kosong bila server belum menyediakannya.
    * Nilai true bukan bukti semua kategori lengkap: lihat `jumlahApbdTerverifikasi`.
    */
@@ -38,12 +44,24 @@ export function siapkanGap(
   /** Urutan kategori di simulator. Kalau kosong, baris diurutkan menurut selisih. */
   urutanKategori: readonly string[] = [],
 ): GapRingkasan {
-  const semua: GapRow[] = items.map((item) => ({ ...item, adaApbd: item.nominal_apbd > 0 }));
+  const apbdTersedia = items[0]?.apbd_tersedia;
+  const jumlahPartisipan = items[0]?.jumlah_partisipan;
+  // Hanya server migrasi 7 yang membatasi APBD ke item terverifikasi, dan menandainya lewat
+  // `apbd_tersedia`. Tanpa penanda itu, nominal positif tidak boleh dianggap terverifikasi.
+  const apbdTerbukti = apbdTersedia === true;
+  const semua: GapRow[] = items.map((item) => ({
+    ...item,
+    adaApbd: apbdTerbukti && item.nominal_apbd > 0,
+  }));
   const berdata = semua
     .filter((row) => row.adaApbd)
     .sort((a, b) => Math.abs(b.gap_poin_persen) - Math.abs(a.gap_poin_persen));
   const menyusul = semua.filter((row) => !row.adaApbd);
-  const adaWarga = semua.some((row) => row.total_alokasi_warga > 0);
+  // Nol partisipan berarti belum ada hasil agregasi, bukan warga memilih nol persen.
+  const adaWarga =
+    jumlahPartisipan !== undefined
+      ? jumlahPartisipan > 0
+      : semua.some((row) => row.total_alokasi_warga > 0);
   const rowsSelisih = [...berdata, ...menyusul];
   const posisi = (kategori: string) => {
     const index = urutanKategori.indexOf(kategori);
@@ -64,8 +82,10 @@ export function siapkanGap(
     totalApbd: semua.reduce((sum, row) => sum + row.nominal_apbd, 0),
     adaWarga,
     maks: Math.max(1, ...berdata.map((row) => Math.abs(row.gap_poin_persen))),
-    jumlahPartisipan: items[0]?.jumlah_partisipan,
-    apbdTersedia: items[0]?.apbd_tersedia,
+    jumlahPartisipan,
+    statusVerifikasiServer:
+      apbdTersedia === undefined ? 'tidak_diketahui' : apbdTersedia ? 'terverifikasi' : 'tidak_ada',
+    apbdTersedia,
     jumlahApbdTerverifikasi: berdata.length,
   };
 }
@@ -95,7 +115,7 @@ export function formatBesarPanjang(nilai: number): string {
 }
 
 /** CSV untuk diunduh. Diawali BOM supaya Excel membaca UTF-8 dengan benar. */
-export function buatCsv(rows: readonly GapRow[]): string {
+export function buatCsv(rows: readonly GapRow[], adaWarga = true): string {
   const kepala = [
     'kategori',
     'warga_persen',
@@ -107,8 +127,9 @@ export function buatCsv(rows: readonly GapRow[]): string {
   const baris = rows.map((row) =>
     [
       `"${row.kategori.replace(/"/g, '""')}"`,
-      row.persen_warga,
-      row.persen_apbd,
+      // Belum ada partisipan: kosongkan, jangan menulis 0 yang terbaca sebagai hasil.
+      adaWarga ? row.persen_warga : '',
+      row.adaApbd ? row.persen_apbd : '',
       row.adaApbd ? row.gap_poin_persen : '',
       row.nominal_apbd,
       row.adaApbd ? 'ada' : 'menyusul',

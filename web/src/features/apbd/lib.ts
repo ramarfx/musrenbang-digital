@@ -36,3 +36,32 @@ export function rapikanSumber(sumber: string | null | undefined): string | null 
   if (teks === '' || /^[-–—\s]+$/.test(teks)) return null;
   return teks.replace(/\s*[–—]\s*/g, ', ');
 }
+
+export type SumberKategori = {
+  /** Baris yang ikut agregat v_gap: kota dan tahun terpilih, `verified_program`, ada tautan. */
+  terverifikasi: ApbdItem[];
+  /** Baris pada kota dan tahun yang sama yang bernominal tetapi tidak ikut agregat. */
+  belumTerverifikasi: ApbdItem[];
+};
+
+/**
+ * Memilah baris APBD satu kategori sesuai filter v_gap (kota dan tahun dari config), supaya
+ * sumber yang ditampilkan sama dengan baris pembentuk angka agregat, bukan baris pertama yang
+ * kebetulan cocok kategorinya. Baris lain tahun atau kota diabaikan.
+ */
+export function sumberKategori(
+  items: readonly ApbdItem[],
+  kategori: string,
+  konfigurasi: { kota: string; tahun: number } | undefined,
+): SumberKategori {
+  const hasil: SumberKategori = { terverifikasi: [], belumTerverifikasi: [] };
+  if (!konfigurasi) return hasil;
+  for (const item of items) {
+    if (item.kategori !== kategori) continue;
+    if (item.kota !== konfigurasi.kota || item.tahun !== konfigurasi.tahun) continue;
+    const status = statusData(item);
+    if (status === 'terverifikasi') hasil.terverifikasi.push(item);
+    else if (status === 'belum_terverifikasi') hasil.belumTerverifikasi.push(item);
+  }
+  return hasil;
+}

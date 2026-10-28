@@ -7,9 +7,9 @@ import type { GapRingkasan } from '../lib';
  * terverifikasi, jadi yang dihitung di sini adalah jumlah kategori terverifikasinya.
  */
 export function GapCatatanData({ ringkasan }: { ringkasan: GapRingkasan }) {
-  const { jumlahPartisipan, apbdTersedia, jumlahApbdTerverifikasi, rows } = ringkasan;
+  const { jumlahPartisipan, statusVerifikasiServer, jumlahApbdTerverifikasi, rows } = ringkasan;
   const totalKategori = rows.length;
-  const tanpaApbd = apbdTersedia === false || jumlahApbdTerverifikasi === 0;
+  const tanpaApbd = statusVerifikasiServer !== 'terverifikasi' || jumlahApbdTerverifikasi === 0;
   const sebagian = !tanpaApbd && jumlahApbdTerverifikasi < totalKategori;
 
   return (
@@ -24,8 +24,11 @@ export function GapCatatanData({ ringkasan }: { ringkasan: GapRingkasan }) {
       </p>
       {tanpaApbd && (
         <p>
-          <b>Data APBD:</b> belum ada kategori dengan data terverifikasi, jadi selisih dengan APBD
-          belum bisa dihitung. Yang tampil baru pilihan warga.{' '}
+          <b>Data APBD:</b>{' '}
+          {statusVerifikasiServer === 'tidak_diketahui'
+            ? 'server belum memberi status verifikasi, jadi angka APBD tidak dianggap terverifikasi dan selisih tidak dihitung.'
+            : 'belum ada kategori dengan data terverifikasi, jadi selisih dengan APBD belum bisa dihitung.'}{' '}
+          Yang tampil baru pilihan warga.{' '}
           <Link to="/apbd" className="font-semibold text-warga underline">
             Lihat status data
           </Link>

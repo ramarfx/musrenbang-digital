@@ -1,7 +1,7 @@
 import { describeGap, type ApbdItem } from '@musrenbang/shared';
 import { Link } from 'react-router-dom';
 import { Modal } from '@/components/ui/Modal';
-import { LABEL_STATUS_DATA, rapikanSumber, statusData } from '@/features/apbd/lib';
+import { rapikanSumber, sumberKategori, type SumberKategori } from '@/features/apbd/lib';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
 import { getCategoryInfo } from '@/features/categories/info';
 import { formatPersen, formatRupiah } from '@/lib/format';
@@ -14,6 +14,8 @@ type Props = {
   ringkasan: GapRingkasan;
   /** Data sumber dan status verifikasi; boleh kosong bila belum termuat. */
   apbd: ApbdItem[];
+  /** Kota dan tahun yang dipakai v_gap. Tanpa ini sumber pembentuk agregat tidak bisa dipastikan. */
+  konfigurasi: { kota: string; tahunAnggaran: number } | undefined;
 };
 
 /** Batang perbandingan satu sisi (warga atau APBD) pada skala yang sama. */
@@ -22,25 +24,73 @@ function Batang({
   nilai,
   warna,
   skala,
+  tersedia = true,
 }: {
   label: string;
   nilai: number;
   warna: string;
   skala: number;
+  /** False bila datanya belum ada (mis. belum ada partisipan): tampil "Belum ada", bukan 0%. */
+  tersedia?: boolean;
 }) {
   return (
     <div>
       <div className="flex items-baseline justify-between gap-3">
         <span className="text-[13px] text-muted">{label}</span>
-        <b className="text-lg font-semibold tracking-[-0.01em]">{formatPersen(nilai)}</b>
+        <b className="text-lg font-semibold tracking-[-0.01em]">
+          {tersedia ? formatPersen(nilai) : 'Belum ada'}
+        </b>
       </div>
       <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-track">
         <i
           className={`bar-grow block h-full rounded-full ${warna}`}
-          style={{ width: `${skala > 0 ? Math.min(100, (nilai / skala) * 100) : 0}%` }}
+          style={{
+            width: `${tersedia && skala > 0 ? Math.min(100, (nilai / skala) * 100) : 0}%`,
+          }}
         />
       </div>
     </div>
+  );
+}
+
+function SumberAgregat({ row, sumber }: { row: GapRow; sumber: SumberKategori | undefined }) {
+  const daftar = row.adaApbd ? sumber?.terverifikasi : sumber?.belumTerverifikasi;
+  if (!daftar || daftar.length === 0) {
+    return (
+      <p>
+        {row.adaApbd
+          ? 'Baris sumber pembentuk angka ini belum bisa ditelusuri dari data yang tersedia.'
+          : 'Belum dicantumkan.'}
+      </p>
+    );
+  }
+  return (
+    <>
+      {row.adaApbd && daftar.length > 1 && (
+        <p className="mb-1.5">Angka ini dijumlahkan dari {daftar.length} baris sumber:</p>
+      )}
+      {!row.adaApbd && <p className="mb-1.5">Sumber yang dicantumkan, belum terverifikasi:</p>}
+      <ul className="space-y-1.5">
+        {daftar.map((item) => (
+          <li key={item.id}>
+            {rapikanSumber(item.sumber) ?? 'Sumber tanpa keterangan'}
+            {item.sumber_url && (
+              <>
+                {' '}
+                <a
+                  href={item.sumber_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-semibold text-warga underline"
+                >
+                  Buka sumber
+                </a>
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 
@@ -48,8 +98,14 @@ function Batang({
  * Pop-up rincian satu program di halaman Bandingkan: pilihan warga lawan porsi APBD,
  * kalimat penjelasan otomatis, nominal, dan sumber data beserta status verifikasinya.
  */
-export function GapDetailDialog({ row, onClose, ringkasan, apbd }: Props) {
-  const sumber = row ? apbd.find((item) => item.kategori === row.kategori) : undefined;
+export function GapDetailDialog({ row, onClose, ringkasan, apbd, konfigurasi }: Props) {
+  const sumber = row
+    ? sumberKategori(
+        apbd,
+        row.kategori,
+        konfigurasi && { kota: konfigurasi.kota, tahun: konfigurasi.tahunAnggaran },
+      )
+    : undefined;
   const bisaBandingkan = Boolean(row && row.adaApbd && ringkasan.adaWarga);
   const skala = row ? Math.max(row.persen_warga, row.persen_apbd, 1) : 1;
 
@@ -91,6 +147,7 @@ export function GapDetailDialog({ row, onClose, ringkasan, apbd }: Props) {
                       nilai={row.persen_warga}
                       warna="bg-warga"
                       skala={skala}
+                      tersedia={ringkasan.adaWarga}
                     />
                     <Batang
                       label="Porsi APBD"
@@ -134,15 +191,15 @@ export function GapDetailDialog({ row, onClose, ringkasan, apbd }: Props) {
                 </dd>
                 <dt className="text-muted">Status data</dt>
                 <dd className="font-semibold">
-                  {sumber
-                    ? LABEL_STATUS_DATA[statusData(sumber)]
-                    : row.adaApbd
-                      ? 'Terverifikasi'
+                  {row.adaApbd
+                    ? 'Terverifikasi'
+                    : sumber && sumber.belumTerverifikasi.length > 0
+                      ? 'Belum terverifikasi'
                       : 'Data belum ada'}
                 </dd>
                 <dt className="text-muted">Sumber</dt>
                 <dd className="text-muted">
-                  {rapikanSumber(sumber?.sumber) ?? 'Belum dicantumkan.'}
+                  <SumberAgregat row={row} sumber={sumber} />
                 </dd>
               </dl>
               <p className="mt-4 border-t border-rule pt-3 text-[12.5px] text-muted">

@@ -1,7 +1,15 @@
 import type { Profile } from '@musrenbang/shared';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Session, User } from '@supabase/supabase-js';
-import { createContext, useCallback, useContext, useEffect, useMemo, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  type ReactNode,
+} from 'react';
 import { queryKeys } from '@/lib/query-keys';
 import { supabase } from '@/lib/supabase';
 import { signOut as signOutRequest } from './api';
@@ -24,15 +32,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const session = sessionQuery.data ?? null;
   const user = session?.user ?? null;
   const profileQuery = useProfileQuery(user?.id ?? null);
+  // Id pengguna terakhir yang sesi-nya dikenali, untuk mendeteksi pergantian akun.
+  const idTerakhir = useRef<string | null>(user?.id ?? null);
+  const userId = user?.id ?? null;
+  useEffect(() => {
+    if (userId !== null) idTerakhir.current = userId;
+  }, [userId]);
 
   useEffect(() => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      queryClient.setQueryData(queryKeys.session, nextSession);
-      if (!nextSession) {
-        queryClient.removeQueries({ queryKey: ['profile'] });
+      const idBaru = nextSession?.user.id ?? null;
+      // Data usulan dan statistik bergantung pada siapa yang masuk (usulan milik sendiri, usulan
+      // menunggu, data admin). Saat akun berganti atau keluar, buang semuanya kecuali sesi dan
+      // data publik yang sama untuk semua orang, supaya tidak ada sisa data akun sebelumnya.
+      if (idTerakhir.current !== null && idBaru !== idTerakhir.current) {
+        queryClient.removeQueries({
+          predicate: (query) => {
+            const kunci = query.queryKey[0];
+            return kunci !== 'session' && kunci !== 'config' && kunci !== 'categories';
+          },
+        });
+        idTerakhir.current = idBaru;
       }
+      queryClient.setQueryData(queryKeys.session, nextSession);
     });
     return () => subscription.unsubscribe();
   }, [queryClient]);

@@ -102,8 +102,8 @@ export default function Apbd() {
 
       {apbdQuery.isSuccess && items.length === 0 && (
         <EmptyState
-          title="Belum ada data APBD"
-          description="Jalankan bun run seed dari root proyek setelah mengisi .env."
+          title="Data APBD belum tersedia"
+          description="Data APBD belum tersedia atau masih dalam proses verifikasi."
         />
       )}
 
