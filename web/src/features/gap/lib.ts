@@ -130,8 +130,10 @@ export function buatCsv(rows: readonly GapRow[], adaWarga = true): string {
       // Belum ada partisipan: kosongkan, jangan menulis 0 yang terbaca sebagai hasil.
       adaWarga ? row.persen_warga : '',
       row.adaApbd ? row.persen_apbd : '',
-      row.adaApbd ? row.gap_poin_persen : '',
-      row.nominal_apbd,
+      // Selisih hanya bermakna bila kedua sisi ada. Kosong (bukan 0 atau -100) bila belum ada
+      // partisipan atau APBD terverifikasi; nol yang valid tetap ditulis sebagai 0.
+      row.adaApbd && adaWarga ? row.gap_poin_persen : '',
+      row.adaApbd ? row.nominal_apbd : '',
       row.adaApbd ? 'ada' : 'menyusul',
     ].join(','),
   );

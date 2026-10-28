@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { ApbdItem } from '@musrenbang/shared';
-import { rapikanSumber, statusData, sumberKategori } from './lib';
+import { rapikanSumber, statusData, statusKategori, sumberKategori } from './lib';
 
 describe('statusData', () => {
   test('tanpa nominal berarti data belum ada, apa pun statusnya', () => {
@@ -107,5 +107,67 @@ describe('sumberKategori', () => {
   test('kategori lain diabaikan', () => {
     const hasil = sumberKategori([baris(1, { kategori: 'Kesehatan' })], 'Pendidikan', konfigurasi);
     expect(hasil.terverifikasi).toEqual([]);
+  });
+});
+
+describe('statusKategori', () => {
+  const baris = (id: number, tambahan: Partial<ApbdItem> = {}): ApbdItem => ({
+    id,
+    kategori: 'Pendidikan',
+    nominal_rp: 100,
+    tahun: 2026,
+    kota: 'DKI Jakarta',
+    sumber: `Sumber ${id}`,
+    sumber_url: `https://contoh.id/${id}`,
+    catatan_pemetaan: null,
+    status_verifikasi: 'verified_program',
+    dibuat_pada: '2026-10-26T00:00:00+07:00',
+    diubah_pada: '2026-10-26T00:00:00+07:00',
+    ...tambahan,
+  });
+  const belum = { status_verifikasi: 'perlu_lampiran' as const, sumber_url: null };
+  const konfigurasi = { kota: 'DKI Jakarta', tahun: 2026 };
+
+  test('hasil tidak bergantung pada urutan baris', () => {
+    const a = statusKategori([baris(1), baris(2, belum)], 'Pendidikan', konfigurasi);
+    const b = statusKategori([baris(2, belum), baris(1)], 'Pendidikan', konfigurasi);
+    expect(a).toBe('sebagian');
+    expect(b).toBe('sebagian');
+  });
+
+  test('satu baris terverifikasi tidak membuat kategori terverifikasi', () => {
+    expect(statusKategori([baris(1), baris(2, belum)], 'Pendidikan', konfigurasi)).not.toBe(
+      'terverifikasi',
+    );
+  });
+
+  test('semua baris terverifikasi: terverifikasi', () => {
+    expect(statusKategori([baris(1), baris(2)], 'Pendidikan', konfigurasi)).toBe('terverifikasi');
+  });
+
+  test('tidak ada baris terverifikasi: belum terverifikasi', () => {
+    expect(statusKategori([baris(1, belum), baris(2, belum)], 'Pendidikan', konfigurasi)).toBe(
+      'belum_terverifikasi',
+    );
+  });
+
+  test('baris tahun atau kota lain diabaikan', () => {
+    const lain = [baris(1, { tahun: 2025 }), baris(2, { kota: 'Bandung' }), baris(3, belum)];
+    expect(statusKategori(lain, 'Pendidikan', konfigurasi)).toBe('belum_terverifikasi');
+  });
+
+  test('baris tanpa nominal tidak dihitung', () => {
+    const hasil = statusKategori(
+      [baris(1), baris(2, { nominal_rp: 0 })],
+      'Pendidikan',
+      konfigurasi,
+    );
+    expect(hasil).toBe('terverifikasi');
+  });
+
+  test('tanpa baris relevan atau tanpa konfigurasi: kosong', () => {
+    expect(statusKategori([], 'Pendidikan', konfigurasi)).toBe('kosong');
+    expect(statusKategori([baris(1)], 'Pendidikan', undefined)).toBe('kosong');
+    expect(statusKategori([baris(1)], 'Kesehatan', konfigurasi)).toBe('kosong');
   });
 });

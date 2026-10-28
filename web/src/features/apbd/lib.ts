@@ -65,3 +65,32 @@ export function sumberKategori(
   }
   return hasil;
 }
+
+/** Status satu kategori dari semua baris relevannya; `sebagian` bila baris-barisnya berbeda status. */
+export type StatusKategori = StatusData | 'sebagian';
+
+/**
+ * Status data APBD satu kategori pada kota dan tahun terpilih, dari seluruh baris bernominal.
+ * Satu baris terverifikasi tidak membuat kategori disebut terverifikasi bila baris lain belum:
+ * hasilnya `sebagian`. Baris lain tahun atau kota diabaikan; tanpa konfigurasi hasilnya `kosong`.
+ */
+export function statusKategori(
+  items: readonly ApbdItem[],
+  kategori: string,
+  konfigurasi: { kota: string; tahun: number } | undefined,
+): StatusKategori {
+  if (!konfigurasi) return 'kosong';
+  const relevan = items
+    .filter(
+      (item) =>
+        item.kategori === kategori &&
+        item.kota === konfigurasi.kota &&
+        item.tahun === konfigurasi.tahun,
+    )
+    .map(statusData)
+    .filter((status) => status !== 'kosong');
+  if (relevan.length === 0) return 'kosong';
+  const terverifikasi = relevan.filter((status) => status === 'terverifikasi').length;
+  if (terverifikasi === relevan.length) return 'terverifikasi';
+  return terverifikasi === 0 ? 'belum_terverifikasi' : 'sebagian';
+}
