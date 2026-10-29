@@ -11,6 +11,7 @@
     "dev": "bun run --cwd web dev",
     "build": "bun run --cwd web build",
     "preview": "bun run --cwd web preview",
+    "deploy": "bun run build && bunx wrangler pages deploy web/dist --project-name musrenbang-digital",
     "seed": "bun run scripts/seed.ts",
     "typecheck": "bun run --cwd packages/shared typecheck && bun run --cwd web typecheck && tsc --noEmit -p tsconfig.json",
     "lint": "oxlint .",
