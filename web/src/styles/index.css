@@ -274,6 +274,28 @@ html::-webkit-scrollbar,
   scrollbar-width: none;
 }
 
+/*
+ * Trek tipis untuk panel yang sendiri yang scroll (isi sidebar, menu HP): bulat, semi-
+ * transparan di atas warna panel, bukan trek abu bawaan browser yang kontras dengan hijau.
+ */
+.trek-tipis {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 35%) transparent;
+}
+.trek-tipis::-webkit-scrollbar {
+  width: 6px;
+}
+.trek-tipis::-webkit-scrollbar-track {
+  background: transparent;
+}
+.trek-tipis::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 35%);
+  border-radius: 999px;
+}
+.trek-tipis::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 55%);
+}
+
 ::selection {
   background: var(--mint);
   color: var(--ink);
