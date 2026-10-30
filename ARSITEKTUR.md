@@ -91,21 +91,21 @@ pernah dikirim ke browser.
 │   │   │   ├── AppProviders.tsx   # QueryClient, AuthProvider, Toaster
 │   │   │   └── router.tsx         # route lazy + guard
 │   │   ├── components/
-│   │   │   ├── layout/            # AppLayout, Navbar, Footer
+│   │   │   ├── layout/            # AppLayout, Sidebar, MobileNav, Footer
 │   │   │   ├── map/               # ProposalMap, LocationPicker
 │   │   │   └── ui/                # Button, Card, Field, Input, Select, dll.
 │   │   ├── features/
-│   │   │   ├── admin/             # tabel + mutasi status
-│   │   │   ├── allocations/       # simulator + RPC save_allocations
+│   │   │   ├── admin/             # antrean moderasi, dialog catatan, mutasi
+│   │   │   ├── allocations/       # simulator prioritas + RPC save_allocations
 │   │   │   ├── apbd/              # tabel APBD
 │   │   │   ├── auth/              # provider, form, guard
 │   │   │   ├── categories/        # daftar kategori
 │   │   │   ├── comments/          # komentar
 │   │   │   ├── config/            # config aplikasi
-│   │   │   ├── gap/               # grafik, sorotan, tabel gap
+│   │   │   ├── gap/               # perbandingan, sorotan, rincian, catatan data
 │   │   │   └── proposals/         # daftar, form, vote, status
 │   │   ├── lib/                   # api, env, format, cn, leaflet, query keys
-│   │   ├── routes/                # Beranda, Bandingkan, Apbd, Simulator, dll.
+│   │   ├── routes/                # Beranda, Bandingkan, Apbd, Simulator, Profil, dll.
 │   │   ├── styles/index.css
 │   │   └── main.tsx
 │   └── vite.config.ts             # alias @/ dan @musrenbang/shared

@@ -180,16 +180,21 @@ Urutan sebelum commit: `bun run format`, lalu `bun run check`.
 
 ## Halaman
 
-| Route          | Isi                                                        |
-| -------------- | ---------------------------------------------------------- |
-| `/`            | Peta usulan + daftar, filter kategori/status               |
-| `/bandingkan`  | Grafik, sorotan, dan tabel Gap Warga–APBD + teks otomatis  |
-| `/apbd`        | Rincian APBD per kategori, sumber, dan status verifikasi   |
-| `/simulator`   | Slider alokasi anggaran virtual per kategori (butuh login) |
-| `/usulan/baru` | Form usulan dengan pilih titik di peta (butuh login)       |
-| `/usulan/:id`  | Detail usulan, voting, komentar, linimasa status           |
-| `/login`       | Masuk / daftar                                             |
-| `/admin`       | Tabel usulan (TanStack Table) + ubah status (khusus admin) |
+| Route          | Isi                                                                         |
+| -------------- | --------------------------------------------------------------------------- |
+| `/`            | Peta usulan + daftar usulan yang disetujui, filter kategori/status          |
+| `/bandingkan`  | Perbandingan pilihan warga dan APBD; hanya data APBD terverifikasi dihitung |
+| `/apbd`        | APBD per kategori: terverifikasi, belum terverifikasi, atau belum ada       |
+| `/simulator`   | Urutkan prioritas program dan lihat alokasi anggaran virtual (butuh login)  |
+| `/usulan/baru` | Form usulan dengan pilih titik di peta (butuh login)                        |
+| `/usulan-saya` | Usulan milikmu, termasuk yang menunggu atau ditolak (butuh login)           |
+| `/usulan/:id`  | Detail usulan, upvote, komentar, linimasa status bercatatan                 |
+| `/profil`      | Identitas akun, ubah nama, ringkasan usulan, keluar (butuh login)           |
+| `/metodologi`  | Cara perbandingan dihitung dan batas datanya                                |
+| `/login`       | Masuk / daftar (email atau Google)                                          |
+| `/admin`       | Antrean moderasi (setujui/tolak) dan ubah status dengan catatan (admin)     |
+
+Navigasi memakai sidebar di layar lebar, dan bar atas dengan menu layar penuh di HP.
 
 ## Aturan arsitektur
 
