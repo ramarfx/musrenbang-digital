@@ -157,7 +157,8 @@ export function Toa({ className }: { className?: string }) {
         y={62}
         isi={GELAP}
         latar={STABILO}
-        geser={[-26, 10]}
+        // Menjauh ke kanan-atas, bukan ke bawah-kiri: arah itu menyeretnya menimpa garis suara.
+        geser={[22, -24]}
         ikon="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11ZM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"
       />
       <Lencana
