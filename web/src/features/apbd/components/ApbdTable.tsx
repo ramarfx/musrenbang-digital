@@ -7,7 +7,7 @@ import { LABEL_STATUS_DATA, rapikanSumber, statusData, type StatusData } from '.
 const WARNA_STATUS: Record<StatusData, string> = {
   terverifikasi: 'bg-mint-pucat text-mint-tua',
   belum_terverifikasi: 'bg-mustard-pucat text-mustard-tua',
-  kosong: 'bg-pasir text-muted',
+  kosong: 'bg-pasir text-ink',
 };
 
 /**

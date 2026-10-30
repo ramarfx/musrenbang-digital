@@ -99,7 +99,7 @@ export function GapComparison({ ringkasan, onPilih, statusApbd = {} }: Props) {
               className={cn(
                 'h-8 rounded-[10px] px-3 text-[13px] font-semibold transition-[scale,background-color,color] duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga',
                 urutan === nilai
-                  ? 'bg-ink text-white'
+                  ? 'bg-ink text-on-ink'
                   : 'text-muted hover:bg-active hover:text-ink',
               )}
             >

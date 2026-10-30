@@ -5,15 +5,15 @@ import { Spinner } from './Spinner';
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 export type ButtonSize = 'sm' | 'md';
 
-// Desain 1: aksi utama memakai tinta (warna ikon logo), hijau untuk aksi kedua.
+// Desain 2: aksi utama memakai tinta; tombol garis bertepi tinta seperti kartu.
 // Tanpa bayangan; sudut tombol 12px, bukan pil.
 const variants: Record<ButtonVariant, string> = {
   primary:
-    'bg-ink text-white hover:bg-ink-tekan disabled:bg-mati disabled:text-muted disabled:opacity-100',
+    'bg-ink text-on-ink hover:bg-ink-tekan disabled:bg-mati disabled:text-muted disabled:opacity-100',
   secondary: 'bg-hijau text-white hover:bg-hijau-tekan',
-  outline: 'border border-border bg-surface text-ink hover:bg-active',
+  outline: 'border border-edge bg-surface text-ink hover:bg-active',
   ghost: 'text-ink hover:bg-active',
-  danger: 'bg-red-700 text-white hover:bg-red-600 focus-visible:outline-red-700',
+  danger: 'bg-[#b42318] text-white hover:bg-[#8a1c13] focus-visible:outline-[#b42318]',
 };
 
 const base =

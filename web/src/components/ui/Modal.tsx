@@ -42,7 +42,7 @@ export function Modal({ open, onClose, labelledBy, className, children }: ModalP
         if (event.target === ref.current) onClose();
       }}
       className={cn(
-        'anim-dialog no-scrollbar m-auto max-h-[calc(100dvh-24px)] overflow-y-auto rounded-3xl border border-border bg-ground p-0 text-ink backdrop:bg-ink/55',
+        'anim-dialog no-scrollbar m-auto max-h-[calc(100dvh-24px)] overflow-y-auto rounded-3xl border border-border bg-ground p-0 text-ink backdrop:bg-black/60',
         className,
       )}
     >

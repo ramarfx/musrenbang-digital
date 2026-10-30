@@ -53,7 +53,7 @@ export default function Simulator() {
             className={cn(
               'h-9 rounded-[10px] px-3.5 text-[13px] font-semibold transition-[scale,background-color,color] duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga',
               cara === pilihan.nilai
-                ? 'bg-ink text-white'
+                ? 'bg-ink text-on-ink'
                 : 'text-muted hover:bg-active hover:text-ink',
             )}
           >

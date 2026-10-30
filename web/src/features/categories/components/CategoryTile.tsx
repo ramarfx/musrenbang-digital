@@ -10,7 +10,7 @@ export function CategoryTile({ kategori, small = false }: { kategori: string; sm
       className={cn(
         'grid flex-none place-items-center font-bold',
         small ? 'size-8 rounded-[10px] text-[11px]' : 'size-10 rounded-[13px] text-xs',
-        tone === 'hijau' ? 'bg-[#d5ede3] text-[#0b4a36]' : 'bg-[#e9e3d8] text-ink',
+        tone === 'hijau' ? 'bg-mint-pucat text-mint-tua' : 'bg-active text-ink',
       )}
     >
       {kode}

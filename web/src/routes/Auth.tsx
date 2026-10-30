@@ -59,7 +59,7 @@ export default function Auth() {
         <Card>
           <p className="text-ink">Lanjutkan menjelajah usulan atau urutkan prioritasmu.</p>
           <div className="mt-5 flex flex-wrap gap-3">
-            <Link to="/" className={buttonClass('primary', 'md')}>
+            <Link to="/beranda" className={buttonClass('primary', 'md')}>
               Ke beranda
             </Link>
             <Link to="/simulator" className={buttonClass('outline', 'md')}>
@@ -93,7 +93,7 @@ export default function Auth() {
               >
                 <span
                   aria-hidden="true"
-                  className="grid size-9 flex-none place-items-center rounded-xl bg-ink text-hijau-terang"
+                  className="grid size-9 flex-none place-items-center rounded-xl bg-hijau text-hijau-terang"
                 >
                   <Icon name={item.ikon} size={18} />
                 </span>
@@ -129,7 +129,7 @@ export default function Auth() {
                 className={cn(
                   'h-9 min-w-24 rounded-[10px] px-4 text-[13px] font-semibold transition-[scale,background-color,color] duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga',
                   mode === pilihan.nilai
-                    ? 'bg-ink text-white'
+                    ? 'bg-ink text-on-ink'
                     : 'text-muted hover:bg-active hover:text-ink',
                 )}
               >

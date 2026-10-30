@@ -10,19 +10,17 @@ type CardProps = {
 
 export function Card({ children, className, as: Tag = 'section' }: CardProps) {
   return (
-    // Kartu putih datar Desain 1: garis tipis, tanpa bayangan, sudut 24px.
-    <Tag className={cn('rounded-3xl border border-border bg-surface p-5 sm:p-6', className)}>
-      {children}
-    </Tag>
+    // Kartu bercap Desain 2: tepi tinta dan alas tebal (lihat kartu-cap di index.css).
+    <Tag className={cn('kartu-cap rounded-3xl bg-surface p-5 sm:p-6', className)}>{children}</Tag>
   );
 }
 
-/** Kartu hijau polos untuk temuan utama, dengan lingkaran dekorasi di pojok. Tanpa gradasi. */
+/** Kartu panel gelap untuk temuan utama, dengan lingkaran dekorasi di pojok. Tanpa gradasi. */
 export function HeroCard({ children, className }: Omit<CardProps, 'as'>) {
   return (
     <section
       className={cn(
-        'group relative overflow-hidden rounded-3xl bg-hijau p-5 text-white sm:p-6',
+        'kartu-cap group relative overflow-hidden rounded-3xl bg-hijau p-5 text-white sm:p-6',
         className,
       )}
     >

@@ -55,7 +55,7 @@ export function UpvoteButton({ proposalId, jumlah, terang = false, className }: 
             ? 'border-white bg-white text-hijau'
             : 'border-white/40 text-white hover:bg-white/15'
           : sudah
-            ? 'border-hijau bg-hijau text-white'
+            ? 'border-edge bg-hijau-terang text-hitam'
             : 'border-border bg-surface text-ink hover:bg-active',
         className,
       )}
