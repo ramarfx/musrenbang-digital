@@ -75,7 +75,7 @@ export default function Profil() {
       <Card className="flex flex-wrap items-center gap-4">
         <span
           aria-hidden="true"
-          className="grid size-16 flex-none place-items-center rounded-full bg-ink text-xl font-bold text-hijau-terang"
+          className="grid size-16 flex-none place-items-center rounded-full bg-hijau-terang text-xl font-bold text-hitam"
         >
           {inisial(namaSekarang || user?.email || 'Warga')}
         </span>

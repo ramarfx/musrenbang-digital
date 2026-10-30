@@ -182,7 +182,8 @@ Urutan sebelum commit: `bun run format`, lalu `bun run check`.
 
 | Route          | Isi                                                                         |
 | -------------- | --------------------------------------------------------------------------- |
-| `/`            | Peta usulan + daftar usulan yang disetujui, filter kategori/status          |
+| `/`            | Landing: penjelasan singkat, empat langkah, dan aturan transparansi          |
+| `/beranda`     | Peta usulan + daftar usulan yang disetujui, filter kategori/status          |
 | `/bandingkan`  | Perbandingan pilihan warga dan APBD; hanya data APBD terverifikasi dihitung |
 | `/apbd`        | APBD per kategori: terverifikasi, belum terverifikasi, atau belum ada       |
 | `/simulator`   | Urutkan prioritas program dan lihat alokasi anggaran virtual (butuh login)  |
@@ -194,7 +195,7 @@ Urutan sebelum commit: `bun run format`, lalu `bun run check`.
 | `/login`       | Masuk / daftar (email atau Google)                                          |
 | `/admin`       | Antrean moderasi (setujui/tolak) dan ubah status dengan catatan (admin)     |
 
-Navigasi memakai sidebar di layar lebar, dan bar atas dengan menu layar penuh di HP.
+Landing tidak memakai sidebar. Halaman lain memakai sidebar di layar lebar, dan bar atas dengan menu layar penuh di HP. Tombol tema (terang/gelap) ada di landing, sidebar, dan bar atas HP; pilihannya disimpan di browser.
 
 ## Aturan arsitektur
 

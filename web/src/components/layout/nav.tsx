@@ -12,7 +12,7 @@ type NavGroup = { title?: string; items: NavItem[] };
 
 export function buildNav(isAdmin: boolean, sudahMasuk = false): NavGroup[] {
   const groups: NavGroup[] = [
-    { items: [{ to: '/', label: 'Beranda', icon: 'beranda', end: true }] },
+    { items: [{ to: '/beranda', label: 'Beranda', icon: 'beranda' }] },
     {
       title: 'Ikut serta',
       items: [
@@ -54,7 +54,7 @@ export function NavList({ groups, dark }: { groups: NavGroup[]; dark: boolean })
       {groups.map((group, index) => (
         <div key={group.title ?? index} className={group.title ? 'mt-5' : undefined}>
           {group.title && (
-            <p className={cn('px-3 pb-2 text-[13px]', dark ? 'text-white/70' : 'text-muted')}>
+            <p className={cn('px-3 pb-2 text-[13px]', dark ? 'text-white/90' : 'text-muted')}>
               {group.title}
             </p>
           )}
@@ -67,10 +67,10 @@ export function NavList({ groups, dark }: { groups: NavGroup[]; dark: boolean })
                   className={({ isActive }) =>
                     cn(
                       'relative flex h-11 items-center gap-3 rounded-[14px] px-3 text-[15px] font-medium transition-colors duration-150 ease-out',
-                      dark ? 'text-white hover:bg-white/10' : 'text-ink hover:bg-active',
+                      dark ? 'text-white hover:bg-black/10' : 'text-ink hover:bg-active',
                       isActive &&
                         dark &&
-                        'bg-ink/40 font-bold hover:bg-ink/40 before:absolute before:top-2.5 before:bottom-2.5 before:-left-3.5 before:w-1 before:rounded-r before:bg-hijau-terang before:animate-[anim-bar_240ms_cubic-bezier(0.23,1,0.32,1)_backwards]',
+                        'bg-black/20 font-bold hover:bg-black/20 before:absolute before:top-2.5 before:bottom-2.5 before:-left-3.5 before:w-1 before:rounded-r before:bg-hijau-terang before:animate-[anim-bar_240ms_cubic-bezier(0.23,1,0.32,1)_backwards]',
                       isActive && !dark && 'bg-active font-bold',
                     )
                   }
@@ -94,16 +94,16 @@ export function RegionBox({ dark }: { dark: boolean }) {
     <div
       className={cn(
         'flex items-center gap-3 rounded-2xl border px-3.5 py-3',
-        dark ? 'border-white/25 bg-white/15 text-white' : 'border-border bg-surface',
+        dark ? 'border-white/25 bg-black/15 text-white' : 'border-border bg-surface',
       )}
     >
-      <span className="grid size-9 flex-none place-items-center rounded-[11px] bg-ink text-hijau-terang">
+      <span className="grid size-9 flex-none place-items-center rounded-[11px] bg-hijau text-hijau-terang">
         <Icon name="lokasi" />
       </span>
       <span className="flex min-w-0 flex-col leading-tight">
-        <span className={cn('text-xs', dark ? 'text-white/75' : 'text-muted')}>Wilayah</span>
+        <span className={cn('text-xs', dark ? 'text-white/90' : 'text-muted')}>Wilayah</span>
         <span className="text-[15px] font-bold">{data?.kota ?? 'DKI Jakarta'}</span>
-        <span className={cn('text-xs', dark ? 'text-white/75' : 'text-muted')}>
+        <span className={cn('text-xs', dark ? 'text-white/90' : 'text-muted')}>
           APBD {data?.tahunAnggaran ?? 2026}
         </span>
       </span>
@@ -137,14 +137,14 @@ export function UserRow({ dark }: { dark: boolean }) {
 
   const actionClass = cn(
     'inline-flex h-9 flex-none items-center rounded-xl px-4 text-[13px] font-bold transition-[scale,background-color] duration-150 ease-out active:scale-[0.96] disabled:opacity-60',
-    dark ? 'bg-white text-ink hover:bg-ground' : 'bg-ink text-white hover:bg-ink-tekan',
+    dark ? 'bg-white text-hitam hover:bg-white/85' : 'bg-ink text-on-ink hover:bg-ink-tekan',
   );
 
   return (
     <div
       className={cn(
         'flex items-center gap-2.5 rounded-[18px] px-2 py-2.5',
-        dark ? 'bg-ink/40' : 'border border-border bg-surface',
+        dark ? 'bg-black/15' : 'border border-border bg-surface',
       )}
     >
       {user ? (
@@ -153,18 +153,18 @@ export function UserRow({ dark }: { dark: boolean }) {
           aria-label="Buka profil"
           className={cn(
             '-m-1 flex min-w-0 flex-1 items-center gap-2.5 rounded-[14px] p-1 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2',
-            dark ? 'hover:bg-white/10' : 'hover:bg-active',
+            dark ? 'hover:bg-black/10' : 'hover:bg-active',
           )}
         >
           <span
             aria-hidden="true"
-            className="grid size-8 flex-none place-items-center rounded-full bg-ink text-xs font-bold text-hijau-terang"
+            className="grid size-8 flex-none place-items-center rounded-full bg-hijau-terang text-xs font-bold text-hitam"
           >
             {user ? initials(name) : 'W'}
           </span>
           <span className="min-w-0 flex-1 leading-tight">
             <span className="block truncate text-[14px] font-bold">{user ? name : 'Warga'}</span>
-            <span className={cn('block text-xs', dark ? 'text-white/75' : 'text-muted')}>
+            <span className={cn('block text-xs', dark ? 'text-white/90' : 'text-muted')}>
               {user ? (isAdmin ? 'Admin' : 'Warga') : 'Belum masuk'}
             </span>
           </span>
@@ -173,13 +173,13 @@ export function UserRow({ dark }: { dark: boolean }) {
         <>
           <span
             aria-hidden="true"
-            className="grid size-8 flex-none place-items-center rounded-full bg-ink text-xs font-bold text-hijau-terang"
+            className="grid size-8 flex-none place-items-center rounded-full bg-hijau-terang text-xs font-bold text-hitam"
           >
             {user ? initials(name) : 'W'}
           </span>
           <span className="min-w-0 flex-1 leading-tight">
             <span className="block truncate text-[14px] font-bold">{user ? name : 'Warga'}</span>
-            <span className={cn('block text-xs', dark ? 'text-white/75' : 'text-muted')}>
+            <span className={cn('block text-xs', dark ? 'text-white/90' : 'text-muted')}>
               {user ? (isAdmin ? 'Admin' : 'Warga') : 'Belum masuk'}
             </span>
           </span>

@@ -85,7 +85,7 @@ export function ProposalFilters({
                 className={cn(
                   'inline-flex h-9 items-center gap-2 rounded-xl border px-3.5 text-[13px] font-semibold transition-[scale,background-color,border-color,color] duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga',
                   aktif
-                    ? 'border-ink bg-ink text-white'
+                    ? 'border-ink bg-ink text-on-ink'
                     : 'border-border bg-surface text-ink hover:bg-active',
                 )}
               >
@@ -93,7 +93,7 @@ export function ProposalFilters({
                 <span
                   className={cn(
                     'rounded-md px-1.5 text-[12px] font-medium tabular-nums',
-                    aktif ? 'bg-white/20 text-white' : 'bg-pasir text-muted',
+                    aktif ? 'bg-on-ink/20 text-on-ink' : 'bg-pasir text-ink',
                   )}
                 >
                   {counts[option]}
@@ -118,7 +118,7 @@ export function ProposalFilters({
               className={cn(
                 'h-8 rounded-lg px-3.5 text-[13px] font-semibold transition-[scale,background-color,color] duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga',
                 urutan === pilihan
-                  ? 'bg-ink text-white'
+                  ? 'bg-ink text-on-ink'
                   : 'text-muted hover:bg-active hover:text-ink',
               )}
             >

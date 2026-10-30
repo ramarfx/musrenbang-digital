@@ -16,7 +16,7 @@ type LoginLocationState = { from?: string } | null;
 export function LoginForm() {
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as LoginLocationState)?.from ?? '/';
+  const from = (location.state as LoginLocationState)?.from ?? '/beranda';
   const mutation = useSignInMutation();
   const splash = useWelcomeSplash();
   const form = useForm<LoginInput>({

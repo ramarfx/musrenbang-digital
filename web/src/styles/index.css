@@ -1,37 +1,95 @@
 @import 'tailwindcss';
 
 /*
- * Desain 1 (hijau). Aturan tim: tanpa gradasi, tanpa biru, tanpa warna pelangi.
- * Nilai mentah ada di :root supaya mode gelap nanti cukup mengganti di satu tempat.
+ * Desain 2: kartu bercap dan judul bertanda stabilo, dengan warna dari panduan logo
+ * (PANDUAN-LOGO.md): Tinta #14222B, Kertas #F7F4EF, Hijau Zamrud #047857, Hijau Terang
+ * #4FC79C. Warna web sama dengan logo supaya keduanya menyatu. Aturan tim: tanpa gradasi,
+ * tanpa biru, tanpa warna pelangi.
+ *
+ * - Tinta dan Kertas: dua warna inti; kartu bertepi tinta dengan alas tebal, seperti kertas
+ *   usulan yang dicap. Itu motif identitas di semua halaman.
+ * - Hijau Terang (stabilo): satu aksen, seperti menandai baris penting di dokumen anggaran:
+ *   judul bagian, tanda aktif, ilustrasi toa. Tidak dipakai sebagai teks di latar terang.
+ * - Hijau Zamrud: sidebar (versi logo putih di atasnya) serta teks tautan di mode terang.
+ *
+ * Mode gelap mengganti nilai di [data-theme='dark']; komponen cukup memakai token.
  */
 :root {
+  color-scheme: light;
   --ground: #f7f4ef; /* Kertas: latar halaman */
   --surface: #ffffff;
-  --border: #e6e0d6;
-  --rule: #efeae1;
-  --ink: #14222b; /* Tinta: warna ikon logo, dipakai untuk aksi */
+  --border: #e2ddd3;
+  --rule: #ece7de;
+  --ink: #14222b; /* Tinta: teks utama dan aksi */
   --ink-tekan: #26363f;
+  --on-ink: #ffffff; /* teks di atas tombol tinta */
   --muted: #5e6a70;
   --active: #ece7dd;
-  --track: #e9e4da;
+  --track: #e6e1d7;
+  --edge: #14222b; /* tepi dan alas kartu */
 
-  --hijau: #0b6e55; /* sidebar dan kartu hero */
-  --hijau-tekan: #0a5e49;
-  --hijau-terang: #4fc79c; /* aksen di atas tinta, batang "b" di ikon */
-  --warga: #047857; /* data porsi warga, batang logo */
+  --hijau: #14222b; /* panel gelap: kartu hero dan kartu gelap landing */
+  --hijau-tekan: #26363f;
+  --hijau-terang: #4fc79c; /* stabilo */
+  --zamrud: #047857; /* sidebar, hijau di kedua mode */
+  --hitam: #14222b; /* teks di atas stabilo, tetap gelap di kedua mode */
+  --warga: #036548; /* teks tautan dan data porsi warga, zamrud sedikit lebih gelap supaya AA di latar abu */
   --apbd: #14222b; /* data porsi APBD */
 
-  --mint: #a7f3d0;
-  --mint-pucat: #d1fae5;
+  --mint: #4fc79c;
+  --mint-pucat: #dbf2e8;
   --mint-tua: #065f46;
   --mustard: #f2c46d;
-  --mustard-pucat: #efe6c9;
+  --mustard-pucat: #f3e8c8;
   --mustard-tua: #5e4a0a;
   --terakota: #ee9f7f;
   --pasir: #e6e0d6;
   --mati: #c9d8d2;
 
+  --merah-pucat: #fde8e6;
+  --merah-garis: #f3b8b1;
+  --merah: #b42318;
+  --merah-tua: #8a1c13;
+
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/*
+ * Mode gelap: latar menjadi Tinta yang lebih dalam, teks menjadi Kertas. Panel gelap
+ * (--hijau) sedikit lebih gelap dari latar supaya kartu hero tetap terbaca sebagai bidang
+ * tersendiri. Stabilo tetap Hijau Terang, sesuai versi logo terbalik di latar gelap.
+ */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --ground: #0f1a21;
+  --surface: #17262f;
+  --border: #2c3d47;
+  --rule: #213139;
+  --ink: #f7f4ef;
+  --ink-tekan: #e2ddd3;
+  --on-ink: #14222b;
+  --muted: #adb8bc;
+  --active: #213139;
+  --track: #26363f;
+  --edge: #d9dfe0;
+
+  --hijau: #0a1318;
+  --hijau-tekan: #14222b;
+  --zamrud: #046a4d;
+  --warga: #4fc79c;
+  --apbd: #f7f4ef;
+
+  --mint-pucat: #123229;
+  --mint-tua: #8fe0c3;
+  --mustard-pucat: #33301f;
+  --mustard-tua: #f2d27d;
+  --pasir: #2c3d47;
+  --mati: #3a4a52;
+
+  --merah-pucat: #3d2220;
+  --merah-garis: #7a3a33;
+  --merah: #ff9f94;
+  --merah-tua: #ffb4ab;
 }
 
 @theme inline {
@@ -60,27 +118,66 @@
   --color-terakota: var(--terakota);
   --color-pasir: var(--pasir);
   --color-mati: var(--mati);
+  --color-on-ink: var(--on-ink);
+  --color-edge: var(--edge);
+  --color-hitam: var(--hitam);
+  --color-zamrud: var(--zamrud);
+
+  /*
+   * Merah dan hijau bawaan Tailwind yang dipakai pesan galat dan teks sukses dipetakan ke
+   * token, supaya tetap kontras di mode gelap tanpa mengubah setiap komponen.
+   */
+  --color-red-50: var(--merah-pucat);
+  --color-red-100: var(--merah-pucat);
+  --color-red-200: var(--merah-garis);
+  --color-red-500: var(--merah);
+  --color-red-600: var(--merah);
+  --color-red-700: var(--merah);
+  --color-red-800: var(--merah-tua);
+  --color-emerald-800: var(--mint-tua);
 
   --ease-out: var(--ease-out);
 }
 
+/* `dark:` mengikuti atribut tema di <html>, bukan setelan sistem langsung. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
 /*
- * Skala stone Tailwind dipetakan ke netral Desain 1 (kertas sampai tinta), jadi
- * komponen fitur yang memakai stone-* otomatis ikut palet tanpa diubah satu per satu.
- * stone-400 sengaja digelapkan supaya teks abu tetap lolos kontras AA di atas kertas.
+ * Skala stone Tailwind dipetakan ke token netral (kertas sampai tinta), jadi komponen
+ * yang memakai stone-* ikut palet dan ikut mode gelap tanpa diubah satu per satu.
+ * stone-400 sengaja setara --muted supaya teks abu tetap lolos kontras AA.
  */
-@theme {
-  --color-stone-50: #f7f4ef;
-  --color-stone-100: #efeae1;
-  --color-stone-200: #e6e0d6;
-  --color-stone-300: #d6cfc2;
-  --color-stone-400: #646f74;
-  --color-stone-500: #5e6a70;
-  --color-stone-600: #4c585e;
-  --color-stone-700: #36434b;
-  --color-stone-800: #22303a;
-  --color-stone-900: #14222b;
-  --color-stone-950: #0c161c;
+@theme inline {
+  --color-stone-50: var(--ground);
+  --color-stone-100: var(--rule);
+  --color-stone-200: var(--border);
+  --color-stone-300: var(--border);
+  --color-stone-400: var(--muted);
+  --color-stone-500: var(--muted);
+  --color-stone-600: var(--muted);
+  --color-stone-700: var(--ink-tekan);
+  --color-stone-800: var(--ink);
+  --color-stone-900: var(--ink);
+  --color-stone-950: var(--ink);
+}
+
+/*
+ * Tanda stabilo: latar aksen di belakang teks judul, seperti menandai baris penting di
+ * dokumen anggaran. box-decoration-break menjaga tanda tetap rapi saat judul terlipat.
+ */
+@utility stabilo {
+  background: var(--hijau-terang);
+  color: var(--hitam);
+  padding: 0 0.22em;
+  border-radius: 6px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* Kartu bercap: tepi tinta dan alas tebal 4px. Alas menandai bidang yang bisa dibaca utuh. */
+@utility kartu-cap {
+  border: 1px solid var(--edge);
+  box-shadow: 0 4px 0 var(--edge);
 }
 
 html {
@@ -487,5 +584,103 @@ html::-webkit-scrollbar,
   *::after {
     transition-duration: 0ms !important;
     animation-duration: 0ms !important;
+  }
+}
+
+/*
+ * Toa di landing: gelombang suara muncul sekali setelah halaman terbuka, sebagai satu-satunya
+ * gerak di hero (menarik mata ke pesan "suara warga"). Tidak berulang.
+ */
+.toa .toa-gelombang {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: toa-gelombang 520ms var(--ease-out) 260ms backwards;
+}
+.toa .toa-gelombang-2 {
+  animation-delay: 380ms;
+}
+.toa .toa-lencana {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: toa-lencana 420ms var(--ease-out) 520ms backwards;
+}
+@keyframes toa-gelombang {
+  from {
+    opacity: 0;
+    transform: translateX(-10px) scale(0.85);
+  }
+}
+@keyframes toa-lencana {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toa .toa-gelombang,
+  .toa .toa-lencana {
+    animation: none;
+  }
+}
+
+/* Saat tema berganti, semua warna langsung berubah bersamaan (lihat lib/tema.ts). */
+.tema-ganti *,
+.tema-ganti *::before,
+.tema-ganti *::after {
+  transition: none !important;
+}
+
+/* Di mode gelap ubin peta dibalik setelah dijadikan abu, jadi tetap netral dan tidak menyilaukan. */
+[data-theme='dark'] .peta-hangat .leaflet-tile-pane {
+  filter: grayscale(1) invert(0.9) brightness(0.95) contrast(0.9);
+}
+
+/*
+ * Toa saat disentuh kursor: orbit + teriak. Lintasan berputar dan lencana bergeser
+ * mengelilingi toa (700ms, melambat di akhir), sementara toa menyentak sedikit dan
+ * gelombang ketiga muncul (420ms, sedikit memantul seperti sentakan suara). Memakai
+ * transisi, bukan keyframe, jadi gerakan bisa dibatalkan di tengah tanpa melompat.
+ * Hanya untuk perangkat ber-mouse dan bila pengguna tidak meminta gerak dikurangi.
+ */
+.toa .toa-orbit,
+.toa .toa-geser {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 700ms var(--ease-out);
+}
+.toa .toa-badan {
+  transform-box: fill-box;
+  transform-origin: 30% 60%;
+  transition: transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.toa .toa-suara {
+  transform-box: fill-box;
+  transform-origin: left center;
+  transition:
+    transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 250ms ease-out;
+}
+.toa .toa-suara-3 {
+  opacity: 0;
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .toa:hover .toa-orbit-1 {
+    transform: rotate(18deg);
+  }
+  .toa:hover .toa-orbit-2 {
+    transform: rotate(-22deg);
+  }
+  .toa:hover .toa-geser {
+    transform: translate(var(--gx), var(--gy));
+  }
+  .toa:hover .toa-badan {
+    transform: rotate(-7deg) scale(1.05);
+  }
+  .toa:hover .toa-suara {
+    transform: translateX(10px) scale(1.12);
+  }
+  .toa:hover .toa-suara-3 {
+    opacity: 1;
+    transform: translateX(14px) scale(1.15);
   }
 }

@@ -8,6 +8,22 @@
       content="Musrenbang Digital: usulkan program, alokasikan anggaran virtual, beri suara, dan bandingkan prioritas warga dengan APBD."
     />
     <meta name="theme-color" content="#F7F4EF" />
+    <script>
+      // Pasang tema sebelum halaman tergambar supaya tidak berkedip terang di mode gelap.
+      (function () {
+        var tema = null;
+        try {
+          tema = localStorage.getItem('mb-tema');
+        } catch (e) {}
+        if (tema !== 'gelap' && tema !== 'terang') {
+          tema = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'gelap' : 'terang';
+        }
+        document.documentElement.dataset.theme = tema === 'gelap' ? 'dark' : 'light';
+        if (tema === 'gelap') {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0F1A21');
+        }
+      })();
+    </script>
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

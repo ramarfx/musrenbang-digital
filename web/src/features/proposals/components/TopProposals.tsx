@@ -31,7 +31,7 @@ function Peringkat({ nomor, terang = false }: { nomor: number; terang?: boolean 
     <span
       className={cn(
         'grid size-9 flex-none place-items-center rounded-full text-[15px] font-bold',
-        terang ? 'bg-white text-hijau' : 'bg-ink text-white',
+        terang ? 'bg-hijau-terang text-hitam' : 'bg-ink text-on-ink',
       )}
       aria-label={`Peringkat ${nomor}`}
     >

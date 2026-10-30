@@ -41,7 +41,7 @@ export default function UsulanDetail() {
         title="Usulan tidak ditemukan"
         description="Alamat usulan tidak valid."
         action={
-          <Link to="/" className="text-sm font-semibold text-warga underline">
+          <Link to="/beranda" className="text-sm font-semibold text-warga underline">
             Kembali ke beranda
           </Link>
         }
@@ -68,7 +68,7 @@ export default function UsulanDetail() {
         title="Usulan tidak ditemukan"
         description="Usulan mungkin sudah dihapus atau belum pernah ada."
         action={
-          <Link to="/" className="text-sm font-semibold text-warga underline">
+          <Link to="/beranda" className="text-sm font-semibold text-warga underline">
             Kembali ke beranda
           </Link>
         }
@@ -83,7 +83,7 @@ export default function UsulanDetail() {
     <div className="space-y-6">
       <div>
         <Link
-          to="/"
+          to="/beranda"
           className="inline-flex text-[13px] text-muted transition-colors duration-150 hover:text-ink"
         >
           ← Kembali ke daftar usulan
