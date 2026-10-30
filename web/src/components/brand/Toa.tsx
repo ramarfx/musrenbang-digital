@@ -153,12 +153,12 @@ export function Toa({ className }: { className?: string }) {
       </g>
 
       <Lencana
-        // Digeser murni ke kiri menjauhi gelombang dan elips orbit di kanan, tanpa naik.
+        // Digeser ke kiri menjauhi gelombang dan elips orbit di kanan, sedikit naik juga.
         x={360}
         y={66}
         isi={GELAP}
         latar={STABILO}
-        geser={[-26, 0]}
+        geser={[-26, -10]}
         ikon="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11ZM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"
       />
       <Lencana
