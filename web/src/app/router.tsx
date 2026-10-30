@@ -4,6 +4,7 @@ import { lazy, Suspense, type ReactNode } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import { RouteError } from '@/routes/RouteError';
 
+const Landing = lazy(() => import('@/routes/Landing'));
 const Beranda = lazy(() => import('@/routes/Beranda'));
 const Bandingkan = lazy(() => import('@/routes/Bandingkan'));
 const Apbd = lazy(() => import('@/routes/Apbd'));
@@ -23,12 +24,13 @@ function page(element: ReactNode) {
 }
 
 export const router = createBrowserRouter([
+  // Landing berdiri sendiri tanpa sidebar; halaman aplikasi lain memakai AppLayout.
+  { path: '/', element: page(<Landing />), errorElement: <RouteError /> },
   {
-    path: '/',
     element: <AppLayout />,
     errorElement: <RouteError />,
     children: [
-      { index: true, element: page(<Beranda />) },
+      { path: 'beranda', element: page(<Beranda />) },
       { path: 'bandingkan', element: page(<Bandingkan />) },
       { path: 'apbd', element: page(<Apbd />) },
       { path: 'simulator', element: page(<Simulator />) },

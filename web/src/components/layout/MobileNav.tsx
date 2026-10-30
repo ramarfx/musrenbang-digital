@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import logoTerbalik from '@/assets/logo/mb-lockup-horizontal-terbalik.svg';
 import logoColor from '@/assets/logo/mb-lockup-horizontal-warna.svg';
 import { Icon } from '@/components/ui/Icon';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useAuth } from '@/features/auth';
 import { buildNav, NavList, RegionBox, UserRow } from './nav';
 
@@ -49,23 +51,35 @@ export function MobileNav({ open, setOpen }: MobileNavProps) {
   return (
     <div className="lg:hidden">
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-rule bg-ground px-4">
-        <img
-          src={logoColor}
-          alt="Musrenbang Digital"
-          draggable={false}
-          className="h-[34px] w-auto select-none"
-        />
-        <button
-          ref={buttonRef}
-          type="button"
-          aria-expanded={open}
-          aria-controls="menu-hp"
-          onClick={() => setOpen((value) => !value)}
-          className="inline-flex h-11 items-center gap-2 rounded-xl border border-border bg-surface px-4 text-sm font-semibold transition-[scale] duration-150 ease-out active:scale-[0.97]"
-        >
-          <Icon name={open ? 'tutup' : 'menu'} />
-          {open ? 'Tutup' : 'Menu'}
-        </button>
+        <Link to="/" className="flex min-h-11 items-center rounded-xl select-none">
+          {/* Panduan logo: versi berwarna di kertas, versi terbalik di latar gelap. */}
+          <img
+            src={logoColor}
+            alt="Musrenbang Digital"
+            draggable={false}
+            className="h-[34px] w-auto dark:hidden"
+          />
+          <img
+            src={logoTerbalik}
+            alt="Musrenbang Digital"
+            draggable={false}
+            className="hidden h-[34px] w-auto dark:block"
+          />
+        </Link>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <button
+            ref={buttonRef}
+            type="button"
+            aria-expanded={open}
+            aria-controls="menu-hp"
+            onClick={() => setOpen((value) => !value)}
+            className="inline-flex h-11 items-center gap-2 rounded-xl border border-edge bg-surface px-4 text-sm font-semibold transition-[scale] duration-150 ease-out active:scale-[0.97]"
+          >
+            <Icon name={open ? 'tutup' : 'menu'} />
+            {open ? 'Tutup' : 'Menu'}
+          </button>
+        </div>
       </header>
       {open && (
         <div
