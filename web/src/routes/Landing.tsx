@@ -10,6 +10,7 @@ import { useAuth } from '@/features/auth';
 import { useCategoriesQuery } from '@/features/categories/queries';
 import { useAppConfigQuery } from '@/features/config/queries';
 import { cn } from '@/lib/cn';
+import { useMasukTerlihat } from '@/lib/reveal';
 
 /** Logo resmi sesuai panduan: versi berwarna di kertas, versi terbalik di latar gelap. */
 function Logo({ selaluGelap = false }: { selaluGelap?: boolean }) {
@@ -210,6 +211,13 @@ export default function Landing() {
   const kota = configQuery.data?.kota ?? 'DKI Jakarta';
   const tahun = configQuery.data?.tahunAnggaran ?? 2026;
 
+  // Hero sudah terlihat saat halaman dibuka, jadi tidak perlu animasi masuk; bagian di
+  // bawahnya memudar naik satu per satu begitu pertama kali terlihat saat discroll.
+  const [bidangRef, bidangTampak] = useMasukTerlihat<HTMLDivElement>();
+  const [fiturRef, fiturTampak] = useMasukTerlihat<HTMLOListElement>();
+  const [ajakanRef, ajakanTampak] = useMasukTerlihat<HTMLDivElement>();
+  const [transparansiRef, transparansiTampak] = useMasukTerlihat<HTMLDivElement>();
+
   return (
     <div className="min-h-dvh bg-ground text-ink">
       <a
@@ -297,7 +305,10 @@ export default function Landing() {
         </section>
 
         <section aria-label="Bidang usulan" className="mx-auto max-w-[1160px] px-4 sm:px-6">
-          <div className="border-y border-rule py-6">
+          <div
+            ref={bidangRef}
+            className={cn('masuk border-y border-rule py-6', bidangTampak && 'masuk-tampak')}
+          >
             <p className="mb-3 text-[13px] text-muted">Bidang yang bisa kamu usulkan</p>
             {categoriesQuery.isPending && (
               <p className="text-[15px] text-muted">Memuat bidang...</p>
@@ -329,7 +340,13 @@ export default function Landing() {
             Empat langkah, dari menulis usulan sampai melihat apakah anggaran kota sejalan dengan
             pilihan warga.
           </JudulBagian>
-          <ol className="mt-10 grid gap-6 md:grid-cols-2">
+          <ol
+            ref={fiturRef}
+            className={cn(
+              'masuk-stagger mt-10 grid gap-6 md:grid-cols-2',
+              fiturTampak && 'masuk-tampak',
+            )}
+          >
             {FITUR.map((fitur, index) => (
               <li
                 key={fitur.judul}
@@ -384,7 +401,13 @@ export default function Landing() {
           aria-labelledby="judul-ajakan"
           className="mx-auto max-w-[1160px] px-4 pt-20 sm:px-6"
         >
-          <div className="kartu-cap grid items-center gap-8 rounded-[28px] bg-mint-pucat p-6 sm:p-10 md:grid-cols-[1.4fr_1fr]">
+          <div
+            ref={ajakanRef}
+            className={cn(
+              'masuk kartu-cap grid items-center gap-8 rounded-[28px] bg-mint-pucat p-6 sm:p-10 md:grid-cols-[1.4fr_1fr]',
+              ajakanTampak && 'masuk-tampak',
+            )}
+          >
             <div>
               <h2
                 id="judul-ajakan"
@@ -417,7 +440,13 @@ export default function Landing() {
           <JudulBagian id="judul-transparansi" judul="Terbuka untuk dicek">
             Tiga aturan yang membuat angka dan status di aplikasi ini bisa ditelusuri ulang.
           </JudulBagian>
-          <div className="kartu-cap mt-10 grid rounded-[28px] bg-surface md:grid-cols-3">
+          <div
+            ref={transparansiRef}
+            className={cn(
+              'masuk-stagger kartu-cap mt-10 grid rounded-[28px] bg-surface md:grid-cols-3',
+              transparansiTampak && 'masuk-tampak',
+            )}
+          >
             {TRANSPARANSI.map((butir, index) => (
               <article
                 key={butir.judul}

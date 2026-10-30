@@ -487,6 +487,44 @@ html::-webkit-scrollbar,
   animation-delay: 315ms;
 }
 
+/*
+ * Masuk saat discroll (landing, lihat lib/reveal.ts): bagian di bawah hero memudar naik
+ * sekali saat pertama terlihat, lewat IntersectionObserver, bukan saat halaman dimuat.
+ * Kartu di .masuk-stagger menyusul bergiliran (jeda 70ms). Memakai transisi, bukan
+ * animation keyframe, karena waktu mulainya ditentukan scroll, bukan saat mount.
+ */
+.masuk {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 560ms var(--ease-out),
+    transform 560ms var(--ease-out);
+}
+.masuk.masuk-tampak {
+  opacity: 1;
+  transform: none;
+}
+.masuk-stagger > * {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 520ms var(--ease-out),
+    transform 520ms var(--ease-out);
+}
+.masuk-stagger.masuk-tampak > * {
+  opacity: 1;
+  transform: none;
+}
+.masuk-stagger > :nth-child(2) {
+  transition-delay: 70ms;
+}
+.masuk-stagger > :nth-child(3) {
+  transition-delay: 140ms;
+}
+.masuk-stagger > :nth-child(4) {
+  transition-delay: 210ms;
+}
+
 /* Menu HP: turun tipis dari bar atas, 180ms. Keluarnya langsung (tanpa animasi). */
 .anim-menu {
   transform-origin: top;
@@ -645,11 +683,31 @@ html::-webkit-scrollbar,
   }
 }
 
-/* Saat tema berganti, semua warna langsung berubah bersamaan (lihat lib/tema.ts). */
-.tema-ganti *,
-.tema-ganti *::before,
-.tema-ganti *::after {
-  transition: none !important;
+/*
+ * Saat tema berganti (lihat lib/tema.ts): semua warna memudar bersama dalam waktu yang sama,
+ * bukan berpindah seketika dan bukan bertahap (komponen yang sudah punya transisi sendiri,
+ * mis. tombol, ditimpa sesaat supaya tidak tertinggal di warna tema lama).
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .tema-ganti,
+  .tema-ganti *,
+  .tema-ganti *::before,
+  .tema-ganti *::after {
+    transition:
+      background-color 220ms var(--ease-out),
+      color 220ms var(--ease-out),
+      border-color 220ms var(--ease-out),
+      fill 220ms var(--ease-out),
+      stroke 220ms var(--ease-out) !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tema-ganti,
+  .tema-ganti *,
+  .tema-ganti *::before,
+  .tema-ganti *::after {
+    transition: none !important;
+  }
 }
 
 /* Di mode gelap ubin peta dibalik setelah dijadikan abu, jadi tetap netral dan tidak menyilaukan. */
