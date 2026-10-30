@@ -158,44 +158,53 @@ function TautanPanah({
   );
 }
 
-/** Kotak suara: penutup bagian ajakan, pengganti wajah maskot di desain acuan. */
+/*
+ * Kotak suara: penutup bagian ajakan, pengganti wajah maskot di desain acuan. Saat kursor
+ * menyentuh: kertas dengan centang turun dan masuk ke kotak, kotak menyusul membal pelan
+ * sesaat setelahnya, seperti usulan yang baru dikirim diterima. Lihat .kotak-surat di
+ * index.css. Mati di layar sentuh dan saat prefers-reduced-motion aktif.
+ */
 function KotakSuara() {
   return (
     <svg
       viewBox="0 0 220 180"
       aria-hidden="true"
-      className="h-auto w-full max-w-[240px]"
+      className="kotak-surat h-auto w-full max-w-[240px]"
       fill="none"
     >
       <ellipse cx={110} cy={150} rx={96} ry={16} stroke="var(--ink)" strokeWidth={2} />
-      <path
-        d="M78 22 L142 22 L142 92 L78 92 Z"
-        fill="var(--surface)"
-        stroke="var(--ink)"
-        strokeWidth={3.5}
-        strokeLinejoin="round"
-        transform="rotate(-8 110 57)"
-      />
-      <path
-        d="M94 54 l12 12 l22 -26"
-        stroke="var(--ink)"
-        strokeWidth={5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        transform="rotate(-8 110 57)"
-      />
-      <rect
-        x={40}
-        y={74}
-        width={140}
-        height={74}
-        rx={10}
-        fill="var(--hijau-terang)"
-        stroke="var(--ink)"
-        strokeWidth={3.5}
-      />
-      <rect x={72} y={74} width={76} height={10} rx={5} fill="var(--hitam)" />
-      <path d="M40 98 H180" stroke="var(--ink)" strokeWidth={2.5} />
+      <g transform="rotate(-8 110 57)">
+        <g className="ks-surat">
+          <path
+            d="M78 22 L142 22 L142 92 L78 92 Z"
+            fill="var(--surface)"
+            stroke="var(--ink)"
+            strokeWidth={3.5}
+            strokeLinejoin="round"
+          />
+          <path
+            d="M94 54 l12 12 l22 -26"
+            stroke="var(--ink)"
+            strokeWidth={5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </g>
+      </g>
+      <g className="ks-kotak">
+        <rect
+          x={40}
+          y={74}
+          width={140}
+          height={74}
+          rx={10}
+          fill="var(--hijau-terang)"
+          stroke="var(--ink)"
+          strokeWidth={3.5}
+        />
+        <rect x={72} y={74} width={76} height={10} rx={5} fill="var(--hitam)" />
+        <path d="M40 98 H180" stroke="var(--ink)" strokeWidth={2.5} />
+      </g>
     </svg>
   );
 }
