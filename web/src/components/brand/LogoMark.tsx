@@ -3,7 +3,7 @@ import { LOGO_B_PATH, LOGO_M_PATH, LOGO_STEM_PATH } from './logo-paths';
 
 type LogoMarkProps = {
   className?: string;
-  /** `brand` memakai tinta dan hijau zamrud (sama dengan sidebar); `current` mengikuti warna teks (untuk di dalam tombol). */
+  /** `brand` memakai tinta dan hijau terang (sama dengan logo lockup berwarna dan stabilo); `current` mengikuti warna teks (untuk di dalam tombol). */
   tone?: 'brand' | 'current';
 };
 
@@ -18,7 +18,7 @@ export function LogoMark({ className, tone = 'brand' }: LogoMarkProps) {
     <svg viewBox="8 20 244 206" aria-hidden="true" className={cn('block', className)}>
       <path fill={current ? 'currentColor' : 'var(--ink)'} fillRule="evenodd" d={LOGO_M_PATH} />
       <path fill={current ? 'currentColor' : 'var(--ink)'} fillRule="evenodd" d={LOGO_B_PATH} />
-      <path fill={current ? 'currentColor' : 'var(--zamrud)'} d={LOGO_STEM_PATH} />
+      <path fill={current ? 'currentColor' : 'var(--hijau-terang)'} d={LOGO_STEM_PATH} />
     </svg>
   );
 }

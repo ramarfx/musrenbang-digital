@@ -26,7 +26,7 @@ export function AnimatedLogo({ className }: { className?: string }) {
         <path className="logo-anim-m" d={LOGO_M_PATH} />
         <path className="logo-anim-b" d={LOGO_B_PATH} />
       </g>
-      <path className="logo-anim-stem" fill="var(--zamrud)" d={LOGO_STEM_PATH} />
+      <path className="logo-anim-stem" fill="var(--hijau-terang)" d={LOGO_STEM_PATH} />
       <g fill="var(--ink)" fillRule="evenodd">
         {LETTERS.map((d, i) => (
           <path
