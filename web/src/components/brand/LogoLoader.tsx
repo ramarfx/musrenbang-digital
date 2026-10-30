@@ -25,7 +25,7 @@ export function LoadingDots({
           className={cn(
             'load-dot block rounded-full',
             size === 'lg' ? 'size-4' : 'size-2',
-            tone === 'current' ? 'bg-current' : 'bg-warga',
+            tone === 'current' ? 'bg-current' : 'bg-hijau-terang',
           )}
           style={{ animationDelay: `${i * 160}ms` }}
         />

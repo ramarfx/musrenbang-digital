@@ -274,6 +274,28 @@ html::-webkit-scrollbar,
   scrollbar-width: none;
 }
 
+/*
+ * Trek tipis untuk panel yang sendiri yang scroll (isi sidebar, menu HP): bulat, semi-
+ * transparan di atas warna panel, bukan trek abu bawaan browser yang kontras dengan hijau.
+ */
+.trek-tipis {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 35%) transparent;
+}
+.trek-tipis::-webkit-scrollbar {
+  width: 6px;
+}
+.trek-tipis::-webkit-scrollbar-track {
+  background: transparent;
+}
+.trek-tipis::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 35%);
+  border-radius: 999px;
+}
+.trek-tipis::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 55%);
+}
+
 ::selection {
   background: var(--mint);
   color: var(--ink);
@@ -465,6 +487,44 @@ html::-webkit-scrollbar,
   animation-delay: 315ms;
 }
 
+/*
+ * Masuk saat discroll (landing, lihat lib/reveal.ts): bagian di bawah hero memudar naik
+ * sekali saat pertama terlihat, lewat IntersectionObserver, bukan saat halaman dimuat.
+ * Kartu di .masuk-stagger menyusul bergiliran (jeda 70ms). Memakai transisi, bukan
+ * animation keyframe, karena waktu mulainya ditentukan scroll, bukan saat mount.
+ */
+.masuk {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 560ms var(--ease-out),
+    transform 560ms var(--ease-out);
+}
+.masuk.masuk-tampak {
+  opacity: 1;
+  transform: none;
+}
+.masuk-stagger > * {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 520ms var(--ease-out),
+    transform 520ms var(--ease-out);
+}
+.masuk-stagger.masuk-tampak > * {
+  opacity: 1;
+  transform: none;
+}
+.masuk-stagger > :nth-child(2) {
+  transition-delay: 70ms;
+}
+.masuk-stagger > :nth-child(3) {
+  transition-delay: 140ms;
+}
+.masuk-stagger > :nth-child(4) {
+  transition-delay: 210ms;
+}
+
 /* Menu HP: turun tipis dari bar atas, 180ms. Keluarnya langsung (tanpa animasi). */
 .anim-menu {
   transform-origin: top;
@@ -623,11 +683,31 @@ html::-webkit-scrollbar,
   }
 }
 
-/* Saat tema berganti, semua warna langsung berubah bersamaan (lihat lib/tema.ts). */
-.tema-ganti *,
-.tema-ganti *::before,
-.tema-ganti *::after {
-  transition: none !important;
+/*
+ * Saat tema berganti (lihat lib/tema.ts): semua warna memudar bersama dalam waktu yang sama,
+ * bukan berpindah seketika dan bukan bertahap (komponen yang sudah punya transisi sendiri,
+ * mis. tombol, ditimpa sesaat supaya tidak tertinggal di warna tema lama).
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .tema-ganti,
+  .tema-ganti *,
+  .tema-ganti *::before,
+  .tema-ganti *::after {
+    transition:
+      background-color 220ms var(--ease-out),
+      color 220ms var(--ease-out),
+      border-color 220ms var(--ease-out),
+      fill 220ms var(--ease-out),
+      stroke 220ms var(--ease-out) !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tema-ganti,
+  .tema-ganti *,
+  .tema-ganti *::before,
+  .tema-ganti *::after {
+    transition: none !important;
+  }
 }
 
 /* Di mode gelap ubin peta dibalik setelah dijadikan abu, jadi tetap netral dan tidak menyilaukan. */
@@ -682,5 +762,31 @@ html::-webkit-scrollbar,
   .toa:hover .toa-suara-3 {
     opacity: 1;
     transform: translateX(14px) scale(1.15);
+  }
+}
+
+/*
+ * Kotak suara (bagian ajakan di landing): saat disentuh kursor, kertas turun dan mengecil
+ * masuk ke kotak (460ms, sedikit memantul), kotak menyusul membal pelan 320ms kemudian
+ * (260ms) seolah menerima kiriman. Urutan dua gerak dibuat lewat transition-delay, bukan
+ * dua keyframe terpisah, supaya bisa dibatalkan mulus kalau kursor pergi di tengah jalan.
+ */
+.kotak-surat .ks-surat {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 460ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.kotak-surat .ks-kotak {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 260ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .kotak-surat:hover .ks-surat {
+    transform: translateY(16px) scale(0.88) rotate(-6deg);
+  }
+  .kotak-surat:hover .ks-kotak {
+    transform: scale(1.045);
+    transition-delay: 320ms;
   }
 }

@@ -10,6 +10,7 @@ import { useAuth } from '@/features/auth';
 import { useCategoriesQuery } from '@/features/categories/queries';
 import { useAppConfigQuery } from '@/features/config/queries';
 import { cn } from '@/lib/cn';
+import { useMasukTerlihat } from '@/lib/reveal';
 
 /** Logo resmi sesuai panduan: versi berwarna di kertas, versi terbalik di latar gelap. */
 function Logo({ selaluGelap = false }: { selaluGelap?: boolean }) {
@@ -157,44 +158,53 @@ function TautanPanah({
   );
 }
 
-/** Kotak suara: penutup bagian ajakan, pengganti wajah maskot di desain acuan. */
+/*
+ * Kotak suara: penutup bagian ajakan, pengganti wajah maskot di desain acuan. Saat kursor
+ * menyentuh: kertas dengan centang turun dan masuk ke kotak, kotak menyusul membal pelan
+ * sesaat setelahnya, seperti usulan yang baru dikirim diterima. Lihat .kotak-surat di
+ * index.css. Mati di layar sentuh dan saat prefers-reduced-motion aktif.
+ */
 function KotakSuara() {
   return (
     <svg
       viewBox="0 0 220 180"
       aria-hidden="true"
-      className="h-auto w-full max-w-[240px]"
+      className="kotak-surat h-auto w-full max-w-[240px]"
       fill="none"
     >
       <ellipse cx={110} cy={150} rx={96} ry={16} stroke="var(--ink)" strokeWidth={2} />
-      <path
-        d="M78 22 L142 22 L142 92 L78 92 Z"
-        fill="var(--surface)"
-        stroke="var(--ink)"
-        strokeWidth={3.5}
-        strokeLinejoin="round"
-        transform="rotate(-8 110 57)"
-      />
-      <path
-        d="M94 54 l12 12 l22 -26"
-        stroke="var(--ink)"
-        strokeWidth={5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        transform="rotate(-8 110 57)"
-      />
-      <rect
-        x={40}
-        y={74}
-        width={140}
-        height={74}
-        rx={10}
-        fill="var(--hijau-terang)"
-        stroke="var(--ink)"
-        strokeWidth={3.5}
-      />
-      <rect x={72} y={74} width={76} height={10} rx={5} fill="var(--hitam)" />
-      <path d="M40 98 H180" stroke="var(--ink)" strokeWidth={2.5} />
+      <g transform="rotate(-8 110 57)">
+        <g className="ks-surat">
+          <path
+            d="M78 22 L142 22 L142 92 L78 92 Z"
+            fill="var(--surface)"
+            stroke="var(--ink)"
+            strokeWidth={3.5}
+            strokeLinejoin="round"
+          />
+          <path
+            d="M94 54 l12 12 l22 -26"
+            stroke="var(--ink)"
+            strokeWidth={5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </g>
+      </g>
+      <g className="ks-kotak">
+        <rect
+          x={40}
+          y={74}
+          width={140}
+          height={74}
+          rx={10}
+          fill="var(--hijau-terang)"
+          stroke="var(--ink)"
+          strokeWidth={3.5}
+        />
+        <rect x={72} y={74} width={76} height={10} rx={5} fill="var(--hitam)" />
+        <path d="M40 98 H180" stroke="var(--ink)" strokeWidth={2.5} />
+      </g>
     </svg>
   );
 }
@@ -209,6 +219,13 @@ export default function Landing() {
   const categoriesQuery = useCategoriesQuery();
   const kota = configQuery.data?.kota ?? 'DKI Jakarta';
   const tahun = configQuery.data?.tahunAnggaran ?? 2026;
+
+  // Hero sudah terlihat saat halaman dibuka, jadi tidak perlu animasi masuk; bagian di
+  // bawahnya memudar naik satu per satu begitu pertama kali terlihat saat discroll.
+  const [bidangRef, bidangTampak] = useMasukTerlihat<HTMLDivElement>();
+  const [fiturRef, fiturTampak] = useMasukTerlihat<HTMLOListElement>();
+  const [ajakanRef, ajakanTampak] = useMasukTerlihat<HTMLDivElement>();
+  const [transparansiRef, transparansiTampak] = useMasukTerlihat<HTMLDivElement>();
 
   return (
     <div className="min-h-dvh bg-ground text-ink">
@@ -297,7 +314,10 @@ export default function Landing() {
         </section>
 
         <section aria-label="Bidang usulan" className="mx-auto max-w-[1160px] px-4 sm:px-6">
-          <div className="border-y border-rule py-6">
+          <div
+            ref={bidangRef}
+            className={cn('masuk border-y border-rule py-6', bidangTampak && 'masuk-tampak')}
+          >
             <p className="mb-3 text-[13px] text-muted">Bidang yang bisa kamu usulkan</p>
             {categoriesQuery.isPending && (
               <p className="text-[15px] text-muted">Memuat bidang...</p>
@@ -329,7 +349,13 @@ export default function Landing() {
             Empat langkah, dari menulis usulan sampai melihat apakah anggaran kota sejalan dengan
             pilihan warga.
           </JudulBagian>
-          <ol className="mt-10 grid gap-6 md:grid-cols-2">
+          <ol
+            ref={fiturRef}
+            className={cn(
+              'masuk-stagger mt-10 grid gap-6 md:grid-cols-2',
+              fiturTampak && 'masuk-tampak',
+            )}
+          >
             {FITUR.map((fitur, index) => (
               <li
                 key={fitur.judul}
@@ -384,7 +410,13 @@ export default function Landing() {
           aria-labelledby="judul-ajakan"
           className="mx-auto max-w-[1160px] px-4 pt-20 sm:px-6"
         >
-          <div className="kartu-cap grid items-center gap-8 rounded-[28px] bg-mint-pucat p-6 sm:p-10 md:grid-cols-[1.4fr_1fr]">
+          <div
+            ref={ajakanRef}
+            className={cn(
+              'masuk kartu-cap grid items-center gap-8 rounded-[28px] bg-mint-pucat p-6 sm:p-10 md:grid-cols-[1.4fr_1fr]',
+              ajakanTampak && 'masuk-tampak',
+            )}
+          >
             <div>
               <h2
                 id="judul-ajakan"
@@ -417,7 +449,13 @@ export default function Landing() {
           <JudulBagian id="judul-transparansi" judul="Terbuka untuk dicek">
             Tiga aturan yang membuat angka dan status di aplikasi ini bisa ditelusuri ulang.
           </JudulBagian>
-          <div className="kartu-cap mt-10 grid rounded-[28px] bg-surface md:grid-cols-3">
+          <div
+            ref={transparansiRef}
+            className={cn(
+              'masuk-stagger kartu-cap mt-10 grid rounded-[28px] bg-surface md:grid-cols-3',
+              transparansiTampak && 'masuk-tampak',
+            )}
+          >
             {TRANSPARANSI.map((butir, index) => (
               <article
                 key={butir.judul}

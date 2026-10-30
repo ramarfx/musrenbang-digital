@@ -33,7 +33,7 @@ export function Sidebar() {
           <ThemeToggle dark />
         </div>
         <RegionBox dark />
-        <div className="mt-5 min-h-0 flex-1 overflow-y-auto">
+        <div className="trek-tipis mt-5 min-h-0 flex-1 overflow-y-auto pr-1">
           <NavList groups={buildNav(isAdmin, user !== null)} dark />
         </div>
         <div className="mt-3">

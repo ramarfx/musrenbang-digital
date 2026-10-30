@@ -4,6 +4,9 @@ export type Tema = 'terang' | 'gelap';
 
 const KUNCI = 'mb-tema';
 const pendengar = new Set<() => void>();
+/** Durasi transisi `.tema-ganti` di index.css; dua angka ini harus tetap sama. */
+const LAMA_TRANSISI_MS = 260;
+let timerTransisi: ReturnType<typeof setTimeout> | undefined;
 
 function bacaTema(): Tema {
   return document.documentElement.dataset.theme === 'dark' ? 'gelap' : 'terang';
@@ -15,12 +18,13 @@ function bacaTema(): Tema {
  */
 export function pasangTema(tema: Tema) {
   const html = document.documentElement;
-  // Transisi warna dimatikan sesaat supaya semua elemen berganti tema bersamaan, bukan
-  // bertahap (tombol dengan transisi latar sempat tertinggal di warna tema lama).
+  // Kelas ini memberi semua elemen transisi warna yang seragam sesaat (lihat index.css),
+  // supaya ganti tema terasa memudar bersama, bukan berpindah seketika. Dilepas lagi setelah
+  // transisinya selesai supaya animasi hover dan sejenisnya kembali ke durasinya sendiri.
   html.classList.add('tema-ganti');
+  clearTimeout(timerTransisi);
+  timerTransisi = setTimeout(() => html.classList.remove('tema-ganti'), LAMA_TRANSISI_MS);
   html.dataset.theme = tema === 'gelap' ? 'dark' : 'light';
-  void html.offsetHeight;
-  requestAnimationFrame(() => html.classList.remove('tema-ganti'));
   document
     .querySelector('meta[name="theme-color"]')
     ?.setAttribute('content', tema === 'gelap' ? '#0F1A21' : '#F7F4EF');
