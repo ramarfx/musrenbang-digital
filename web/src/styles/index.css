@@ -865,6 +865,18 @@ html::-webkit-scrollbar,
     transform: scale(1.9);
   }
 }
+/* Batang panggung prioritas tumbuh dari alas tiap kali warga memilih satu bidang. */
+.tt-tumbuh {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: tt-tumbuh 420ms var(--ease-out) backwards;
+}
+@keyframes tt-tumbuh {
+  from {
+    opacity: 0;
+    transform: scaleY(0);
+  }
+}
 .tt-naik {
   transform-box: fill-box;
   transform-origin: center;
@@ -881,7 +893,8 @@ html::-webkit-scrollbar,
   .tt-nyala,
   .tt-jejak,
   .tt-riak,
-  .tt-naik {
+  .tt-naik,
+  .tt-tumbuh {
     animation: none;
   }
   /* Langsung ke akhir cerita: amplop sudah masuk, semua tahap menyala. */

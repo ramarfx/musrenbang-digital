@@ -33,7 +33,7 @@ export function JalurMusrenbang() {
   return (
     <svg
       viewBox="0 0 400 210"
-      className="h-auto w-full max-w-[400px]"
+      className="h-auto w-full max-w-[520px]"
       fill="none"
       aria-hidden="true"
     >
@@ -186,7 +186,7 @@ export function KartuDukung({ jumlah }: { jumlah: number }) {
   return (
     <svg
       viewBox="0 0 400 220"
-      className="h-auto w-full max-w-[400px]"
+      className="h-auto w-full max-w-[520px]"
       fill="none"
       aria-hidden="true"
     >
@@ -272,6 +272,172 @@ export function KartuDukung({ jumlah }: { jumlah: number }) {
   );
 }
 
+/**
+ * Panggung prioritas yang ikut terisi saat warga mengetuk bidang di langkah latihan: nomor 1
+ * jadi batang tertinggi. Slot yang belum dipilih tetap digambar sebagai kotak putus-putus,
+ * jadi warga tahu masih ada sisa pilihan.
+ */
+export function PanggungPrioritas({
+  urut,
+  ikonBidang,
+}: {
+  urut: readonly string[];
+  ikonBidang: Record<string, string>;
+}) {
+  const TINGGI = [142, 118, 94, 70];
+  const ALAS = 188;
+  return (
+    <svg
+      viewBox="0 0 400 220"
+      className="h-auto w-full max-w-[520px]"
+      fill="none"
+      aria-hidden="true"
+    >
+      <ellipse
+        cx={200}
+        cy={120}
+        rx={178}
+        ry={86}
+        stroke={TINTA}
+        strokeWidth={1.5}
+        strokeDasharray="2 7"
+        strokeLinecap="round"
+      />
+      {TINGGI.map((tinggi, index) => {
+        const x = 30 + index * 90;
+        const nama = urut[index];
+        const atas = ALAS - tinggi;
+        if (!nama) {
+          return (
+            <rect
+              key={index}
+              x={x}
+              y={atas}
+              width={70}
+              height={tinggi}
+              rx={8}
+              stroke={TINTA}
+              strokeWidth={2}
+              strokeDasharray="5 6"
+              opacity={0.45}
+            />
+          );
+        }
+        return (
+          <g key={nama} className="tt-tumbuh">
+            <rect
+              x={x}
+              y={atas}
+              width={70}
+              height={tinggi}
+              rx={8}
+              fill={index === 0 ? STABILO : KERTAS}
+              stroke={TINTA}
+              strokeWidth={3}
+            />
+            <text
+              x={x + 35}
+              y={ALAS - 12}
+              fontSize={16}
+              fill={GELAP}
+              textAnchor="middle"
+              fontWeight="bold"
+            >
+              {index + 1}
+            </text>
+            <circle cx={x + 35} cy={atas + 24} r={16} fill={GELAP} />
+            <path
+              transform={`translate(${x + 25} ${atas + 14}) scale(0.84)`}
+              d={ikonBidang[nama] ?? ''}
+              stroke={STABILO}
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </g>
+        );
+      })}
+      <path d={`M16 ${ALAS}H384`} stroke={TINTA} strokeWidth={4} strokeLinecap="round" />
+      <circle cx={28} cy={44} r={6} fill={STABILO} stroke={TINTA} strokeWidth={2.5} />
+      <circle cx={376} cy={60} r={5} fill={TINTA} />
+    </svg>
+  );
+}
+
+/** Kota dengan tiga lencana langkah yang muncul bergantian; penutup tutorial. */
+export function KotaSiap() {
+  const LENCANA = [
+    {
+      x: 92,
+      y: 52,
+      ikon: 'M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4',
+      isi: GELAP,
+      latar: STABILO,
+    },
+    { x: 200, y: 36, ikon: 'M12 3.5 3.5 13H9v7.5h6V13h5.5L12 3.5Z', isi: STABILO, latar: GELAP },
+    {
+      x: 308,
+      y: 56,
+      ikon: 'M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11ZM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z',
+      isi: GELAP,
+      latar: STABILO,
+    },
+  ];
+  return (
+    <svg
+      viewBox="0 0 400 220"
+      className="h-auto w-full max-w-[520px]"
+      fill="none"
+      aria-hidden="true"
+    >
+      <ellipse
+        cx={200}
+        cy={118}
+        rx={182}
+        ry={82}
+        stroke={TINTA}
+        strokeWidth={1.5}
+        strokeDasharray="2 7"
+        strokeLinecap="round"
+      />
+      <g stroke={TINTA} strokeWidth={3} strokeLinejoin="round">
+        <rect x={34} y={140} width={62} height={56} rx={6} fill={KERTAS} />
+        <rect x={108} y={116} width={56} height={80} rx={6} fill={KERTAS} />
+        <rect x={176} y={132} width={66} height={64} rx={6} fill={STABILO} />
+        <rect x={254} y={104} width={52} height={92} rx={6} fill={KERTAS} />
+        <rect x={318} y={146} width={50} height={50} rx={6} fill={KERTAS} />
+      </g>
+      <g stroke={TINTA} strokeWidth={2} opacity={0.5}>
+        <path d="M50 156h30M50 172h30M122 132h28M122 150h28M122 168h28M268 120h24M268 138h24M268 156h24M332 162h22M332 178h22" />
+      </g>
+      <path d="M16 196H384" stroke={TINTA} strokeWidth={4} strokeLinecap="round" />
+      {LENCANA.map((lencana, index) => (
+        <g key={lencana.x} className="tt-pop" style={jeda(120 + index * 160)}>
+          <circle
+            cx={lencana.x}
+            cy={lencana.y}
+            r={26}
+            fill={lencana.latar}
+            stroke={TINTA}
+            strokeWidth={3}
+          />
+          <path
+            transform={`translate(${lencana.x - 12} ${lencana.y - 12})`}
+            d={lencana.ikon}
+            stroke={lencana.isi}
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </g>
+      ))}
+      <circle cx={30} cy={70} r={6} fill={STABILO} stroke={TINTA} strokeWidth={2.5} />
+      <circle cx={372} cy={96} r={5} fill={TINTA} />
+      <circle cx={152} cy={28} r={4} fill={TINTA} />
+    </svg>
+  );
+}
+
 export type BarisLereng = { nama: string; kamu: number; apbd: number };
 
 /**
@@ -283,7 +449,7 @@ export function LerengUrutan({ baris, sorot }: { baris: readonly BarisLereng[]; 
   return (
     <svg
       viewBox="0 0 400 210"
-      className="h-auto w-full max-w-[400px]"
+      className="h-auto w-full max-w-[520px]"
       fill="none"
       aria-hidden="true"
     >

@@ -6,17 +6,15 @@ import { useAuth } from '@/features/auth';
 import { buildNav, NavList, RegionBox, UserRow } from './nav';
 
 /**
- * Sidebar hijau zamrud (warna batang logo) melayang untuk layar lebar (1024px ke atas).
- * Garis fokus di dalamnya putih, karena garis fokus hijau bawaan tidak terlihat di atas hijau.
+ * Sidebar hijau zamrud (warna batang logo) yang menempel penuh ke atas, bawah, dan kiri layar,
+ * untuk layar lebar (1024px ke atas). Garis fokus di dalamnya putih, karena garis fokus hijau
+ * bawaan tidak terlihat di atas hijau.
  */
 export function Sidebar() {
   const { isAdmin, user } = useAuth();
   return (
-    <aside className="sticky top-4 z-30 m-4 mr-0 hidden h-[calc(100dvh-32px)] w-[272px] flex-none flex-col rounded-3xl border border-white/15 bg-zamrud px-3.5 pt-5 pb-4 text-white lg:flex [&_*:focus-visible]:outline-white">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl"
-      >
+    <aside className="sticky top-0 z-30 hidden h-dvh w-[272px] flex-none flex-col bg-zamrud px-4 pt-5 pb-4 text-white lg:flex [&_*:focus-visible]:outline-white">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
         <DecorRings className="-right-[70px] bottom-[120px] size-[200px] shadow-[0_0_0_38px_rgb(255_255_255/0.05),0_0_0_78px_rgb(255_255_255/0.03)]" />
       </div>
       <div className="relative flex min-h-0 flex-1 flex-col">
