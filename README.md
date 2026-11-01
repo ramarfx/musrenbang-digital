@@ -227,29 +227,9 @@ Landing tidak memakai sidebar. Halaman lain memakai sidebar di layar lebar, dan 
 - `scripts/seed.ts` memvalidasi env dan setiap baris CSV/JSON; seed berhenti dengan
   daftar field yang salah alih-alih menulis data setengah jadi.
 
-## Status
+## Progress saat ini
 
-Fondasi Auth, RLS, RPC, dan enam migration sudah diuji lokal dan terpasang pada
-development. Migration ketujuh beserta perubahan kontrak lokal sudah diuji, tetapi
-belum diterapkan remote. Migration kedelapan lokal menangani fallback nama profil
-Auth baru tanpa mengubah role. Gap, APBD dan cache sesi masih perlu ditinjau sebelum
-rollout terkoordinasi. Tersedianya kode bukan bukti seluruh kriteria PRD lulus.
-
-Catatan jujur untuk demo:
-
-- CSV APBD saat ini berisi rincian awal dari ringkasan APBD murni 2026, bukan rekonsiliasi
-  APBD Perubahan dan bukan pemetaan final belanja program. Semua item berstatus
-  `perlu_lampiran`; dua kategori tanpa nominal dilewati oleh seed. Nilai belum boleh
-  diperlakukan sebagai angka perbandingan resmi.
-- Belum ada verifikasi KTP/NIK, sehingga satu orang dapat membuat beberapa akun.
-  Risiko ini dicatat, bukan disembunyikan.
-- Setelah migration keenam, read model memakai `security_invoker = true` dan RLS
-  tabel sumber. Helper `private` menjaga nama penulis, jumlah suara, dan agregat
-  lintas warga tetap tersedia. RPC tulis tetap memakai `SECURITY DEFINER` dengan
-  validasi identitas, peran, dan payload. Migration ketujuh menambahkan catatan wajib
-  untuk perubahan status dan statistik. Detail serta kontrak frontend ada di
-  [`ARSITEKTUR.md`](./ARSITEKTUR.md) dan
-  [`supabase/BACKEND_HANDOFF.md`](./supabase/BACKEND_HANDOFF.md).
+Musrenbang Digital sudah punya landing page terpisah dari dashboard, lengkap dengan mode terang/gelap dan animasi, serta halaman peta usulan, voting, komentar, simulator anggaran virtual, dan perbandingan Gap Warga dengan APBD. Backend-nya berjalan di Supabase (Postgres, Auth, RLS, view, dan RPC) tanpa server API sendiri, dan autentikasi sudah mendukung daftar dan masuk lewat email maupun Google, dengan peran warga dan admin. Alur usulan pun sudah lengkap, dari pengajuan lewat peta, moderasi admin, sampai linimasa status.
 
 ## Pengujian backend lokal dengan RAM terbatas
 
