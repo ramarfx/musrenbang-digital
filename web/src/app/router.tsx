@@ -6,6 +6,8 @@ import { RouteError } from '@/routes/RouteError';
 
 const Landing = lazy(() => import('@/routes/Landing'));
 const Beranda = lazy(() => import('@/routes/Beranda'));
+const UsulanWarga = lazy(() => import('@/routes/UsulanWarga'));
+const Hasilmu = lazy(() => import('@/routes/Hasilmu'));
 const Bandingkan = lazy(() => import('@/routes/Bandingkan'));
 const Apbd = lazy(() => import('@/routes/Apbd'));
 const Simulator = lazy(() => import('@/routes/Simulator'));
@@ -34,6 +36,15 @@ export const router = createBrowserRouter([
       { path: 'bandingkan', element: page(<Bandingkan />) },
       { path: 'apbd', element: page(<Apbd />) },
       { path: 'simulator', element: page(<Simulator />) },
+      { path: 'usulan', element: page(<UsulanWarga />) },
+      {
+        path: 'hasilmu',
+        element: page(
+          <RequireAuth>
+            <Hasilmu />
+          </RequireAuth>,
+        ),
+      },
       { path: 'metodologi', element: page(<Metodologi />) },
       {
         path: 'usulan/baru',

@@ -10,31 +10,28 @@ import { cn } from '@/lib/cn';
 type NavItem = { to: string; label: string; icon: IconName; end?: boolean };
 type NavGroup = { title?: string; items: NavItem[] };
 
+/**
+ * Menu mengikuti urutan langkah warga di Beranda. APBD dan Metodologi tidak di menu karena
+ * sudah ditautkan dari halaman Warga vs APBD dan dari footer; Buat usulan ada di Usulan warga.
+ */
 export function buildNav(isAdmin: boolean, sudahMasuk = false): NavGroup[] {
   const groups: NavGroup[] = [
     { items: [{ to: '/beranda', label: 'Beranda', icon: 'beranda' }] },
     {
-      title: 'Ikut serta',
+      title: 'Langkahmu',
       items: [
-        { to: '/simulator', label: 'Simulator', icon: 'simulator' },
-        { to: '/usulan/baru', label: 'Buat usulan', icon: 'usulan' },
+        { to: '/simulator', label: 'Prioritasku', icon: 'simulator' },
+        { to: '/usulan', label: 'Usulan warga', icon: 'usulan', end: true },
         ...(sudahMasuk
-          ? [{ to: '/usulan-saya', label: 'Usulan saya', icon: 'daftar' } satisfies NavItem]
+          ? [{ to: '/usulan-saya', label: 'Usulanku', icon: 'daftar' } satisfies NavItem]
           : []),
       ],
     },
     {
-      title: 'Pantau',
-      items: [
-        { to: '/bandingkan', label: 'Bandingkan', icon: 'bandingkan' },
-        { to: '/apbd', label: 'APBD', icon: 'apbd' },
-      ],
+      title: 'Hasil',
+      items: [{ to: '/bandingkan', label: 'Warga vs APBD', icon: 'bandingkan' }],
     },
   ];
-  groups.push({
-    title: 'Tentang',
-    items: [{ to: '/metodologi', label: 'Metodologi', icon: 'buku' }],
-  });
   if (sudahMasuk) {
     groups.push({ title: 'Akun', items: [{ to: '/profil', label: 'Profil', icon: 'profil' }] });
   }

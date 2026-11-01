@@ -5,7 +5,7 @@ import {
   totalAllocation,
 } from '@musrenbang/shared';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Card, HeroCard } from '@/components/ui/Card';
@@ -21,7 +21,6 @@ import { useGapQuery } from '@/features/gap/queries';
 import { cn } from '@/lib/cn';
 import { allocateByWeights, formatSelisih } from '../lib';
 import { useSaveAllocationsMutation, useUserAllocationsQuery } from '../queries';
-import { SetelahSimpan } from './SetelahSimpan';
 import { AllocationDetailDialog } from './AllocationDetailDialog';
 
 /**
@@ -42,8 +41,7 @@ export function PrioritasSimulator() {
   // Nomor yang dipilih per program; program yang belum diberi nomor tidak ada di sini.
   const [peringkat, setPeringkat] = useState<Record<string, number>>({});
   const [rincianBuka, setRincianBuka] = useState(false);
-  // Isi yang terakhir tersimpan; kartu konfirmasi tampil selama isi sekarang masih sama.
-  const [kunciTersimpan, setKunciTersimpan] = useState<string | null>(null);
+  const navigate = useNavigate();
   const initializedRef = useRef<string | null>(null);
 
   const categories = useMemo(
@@ -155,10 +153,7 @@ export function PrioritasSimulator() {
       return;
     }
     saveMutation.mutate(validation.data, {
-      onSuccess: () => {
-        setKunciTersimpan(JSON.stringify(items));
-        toast.success('Urutanmu tersimpan. Gap warga ikut diperbarui.');
-      },
+      onSuccess: () => navigate('/hasilmu'),
       onError: (error) => toast.error(error.message),
     });
   };
@@ -457,9 +452,6 @@ export function PrioritasSimulator() {
               </Link>
               .
             </p>
-          )}
-          {userId && kunciTersimpan !== null && kunciTersimpan === JSON.stringify(items) && (
-            <SetelahSimpan />
           )}
           <p className="min-h-[59px] rounded-xl bg-active px-3 py-2.5 text-[13px] text-muted">
             {lengkap

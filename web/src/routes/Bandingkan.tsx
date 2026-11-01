@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Button } from '@/components/ui/Button';
+import { Link } from 'react-router-dom';
+import { Button, buttonClass } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -62,11 +63,16 @@ export default function Bandingkan() {
             : 'Pilihan warga dibanding belanja program APBD.'
         }
         actions={
-          gapQuery.isSuccess && ringkasan.rows.length > 0 ? (
-            <Button variant="outline" size="sm" onClick={unduhCsv}>
-              Unduh data (CSV)
-            </Button>
-          ) : undefined
+          <>
+            <Link to="/apbd" className={buttonClass('outline', 'sm')}>
+              Lihat data APBD
+            </Link>
+            {gapQuery.isSuccess && ringkasan.rows.length > 0 && (
+              <Button variant="outline" size="sm" onClick={unduhCsv}>
+                Unduh data (CSV)
+              </Button>
+            )}
+          </>
         }
       />
 
