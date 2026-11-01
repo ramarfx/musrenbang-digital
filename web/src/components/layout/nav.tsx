@@ -1,5 +1,5 @@
-import { useNavigate, Link, NavLink } from 'react-router-dom';
-import { useState } from 'react';
+import { useNavigate, Link, NavLink, useLocation } from 'react-router-dom';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { useAuth } from '@/features/auth';
@@ -44,10 +44,114 @@ export function buildNav(isAdmin: boolean, sudahMasuk = false): NavGroup[] {
   return groups;
 }
 
+// Alas tuts hijau tua: lebih lembut dari tinta supaya tuts aktif menyatu dengan sidebar hijau.
+const ALAS = '#035C42';
+
+/**
+ * Satu menu sidebar. Tuts aktifnya bukan milik menu ini, melainkan satu tuts bersama yang
+ * meluncur di belakang semua menu (lihat NavList). Menu aktif hanya mengganti warna teks dan
+ * bulatan ikonnya, lalu ikut turun 4px saat ditekan seperti tombol.
+ */
+function TutsMenu({ item }: { item: NavItem }) {
+  return (
+    <NavLink
+      to={item.to}
+      end={item.end}
+      className={({ isActive }) =>
+        cn(
+          'group relative isolate flex h-[46px] items-center rounded-[14px] pr-3 pb-1 pl-[9px] text-[15px] font-semibold transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2',
+          isActive
+            ? 'text-ink'
+            : // Latar hover hanya seluas muka tuts, tidak menutupi bagian alas 4px di bawahnya.
+              'text-white after:absolute after:inset-x-0 after:top-0 after:bottom-1 after:-z-10 after:rounded-[14px] after:bg-white/15 after:opacity-0 after:transition-opacity after:duration-150 hover:after:opacity-100',
+        )
+      }
+    >
+      {({ isActive }) => (
+        <>
+          <span
+            className={cn(
+              'flex items-center gap-2.5 transition-transform duration-[80ms] motion-reduce:transition-none',
+              isActive && 'group-active:translate-y-1',
+            )}
+          >
+            <span
+              className={cn(
+                'grid size-[30px] flex-none place-items-center rounded-full transition-colors duration-200',
+                isActive && 'bg-zamrud text-white',
+              )}
+            >
+              <Icon name={item.icon} />
+            </span>
+            <span>{item.label}</span>
+          </span>
+        </>
+      )}
+    </NavLink>
+  );
+}
+
+/**
+ * Tuts aktif bersama di sidebar: meluncur naik atau turun ke menu yang sedang dibuka, lalu ikut
+ * turun ke alasnya saat menu aktif ditekan. Posisinya diukur dari menu aktif di DOM, jadi tetap
+ * tepat walau ada judul grup di antara menu. Pada muatan pertama tuts langsung di tempat tanpa
+ * meluncur dari atas.
+ */
+function TutsMeluncur({
+  kunciMenu,
+}: {
+  /** Berubah saat daftar menu berubah (mis. sesudah masuk), supaya posisi diukur ulang. */
+  kunciMenu: string;
+}) {
+  const { pathname } = useLocation();
+  const tutsRef = useRef<HTMLSpanElement>(null);
+  const [posisi, setPosisi] = useState<number | null>(null);
+  const [siap, setSiap] = useState(false);
+
+  // Menu aktif dicari lewat induk tuts (elemen nav), karena ref milik nav belum terpasang saat
+  // efek anak ini pertama kali jalan.
+  useLayoutEffect(() => {
+    const aktif =
+      tutsRef.current?.parentElement?.querySelector<HTMLElement>('a[aria-current="page"]');
+    setPosisi(aktif ? aktif.offsetTop : null);
+  }, [pathname, kunciMenu]);
+
+  // Transisi baru dinyalakan sesudah posisi pertama tergambar, supaya tuts tidak meluncur dari
+  // atas saat halaman dibuka.
+  useEffect(() => {
+    if (posisi !== null) setSiap(true);
+  }, [posisi]);
+
+  return (
+    <span
+      ref={tutsRef}
+      aria-hidden="true"
+      style={{
+        backgroundColor: ALAS,
+        transform: `translateY(${posisi ?? 0}px)`,
+      }}
+      className={cn(
+        'pointer-events-none absolute inset-x-0 top-0 h-[46px] rounded-[14px] motion-reduce:transition-none',
+        siap &&
+          'transition-[transform,opacity] duration-[320ms] ease-[cubic-bezier(0.23,1,0.32,1)]',
+        posisi === null ? 'opacity-0' : 'opacity-100',
+        'before:absolute before:inset-x-0 before:top-0 before:bottom-1 before:rounded-[14px] before:border-[1.5px] before:border-[#035C42] before:bg-mint-pucat before:transition-[translate] before:duration-[80ms]',
+        // Ditekan: muka tuts turun ke alas bersama isi menu aktifnya.
+        '[nav:has(a[aria-current=page]:active)_&]:before:translate-y-1',
+      )}
+    />
+  );
+}
+
 /** `dark` = di atas sidebar hijau; tanpa dark = menu HP di atas kertas. */
 export function NavList({ groups, dark }: { groups: NavGroup[]; dark: boolean }) {
   return (
-    <nav aria-label="Navigasi utama" className="flex flex-col">
+    <nav aria-label="Navigasi utama" className="relative isolate flex flex-col">
+      {dark && (
+        <TutsMeluncur
+          kunciMenu={groups.flatMap((group) => group.items.map((item) => item.to)).join('|')}
+        />
+      )}
       {groups.map((group, index) => (
         <div key={group.title ?? index} className={group.title ? 'mt-5' : undefined}>
           {group.title && (
@@ -55,26 +159,26 @@ export function NavList({ groups, dark }: { groups: NavGroup[]; dark: boolean })
               {group.title}
             </p>
           )}
-          <ul className="flex flex-col gap-0.5">
+          <ul className={cn('flex flex-col', dark ? 'gap-2' : 'gap-0.5')}>
             {group.items.map((item) => (
               <li key={item.to}>
-                <NavLink
-                  to={item.to}
-                  end={item.end}
-                  className={({ isActive }) =>
-                    cn(
-                      'relative flex h-11 items-center gap-3 rounded-[14px] px-3 text-[15px] font-medium transition-colors duration-150 ease-out',
-                      dark ? 'text-white hover:bg-black/10' : 'text-ink hover:bg-active',
-                      isActive &&
-                        dark &&
-                        'bg-black/20 font-bold hover:bg-black/20 before:absolute before:top-2.5 before:bottom-2.5 before:-left-3.5 before:w-1 before:rounded-r before:bg-hijau-terang before:animate-[anim-bar_240ms_cubic-bezier(0.23,1,0.32,1)_backwards]',
-                      isActive && !dark && 'bg-active font-bold',
-                    )
-                  }
-                >
-                  <Icon name={item.icon} />
-                  <span>{item.label}</span>
-                </NavLink>
+                {dark ? (
+                  <TutsMenu item={item} />
+                ) : (
+                  <NavLink
+                    to={item.to}
+                    end={item.end}
+                    className={({ isActive }) =>
+                      cn(
+                        'relative flex h-11 items-center gap-3 rounded-[14px] px-3 text-[15px] font-medium text-ink transition-colors duration-150 ease-out hover:bg-active',
+                        isActive && 'bg-active font-bold',
+                      )
+                    }
+                  >
+                    <Icon name={item.icon} />
+                    <span>{item.label}</span>
+                  </NavLink>
+                )}
               </li>
             ))}
           </ul>
