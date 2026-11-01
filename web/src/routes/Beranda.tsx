@@ -1,253 +1,360 @@
-import { buttonClass } from '@/components/ui/Button';
-import { PROPOSAL_STATUSES, type ProposalStatus } from '@musrenbang/shared';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { CaraKerja } from '@/components/CaraKerja';
-import { ProposalMap } from '@/components/map/ProposalMap';
+import { buttonClass } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { ListSkeleton } from '@/components/ui/Skeleton';
-import { PageHeader } from '@/components/ui/PageHeader';
-import { ProposalCard } from '@/features/proposals/components/ProposalCard';
-import { TopProposals } from '@/features/proposals/components/TopProposals';
-import { ProposalFilters } from '@/features/proposals/components/ProposalFilters';
+import { Icon, type IconName } from '@/components/ui/Icon';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { useUserAllocationsQuery } from '@/features/allocations/queries';
+import { useAuth } from '@/features/auth';
 import { useCategoriesQuery } from '@/features/categories/queries';
-import { useProposalsQuery } from '@/features/proposals/queries';
-import { usePublicStatsQuery } from '@/features/stats/queries';
-import { formatAngka, formatRupiahRingkas } from '@/lib/format';
+import { siapkanGap } from '@/features/gap/lib';
+import { useGapQuery } from '@/features/gap/queries';
+import { pilihTeratas } from '@/features/proposals/components/TopProposals';
+import { UpvoteButton } from '@/features/proposals/components/UpvoteButton';
+import { useMyVotesQuery, useProposalsQuery } from '@/features/proposals/queries';
+import { cn } from '@/lib/cn';
+import { formatAngka, formatPersen } from '@/lib/format';
+import { kalimatTahap, TAHAP_MUSRENBANG, tahapSekarang } from '@/lib/jadwal';
 
-export default function Beranda() {
+const TARGET_DUKUNGAN = 3;
+
+/** Empat tahap Musrenbang: yang sudah lewat bertinta, yang berjalan distabilo. */
+function JadwalMusrenbang() {
+  const sekarang = tahapSekarang(new Date());
+  return (
+    <Card>
+      <h2 className="text-base font-bold">Musrenbang tahun ini</h2>
+      <ol className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+        {TAHAP_MUSRENBANG.map((tahap, index) => (
+          <li
+            key={tahap.nama}
+            aria-current={index === sekarang ? 'step' : undefined}
+            className={cn(
+              'rounded-xl px-3 py-2.5',
+              index < sekarang && 'bg-ink text-on-ink',
+              index === sekarang && 'bg-hijau-terang text-hitam',
+              index > sekarang && 'bg-active',
+            )}
+          >
+            <span className={cn('block text-xs', index > sekarang && 'text-muted')}>
+              {index === sekarang ? 'Sekarang' : tahap.bulan}
+            </span>
+            <span className={cn('block text-sm', index === sekarang && 'font-bold')}>
+              {tahap.nama}
+            </span>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-3 text-xs text-muted">
+        Jadwal umum tiap tahun. Tanggal pastinya diumumkan pemerintah daerah.
+      </p>
+    </Card>
+  );
+}
+
+type Langkah = {
+  ikon: IconName;
+  label: string;
+  keterangan?: string;
+  selesai: boolean;
+  ke: string;
+  aksi: string;
+};
+
+/** Tiga langkah warga, dicentang dari data asli: urutan tersimpan, dukungan, dan usulan milik sendiri. */
+function LangkahMu() {
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
+  const allocationsQuery = useUserAllocationsQuery(userId);
+  const votesQuery = useMyVotesQuery(userId);
   const proposalsQuery = useProposalsQuery();
-  const statsQuery = usePublicStatsQuery();
-  const stats = statsQuery.data ?? null;
-  const [search, setSearch] = useState('');
-  const [status, setStatus] = useState<ProposalStatus | 'semua'>('semua');
-  const [kategori, setKategori] = useState('semua');
-  const [urutan, setUrutan] = useState<'terbaru' | 'terpopuler'>('terbaru');
-  const categoriesQuery = useCategoriesQuery();
 
-  // Pengguna yang masuk juga menerima usulan miliknya yang belum disetujui; daftar publik tidak boleh memuatnya.
-  const proposals = useMemo(
-    () => (proposalsQuery.data ?? []).filter((proposal) => proposal.moderasi === 'Disetujui'),
-    [proposalsQuery.data],
+  const sudahUrut = (allocationsQuery.data ?? []).some((row) => row.jumlah > 0);
+  const jumlahDukungan = votesQuery.data?.length ?? 0;
+  const punyaUsulan = (proposalsQuery.data ?? []).some(
+    (proposal) => userId !== null && proposal.pengusul_id === userId,
   );
-  const cocokKeyword = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
-    return proposals.filter(
-      (proposal) =>
-        keyword.length === 0 ||
-        proposal.judul.toLowerCase().includes(keyword) ||
-        proposal.deskripsi.toLowerCase().includes(keyword) ||
-        proposal.kategori.toLowerCase().includes(keyword) ||
-        proposal.pengusul_nama.toLowerCase().includes(keyword),
-    );
-  }, [proposals, search]);
-  // Filter kategori dan status bekerja bersamaan, dan angka di tiap pilihan mengikuti filter lain.
-  const cocokKategori = useMemo(
-    () =>
-      kategori === 'semua'
-        ? cocokKeyword
-        : cocokKeyword.filter((proposal) => proposal.kategori === kategori),
-    [cocokKeyword, kategori],
-  );
-  const filtered = useMemo(() => {
-    const hasil =
-      status === 'semua'
-        ? [...cocokKategori]
-        : cocokKategori.filter((proposal) => proposal.status === status);
-    if (urutan === 'terpopuler') {
-      hasil.sort(
-        (a, b) =>
-          b.jumlah_suara - a.jumlah_suara ||
-          new Date(b.dibuat_pada).getTime() - new Date(a.dibuat_pada).getTime(),
-      );
-    }
-    return hasil;
-  }, [cocokKategori, status, urutan]);
-  // Angka di tombol status mengikuti kata kunci, supaya tidak menjanjikan hasil yang kosong.
-  const counts = useMemo(() => {
-    const hasil = { semua: cocokKategori.length } as Record<ProposalStatus | 'semua', number>;
-    for (const item of PROPOSAL_STATUSES) {
-      hasil[item] = cocokKategori.filter((proposal) => proposal.status === item).length;
-    }
-    return hasil;
-  }, [cocokKategori]);
-  const daftarKategori = useMemo(() => {
-    const menurutStatus =
-      status === 'semua' ? cocokKeyword : cocokKeyword.filter((p) => p.status === status);
-    return (categoriesQuery.data ?? []).map((item) => ({
-      nama: item.nama,
-      jumlah: menurutStatus.filter((proposal) => proposal.kategori === item.nama).length,
-    }));
-  }, [categoriesQuery.data, cocokKeyword, status]);
-
-  const totalSuara = proposals.reduce((sum, proposal) => sum + proposal.jumlah_suara, 0);
-  const totalEstimasi = proposals.reduce((sum, proposal) => sum + proposal.estimasi_biaya, 0);
-  const jumlahBerlokasi = filtered.filter(
-    (proposal) => proposal.latitude !== null && proposal.longitude !== null,
-  ).length;
+  const daftar: Langkah[] = [
+    {
+      ikon: 'simulator',
+      label: 'Urutkan prioritasmu',
+      selesai: sudahUrut,
+      ke: '/simulator',
+      aksi: sudahUrut ? 'Ubah' : 'Mulai',
+    },
+    {
+      ikon: 'panah-atas',
+      label: `Dukung ${TARGET_DUKUNGAN} usulan`,
+      keterangan: user
+        ? `${Math.min(jumlahDukungan, TARGET_DUKUNGAN)} dari ${TARGET_DUKUNGAN}`
+        : undefined,
+      selesai: jumlahDukungan >= TARGET_DUKUNGAN,
+      ke: '/usulan',
+      aksi: 'Lihat usulan',
+    },
+    {
+      ikon: 'lokasi',
+      label: 'Buat usulanmu',
+      selesai: punyaUsulan,
+      ke: punyaUsulan ? '/usulan-saya' : '/usulan/baru',
+      aksi: punyaUsulan ? 'Pantau' : 'Tulis',
+    },
+  ];
+  const jumlahSelesai = daftar.filter((item) => item.selesai).length;
 
   return (
-    <div className="space-y-8">
-      <PageHeader
-        title="Anggaran kota, diputuskan bersama."
-        description="Usulkan program, urutkan prioritas anggaran, upvote usulan warga, dan bandingkan prioritas warga dengan APBD yang sebenarnya."
-        actions={
-          <>
-            <Link to="/simulator" className={buttonClass('primary')}>
-              Coba Simulator Anggaran
-            </Link>
-            <Link to="/bandingkan" className={buttonClass('outline')}>
-              Lihat Gap Warga-APBD
-            </Link>
-          </>
-        }
-      />
-
-      {/* Angka dari view statistik server (migrasi 7); kalau belum ada, dihitung dari daftar usulan yang terbaca. */}
-      <section
-        className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
-        aria-label="Ringkasan partisipasi"
-      >
-        <Card>
-          <p className="text-sm text-stone-500">Usulan disetujui</p>
-          <p className="text-2xl font-bold tabular-nums">
-            {formatAngka(stats?.jumlah_usulan_disetujui ?? proposals.length)}
-          </p>
-        </Card>
-        <Card>
-          <p className="text-sm text-stone-500">
-            {stats ? 'Warga yang memberi upvote' : 'Upvote terkumpul'}
-          </p>
-          <p className="text-2xl font-bold tabular-nums">
-            {formatAngka(stats?.jumlah_pemberi_suara ?? totalSuara)}
-          </p>
-        </Card>
-        {stats && (
-          <Card>
-            <p className="text-sm text-stone-500">Warga yang mengurutkan prioritas</p>
-            <p className="text-2xl font-bold tabular-nums">
-              {formatAngka(stats.jumlah_partisipan_alokasi)}
-            </p>
-          </Card>
-        )}
-        <Card>
-          <p className="text-sm text-stone-500">Total estimasi usulan</p>
-          <p className="text-2xl font-bold tabular-nums">{formatRupiahRingkas(totalEstimasi)}</p>
-        </Card>
-      </section>
-
-      <CaraKerja />
-
-      {proposalsQuery.isSuccess && <TopProposals proposals={proposals} />}
-
-      <section>
-        <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
-          <div>
-            <h2 className="text-xl font-bold">Peta usulan</h2>
-            <p className="text-sm text-stone-500">
-              {jumlahBerlokasi} usulan punya titik lokasi dari hasil filter saat ini.
-            </p>
-          </div>
-          <Link to="/usulan/baru" className="text-sm font-semibold text-warga underline">
-            Usulkan lokasi baru
-          </Link>
-        </div>
-        {proposalsQuery.isPending ? (
-          <div className="load-late h-96 animate-pulse rounded-3xl bg-stone-200" />
-        ) : proposalsQuery.isError ? (
-          <ErrorState
-            title="Peta usulan gagal dimuat"
-            message={proposalsQuery.error.message}
-            onRetry={() => {
-              void proposalsQuery.refetch();
-            }}
-          />
-        ) : jumlahBerlokasi === 0 ? (
-          <EmptyState
-            title="Belum ada usulan berlokasi di peta"
-            description="Usulan tanpa titik tetap tampil di daftar bawah. Tambahkan titik saat membuat usulan agar mudah ditemukan."
-          />
-        ) : (
-          <ProposalMap proposals={filtered} />
-        )}
-      </section>
-
-      <section className="space-y-4">
-        <div className="flex flex-wrap items-end justify-between gap-2">
-          <h2 className="text-xl font-bold">Daftar usulan</h2>
-          <Link to="/usulan/baru" className="text-sm font-semibold text-warga underline">
-            Buat usulan
-          </Link>
-        </div>
-
-        <ProposalFilters
-          search={search}
-          onSearchChange={setSearch}
-          status={status}
-          onStatusChange={setStatus}
-          counts={counts}
-          kategori={kategori}
-          onKategoriChange={setKategori}
-          daftarKategori={daftarKategori}
-          urutan={urutan}
-          onUrutanChange={setUrutan}
-          resultCount={filtered.length}
-          totalCount={proposals.length}
+    <Card>
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="text-base font-bold">Langkahmu</h2>
+        <span className="text-sm text-muted tabular-nums">
+          {jumlahSelesai} dari {daftar.length} selesai
+        </span>
+      </div>
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-track" aria-hidden="true">
+        <div
+          className="h-full rounded-full bg-hijau-terang transition-[width] duration-500 ease-out"
+          style={{ width: `${(jumlahSelesai / daftar.length) * 100}%` }}
         />
+      </div>
+      <ol className="mt-2">
+        {daftar.map((item) => (
+          <li
+            key={item.label}
+            className="flex items-center gap-3 border-t border-rule py-3 first:border-t-0"
+          >
+            <span
+              className={cn(
+                'grid size-9 flex-none place-items-center rounded-full border-2 border-ink',
+                item.selesai && 'bg-hijau-terang text-hitam',
+              )}
+            >
+              {item.selesai ? (
+                <svg
+                  viewBox="0 0 24 24"
+                  width={18}
+                  height={18}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.4}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M5 12.5l4.5 4.5L19 7.5" />
+                </svg>
+              ) : (
+                <Icon name={item.ikon} />
+              )}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className={cn('block text-[15px] font-semibold', item.selesai && 'text-muted')}>
+                {item.label}
+              </span>
+              {item.keterangan && (
+                <span className="block text-xs text-muted tabular-nums">{item.keterangan}</span>
+              )}
+              <span className="sr-only">{item.selesai ? ', selesai' : ', belum'}</span>
+            </span>
+            <Link
+              to={user ? item.ke : '/login'}
+              className={buttonClass(item.selesai ? 'outline' : 'primary', 'sm')}
+            >
+              {user ? item.aksi : 'Masuk'}
+            </Link>
+          </li>
+        ))}
+      </ol>
+    </Card>
+  );
+}
 
-        {proposalsQuery.isPending && <ListSkeleton />}
+/** Tiga usulan dengan dukungan terbanyak, bisa langsung didukung dari sini. */
+function PalingDidukung() {
+  const proposalsQuery = useProposalsQuery();
+  const teratas = useMemo(
+    () =>
+      pilihTeratas(
+        (proposalsQuery.data ?? []).filter((proposal) => proposal.moderasi === 'Disetujui'),
+        3,
+      ),
+    [proposalsQuery.data],
+  );
 
-        {proposalsQuery.isError && (
-          <ErrorState
-            message={proposalsQuery.error.message}
-            onRetry={() => {
-              void proposalsQuery.refetch();
-            }}
-          />
-        )}
+  return (
+    <Card>
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="text-base font-bold">Paling didukung</h2>
+        <Link to="/usulan" className="text-sm font-semibold text-warga underline">
+          Semua usulan
+        </Link>
+      </div>
+      {proposalsQuery.isPending ? (
+        <div className="mt-3 space-y-2">
+          {[0, 1, 2].map((index) => (
+            <Skeleton key={index} className="h-14 w-full rounded-xl" />
+          ))}
+        </div>
+      ) : proposalsQuery.isError ? (
+        <ErrorState
+          message={proposalsQuery.error.message}
+          onRetry={() => {
+            void proposalsQuery.refetch();
+          }}
+        />
+      ) : teratas.length === 0 ? (
+        <p className="mt-3 rounded-xl bg-active p-4 text-sm text-muted">
+          Belum ada usulan yang didukung.{' '}
+          <Link to="/usulan" className="font-semibold text-ink underline">
+            Jadi pendukung pertama
+          </Link>
+          .
+        </p>
+      ) : (
+        <ul className="mt-2">
+          {teratas.map((proposal) => (
+            <li
+              key={proposal.id}
+              className="flex items-center gap-3 border-t border-rule py-3 first:border-t-0"
+            >
+              <span className="min-w-0 flex-1">
+                <Link
+                  to={`/usulan/${proposal.id}`}
+                  className="block truncate text-[15px] font-semibold hover:underline"
+                >
+                  {proposal.judul}
+                </Link>
+                <span className="block truncate text-xs text-muted">{proposal.kategori}</span>
+              </span>
+              <UpvoteButton proposalId={proposal.id} jumlah={proposal.jumlah_suara} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
 
-        {proposalsQuery.isSuccess && proposals.length === 0 && (
-          <EmptyState
-            title="Belum ada usulan"
-            description="Jadilah yang pertama mengusulkan program untuk kotamu."
-            action={
-              <Link to="/usulan/baru" className={buttonClass('primary')}>
-                Buat usulan pertama
-              </Link>
-            }
-          />
-        )}
+/**
+ * Lima bidang pilihan warga terbanyak. Garis APBD hanya untuk kategori yang APBD-nya sudah
+ * terverifikasi, sama dengan aturan halaman Bandingkan.
+ */
+function PilihanWarga() {
+  const gapQuery = useGapQuery();
+  const categoriesQuery = useCategoriesQuery();
+  const ringkasan = useMemo(
+    () => siapkanGap(gapQuery.data ?? [], categoriesQuery.data?.map((item) => item.nama) ?? []),
+    [gapQuery.data, categoriesQuery.data],
+  );
+  const lima = [...ringkasan.rows].sort((a, b) => b.persen_warga - a.persen_warga).slice(0, 5);
+  const skala = Math.max(
+    1,
+    ...lima.flatMap((row) => [row.persen_warga, row.adaApbd ? row.persen_apbd : 0]),
+  );
+  const adaApbd = lima.some((row) => row.adaApbd);
 
-        {proposalsQuery.isSuccess && proposals.length > 0 && filtered.length === 0 && (
-          <EmptyState
-            title="Tidak ada usulan yang cocok"
-            description="Coba kata kunci lain atau ubah filter kategori dan status."
-            action={
-              <button
-                type="button"
-                onClick={() => {
-                  setSearch('');
-                  setStatus('semua');
-                  setKategori('semua');
-                }}
-                className={buttonClass('outline')}
+  return (
+    <Card>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h2 className="text-base font-bold">Pilihan warga{adaApbd ? ' dan porsi APBD' : ''}</h2>
+        <Link to="/bandingkan" className="text-sm font-semibold text-warga underline">
+          Lihat perbandingan lengkap
+        </Link>
+      </div>
+      {gapQuery.isPending ? (
+        <Skeleton className="mt-4 h-48 w-full rounded-xl" />
+      ) : gapQuery.isError ? (
+        <ErrorState
+          message={gapQuery.error.message}
+          onRetry={() => {
+            void gapQuery.refetch();
+          }}
+        />
+      ) : !ringkasan.adaWarga ? (
+        <div className="mt-3 rounded-xl bg-active p-4 text-sm">
+          <p className="text-muted">Belum ada warga yang mengurutkan prioritas.</p>
+          <Link to="/simulator" className={buttonClass('primary', 'sm', 'mt-3')}>
+            Jadi yang pertama
+          </Link>
+        </div>
+      ) : (
+        <>
+          <p className="mt-1 text-sm text-muted">
+            {ringkasan.jumlahPartisipan !== undefined
+              ? `Dari ${formatAngka(ringkasan.jumlahPartisipan)} warga yang sudah mengurutkan.`
+              : 'Dari semua warga yang sudah mengurutkan.'}
+            {ringkasan.sorotan &&
+              ` Selisih terbesar dengan APBD ada di ${ringkasan.sorotan.kategori}.`}
+          </p>
+          {adaApbd && (
+            <p className="mt-3 flex items-center gap-4 text-xs text-muted" aria-hidden="true">
+              <span className="flex items-center gap-1.5">
+                <span className="size-2.5 rounded-[3px] bg-hijau-terang" /> Warga
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-3 w-0.5 bg-ink" /> APBD
+              </span>
+            </p>
+          )}
+          <ul className="mt-3 space-y-2.5">
+            {lima.map((row) => (
+              <li
+                key={row.kategori}
+                className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_3.5rem] items-center gap-3"
               >
-                Hapus filter
-              </button>
-            }
-          />
-        )}
-
-        {filtered.length > 0 && (
-          <div className="stagger grid gap-4 md:grid-cols-2">
-            {filtered.map((proposal) => (
-              <ProposalCard key={proposal.id} proposal={proposal} />
+                <span className="truncate text-sm">{row.kategori}</span>
+                <span className="relative h-3.5 rounded-[4px] bg-track">
+                  <span
+                    className="bar-in absolute inset-y-0 left-0 rounded-[4px] bg-hijau-terang"
+                    style={{ width: `${(row.persen_warga / skala) * 100}%` }}
+                  />
+                  {row.adaApbd && (
+                    <span
+                      className="absolute -top-1 -bottom-1 w-0.5 bg-ink"
+                      style={{ left: `${(row.persen_apbd / skala) * 100}%` }}
+                      title={`APBD ${formatPersen(row.persen_apbd)}`}
+                    />
+                  )}
+                </span>
+                <span className="text-right text-sm tabular-nums">
+                  {formatPersen(row.persen_warga)}
+                </span>
+              </li>
             ))}
-          </div>
-        )}
-      </section>
+          </ul>
+          {!adaApbd && (
+            <p className="mt-3 text-xs text-muted">
+              Data APBD masih diverifikasi, jadi porsinya belum ditampilkan di sini.
+            </p>
+          )}
+        </>
+      )}
+    </Card>
+  );
+}
+
+/**
+ * Beranda warga: posisi Musrenbang tahun ini, tiga langkah yang dicentang dari data asli,
+ * usulan paling didukung, dan pilihan warga dibanding APBD. Daftar lengkap ada di Usulan warga.
+ */
+export default function Beranda() {
+  const { user, profile } = useAuth();
+  const nama = profile?.nama?.split(' ')[0];
+
+  return (
+    <div className="space-y-4">
+      <header className="mb-6">
+        <h1 className="text-2xl font-bold tracking-[-0.01em]">
+          {user && nama ? `Halo, ${nama}` : 'Beranda'}
+        </h1>
+        <p className="mt-1 text-muted">{kalimatTahap(new Date())}</p>
+      </header>
+      <JadwalMusrenbang />
+      <div className="grid items-start gap-4 xl:grid-cols-2">
+        <LangkahMu />
+        <PalingDidukung />
+      </div>
+      <PilihanWarga />
     </div>
   );
 }

@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { Outlet, ScrollRestoration, useLocation } from 'react-router-dom';
+import { Outlet, ScrollRestoration, useLocation, useNavigate } from 'react-router-dom';
+import { TutorialAwal } from '@/components/tutorial/TutorialAwal';
+import { useAuth } from '@/features/auth';
+import { sudahLihatTutorial, tandaiTutorialSelesai } from '@/lib/tutorial';
 import { Footer } from './Footer';
 import { MobileNav } from './MobileNav';
 import { Sidebar } from './Sidebar';
@@ -9,7 +12,12 @@ export function AppLayout() {
   // tidak masuk ke konten yang tertutup panel menu.
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
-
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  // Id akun yang tutorialnya baru ditutup, supaya tidak muncul lagi sebelum halaman dimuat ulang.
+  const [tutorialDitutup, setTutorialDitutup] = useState<string | null>(null);
+  const tampilTutorial =
+    user !== null && tutorialDitutup !== user.id && !sudahLihatTutorial(user.id);
   return (
     <div className="min-h-dvh bg-ground text-ink lg:flex">
       <a
@@ -33,6 +41,15 @@ export function AppLayout() {
         <Footer />
       </div>
       <ScrollRestoration />
+      {tampilTutorial && (
+        <TutorialAwal
+          onSelesai={(tujuan) => {
+            tandaiTutorialSelesai(user.id);
+            setTutorialDitutup(user.id);
+            if (tujuan) navigate(tujuan);
+          }}
+        />
+      )}
     </div>
   );
 }
