@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { Button, buttonClass } from '@/components/ui/Button';
 import { Card, HeroCard } from '@/components/ui/Card';
 import { Icon, type IconName } from '@/components/ui/Icon';
+import { LogoGoogle } from '@/components/ui/LogoGoogle';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { PageLoader } from '@/components/ui/PageLoader';
 import { LoginForm, RegisterForm, useAuth, useGoogleSignInMutation } from '@/features/auth';
@@ -153,6 +154,7 @@ export default function Auth() {
               googleMutation.mutate(undefined, { onError: (error) => toast.error(error.message) })
             }
           >
+            <LogoGoogle />
             Lanjut dengan Google
           </Button>
           <div className="my-5 flex items-center gap-3 text-[13px] text-muted" aria-hidden="true">
