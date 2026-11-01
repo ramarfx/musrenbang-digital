@@ -865,26 +865,28 @@ html::-webkit-scrollbar,
     transform: scale(1.9);
   }
 }
-/* Batang panggung prioritas tumbuh dari alas tiap kali warga memilih satu bidang. */
-.tt-tumbuh {
-  transform-box: fill-box;
-  transform-origin: bottom;
-  animation: tt-tumbuh 420ms var(--ease-out) backwards;
+/* Riak di ujung kursor demo setiap kali "mengklik". */
+.tt-klik {
+  animation: tt-klik 420ms var(--ease-out) forwards;
 }
-@keyframes tt-tumbuh {
+@keyframes tt-klik {
   from {
+    opacity: 0.8;
+    transform: scale(0.3);
+  }
+  to {
     opacity: 0;
-    transform: scaleY(0);
+    transform: scale(1.2);
   }
 }
-.tt-naik {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: tt-naik 520ms var(--ease-out) 500ms both;
+/* Pin lokasi jatuh ke peta di demo tulis usulan. */
+.tt-jatuh {
+  animation: tt-jatuh 320ms var(--ease-out) backwards;
 }
-@keyframes tt-naik {
-  40% {
-    transform: translateY(-12px);
+@keyframes tt-jatuh {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -893,8 +895,8 @@ html::-webkit-scrollbar,
   .tt-nyala,
   .tt-jejak,
   .tt-riak,
-  .tt-naik,
-  .tt-tumbuh {
+  .tt-klik,
+  .tt-jatuh {
     animation: none;
   }
   /* Langsung ke akhir cerita: amplop sudah masuk, semua tahap menyala. */

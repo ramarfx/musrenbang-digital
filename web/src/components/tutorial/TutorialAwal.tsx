@@ -1,55 +1,14 @@
 import logo from '@/assets/logo/mb-lockup-horizontal-warna.svg';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Toa } from '@/components/brand/Toa';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { Modal } from '@/components/ui/Modal';
 import { cn } from '@/lib/cn';
-import {
-  JalurMusrenbang,
-  KartuDukung,
-  KotaSiap,
-  LerengUrutan,
-  PanggungPrioritas,
-} from './IlustrasiTutorial';
+import { DemoDukung, DemoPantau, DemoUrutkan, DemoUsulan } from './DemoTutorial';
+import { JalurMusrenbang, KotaSiap } from './IlustrasiTutorial';
 
-// Latihan memakai empat bidang tetap dan urutan APBD contoh, bukan data asli: tidak ada yang
-// disimpan, dan layarnya menyebut "contoh" supaya tidak terbaca sebagai angka resmi.
-const BIDANG = [
-  { nama: 'Pendidikan', ikon: 'M2 9l10-5 10 5-10 5zM6 11v5c3 2 9 2 12 0v-5' },
-  {
-    nama: 'Kesehatan',
-    ikon: 'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z',
-  },
-  { nama: 'Jalan', ikon: 'M8 3 4 21M16 3l4 18M12 5v2M12 11v2M12 17v2' },
-  { nama: 'Lingkungan', ikon: 'M5 19c0-8 6-14 15-14 0 9-6 15-14 15M5 19l7-7' },
-] as const;
-const IKON_BIDANG = Object.fromEntries(BIDANG.map((bidang) => [bidang.nama, bidang.ikon]));
-const APBD_CONTOH: Record<string, number> = {
-  Jalan: 1,
-  Pendidikan: 2,
-  Kesehatan: 3,
-  Lingkungan: 4,
-};
-const TAHAP = ['Kenalan', 'Alur', 'Latihan', 'Hasil', 'Dukung', 'Siap'] as const;
-
-function IkonGaris({ d }: { d: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width={18}
-      height={18}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d={d} />
-    </svg>
-  );
-}
+const TAHAP = ['Kenalan', 'Alur', 'Urutkan', 'Dukung', 'Usulkan', 'Pantau', 'Siap'] as const;
 
 function Judul({ judul, isi }: { judul: string; isi: string }) {
   return (
@@ -62,6 +21,15 @@ function Judul({ judul, isi }: { judul: string; isi: string }) {
       </h2>
       <p className="mt-3 max-w-[42ch] text-[15px] text-muted sm:text-base lg:text-[17px]">{isi}</p>
     </div>
+  );
+}
+
+/** Pita kecil di atas judul langkah demo: demonya tidak menyimpan apa pun. */
+function PitaDemo() {
+  return (
+    <span className="tt-muncul mb-3 self-start rounded-full bg-ground px-2.5 py-0.5 text-xs text-muted">
+      Demo, tidak ada yang disimpan
+    </span>
   );
 }
 
@@ -78,7 +46,7 @@ function Stepper({ langkah }: { langkah: number }) {
               <span
                 aria-hidden="true"
                 className={cn(
-                  'h-0.5 w-4 rounded-full transition-colors duration-300 sm:w-7',
+                  'h-0.5 w-2.5 rounded-full transition-colors duration-300 sm:w-5',
                   lewat || kini ? 'bg-ink' : 'bg-track',
                 )}
               />
@@ -128,58 +96,22 @@ function Stepper({ langkah }: { langkah: number }) {
 }
 
 /**
- * Tutorial satu layar penuh yang muncul sekali sesudah pertama kali masuk: enam langkah
- * bergambar dengan sedikit teks, termasuk latihan mengurutkan prioritas yang langsung
- * dibandingkan dengan APBD contoh. Layar penuh dipilih supaya warga fokus, bukan melihat
- * halaman di belakangnya. "Lewati" dan Escape sama-sama menutup dan menandainya selesai.
+ * Tutorial satu layar penuh yang muncul sekali sesudah pertama kali masuk. Dua langkah pertama
+ * adalah perkenalan bergambar, lima langkah sesudahnya adalah demo bergerak yang meniru fitur asli
+ * (urutkan prioritas, dukung, tulis usulan, pantau status). Demo berjalan sendiri dengan kursor,
+ * tetapi warga bisa mengkliknya kapan saja. "Lewati" dan Escape menutup dan menandainya selesai.
  */
 export function TutorialAwal({ onSelesai }: { onSelesai: (tujuan?: string) => void }) {
   const [langkah, setLangkah] = useState(0);
-  const [urut, setUrut] = useState<string[]>([]);
-  const [galat, setGalat] = useState('');
-  const [dukungan, setDukungan] = useState(23);
+  // Naik tiap "Putar ulang demo"; dipakai sebagai key supaya demo dimulai dari awal.
+  const [putaran, setPutaran] = useState(0);
+  const ulang = () => setPutaran((n) => n + 1);
   const terakhir = langkah === TAHAP.length - 1;
 
-  // Angka dukungan naik tepat saat tombol dukung selesai melompat (lihat `tt-naik`).
-  useEffect(() => {
-    if (langkah !== 4) return;
-    setDukungan(23);
-    const timer = setTimeout(() => setDukungan(24), 760);
-    return () => clearTimeout(timer);
-  }, [langkah]);
-
-  const ketuk = (nama: string) => {
-    setGalat('');
-    setUrut((lama) =>
-      lama.includes(nama) ? lama.filter((item) => item !== nama) : [...lama, nama],
-    );
+  const pindah = (ke: number) => {
+    setPutaran(0);
+    setLangkah(ke);
   };
-
-  const lanjut = () => {
-    if (langkah === 2 && urut.length < BIDANG.length) {
-      setGalat('Urutkan keempatnya dulu');
-      return;
-    }
-    if (terakhir) onSelesai('/simulator');
-    else setLangkah(langkah + 1);
-  };
-
-  const baris = urut.map((nama, index) => ({
-    nama,
-    kamu: index + 1,
-    apbd: APBD_CONTOH[nama] ?? 0,
-  }));
-  const sorotan = baris.reduce<(typeof baris)[number] | undefined>(
-    (paling, item) =>
-      !paling || Math.abs(item.kamu - item.apbd) > Math.abs(paling.kamu - paling.apbd)
-        ? item
-        : paling,
-    undefined,
-  );
-  const temuan =
-    !sorotan || sorotan.kamu === sorotan.apbd
-      ? 'Urutanmu sama persis dengan APBD.'
-      : `Kamu taruh ${sorotan.nama} di nomor ${sorotan.kamu}, APBD di nomor ${sorotan.apbd}.`;
 
   const isi: { gambar: ReactNode; teks: ReactNode }[] = [
     {
@@ -201,86 +133,51 @@ export function TutorialAwal({ onSelesai }: { onSelesai: (tujuan?: string) => vo
       ),
     },
     {
-      gambar: <PanggungPrioritas urut={urut} ikonBidang={IKON_BIDANG} />,
+      gambar: <DemoUrutkan key={putaran} onUlang={ulang} />,
       teks: (
         <>
-          <span className="tt-muncul mb-3 self-start rounded-full bg-ground px-2.5 py-0.5 text-xs text-muted">
-            Latihan, tidak disimpan
-          </span>
+          <PitaDemo />
           <Judul
-            judul="Mana yang paling penting buatmu?"
-            isi="Ketuk satu per satu. Yang kamu ketuk pertama jadi nomor 1."
+            judul="Urutkan bidang yang paling penting"
+            isi="Ketuk nomor di bawah tiap bidang. Nomor yang sudah dipakai akan saling bertukar. Ikuti demonya, atau coba sendiri kapan saja."
           />
-          <div className="mt-5 grid gap-2 sm:grid-cols-2">
-            {BIDANG.map((bidang) => {
-              const nomor = urut.indexOf(bidang.nama) + 1;
-              const dipilih = nomor > 0;
-              return (
-                <button
-                  key={bidang.nama}
-                  type="button"
-                  aria-pressed={dipilih}
-                  aria-label={
-                    dipilih ? `${bidang.nama}, nomor ${nomor}, ketuk untuk batal` : bidang.nama
-                  }
-                  onClick={() => ketuk(bidang.nama)}
-                  className={cn(
-                    'flex min-h-14 items-center gap-2.5 rounded-xl border-[1.5px] p-3 text-left text-[15px] font-semibold transition-[scale,background-color,border-color] duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2',
-                    dipilih
-                      ? 'border-ink bg-mint-pucat'
-                      : 'border-border bg-surface hover:bg-active',
-                  )}
-                >
-                  <span
-                    className={cn(
-                      'grid size-[34px] flex-none place-items-center rounded-full border-2 border-ink',
-                      dipilih ? 'bg-hijau-terang text-hitam' : 'bg-surface',
-                    )}
-                  >
-                    <IkonGaris d={bidang.ikon} />
-                  </span>
-                  <span className="min-w-0 flex-1">{bidang.nama}</span>
-                  <span
-                    className={cn(
-                      'grid size-7 flex-none place-items-center rounded-full text-sm',
-                      dipilih ? 'bg-ink text-on-ink' : 'border-[1.5px] border-dashed border-mati',
-                    )}
-                  >
-                    {dipilih ? nomor : ''}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          <div className="mt-3 flex min-h-6 items-center justify-between gap-3">
-            <span role="alert" className="text-[13px] text-[var(--merah)]">
-              {galat}
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                setUrut([]);
-                setGalat('');
-              }}
-              className="text-[13px] text-muted underline hover:text-ink"
-            >
-              Ulangi dari awal
-            </button>
-          </div>
         </>
       ),
     },
     {
-      gambar: <LerengUrutan baris={baris} sorot={sorotan?.nama ?? ''} />,
-      teks: <Judul judul="Ini bedanya dengan APBD" isi={temuan} />,
+      gambar: <DemoDukung key={putaran} onUlang={ulang} />,
+      teks: (
+        <>
+          <PitaDemo />
+          <Judul
+            judul="Dukung usulan warga"
+            isi="Ketuk panah di kartu usulan. Makin banyak dukungan, makin besar peluangnya dibahas di rapat."
+          />
+        </>
+      ),
     },
     {
-      gambar: <KartuDukung jumlah={dukungan} />,
+      gambar: <DemoUsulan key={putaran} onUlang={ulang} />,
       teks: (
-        <Judul
-          judul="Dukung usulan tetanggamu"
-          isi="Makin banyak dukungan, makin besar peluangnya dibahas di rapat."
-        />
+        <>
+          <PitaDemo />
+          <Judul
+            judul="Tulis usulanmu sendiri"
+            isi="Isi judul, pilih bidang, tandai lokasi di peta, lalu kirim. Admin memeriksanya dulu."
+          />
+        </>
+      ),
+    },
+    {
+      gambar: <DemoPantau key={putaran} onUlang={ulang} />,
+      teks: (
+        <>
+          <PitaDemo />
+          <Judul
+            judul="Pantau sampai selesai"
+            isi="Setiap perubahan status usulanmu muncul sebagai pemberitahuan."
+          />
+        </>
       ),
     },
     {
@@ -346,12 +243,16 @@ export function TutorialAwal({ onSelesai }: { onSelesai: (tujuan?: string) => vo
           </button>
         </header>
 
-        {/* Kunci per langkah: setiap pindah, animasi langkah baru diputar dari awal. */}
-        <div key={langkah} className="flex min-h-0 flex-1 flex-col lg:flex-row">
-          <div className="flex flex-none items-center justify-center bg-ground px-4 py-5 lg:flex-1 lg:py-10">
+        {/* Kunci per langkah: setiap pindah, animasi langkah baru diputar dari awal. Di HP isinya
+            boleh digulir karena demo cukup tinggi. */}
+        <div
+          key={langkah}
+          className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-visible"
+        >
+          <div className="flex flex-none items-center justify-center bg-ground px-4 py-5 lg:flex-1 lg:overflow-y-auto lg:py-8">
             {sekarang.gambar}
           </div>
-          <div className="flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-5 py-6 sm:px-8 lg:max-w-[46%] lg:px-12">
+          <div className="flex flex-none flex-col justify-center px-5 py-6 sm:px-8 lg:max-w-[46%] lg:flex-1 lg:overflow-y-auto lg:px-12">
             {sekarang.teks}
           </div>
         </div>
@@ -359,13 +260,13 @@ export function TutorialAwal({ onSelesai }: { onSelesai: (tujuan?: string) => vo
         <footer className="flex flex-none items-center justify-between gap-3 border-t border-rule px-4 py-3 sm:px-6">
           <Button
             variant="ghost"
-            onClick={() => setLangkah(langkah - 1)}
+            onClick={() => pindah(langkah - 1)}
             className={cn(langkah === 0 && 'invisible')}
           >
             Kembali
           </Button>
-          <Button onClick={lanjut}>
-            {terakhir ? 'Mulai urutkan prioritas' : langkah === 2 ? 'Lihat hasilnya' : 'Lanjut'}
+          <Button onClick={() => (terakhir ? onSelesai('/simulator') : pindah(langkah + 1))}>
+            {terakhir ? 'Mulai urutkan prioritas' : 'Lanjut'}
           </Button>
         </footer>
       </div>
