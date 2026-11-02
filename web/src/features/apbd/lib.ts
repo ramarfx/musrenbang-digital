@@ -4,6 +4,54 @@ import type { ApbdItem } from '@musrenbang/shared';
 export const PERGUB_APBD_URL =
   'https://jdih.jakarta.go.id/dokumenPeraturanDirectory/0031/2025PERGUB003144.pdf';
 
+/** Lampiran I Perda DKI Jakarta No. 4 Tahun 2025: ringkasan APBD 2026 menurut kelompok dan jenis. */
+export const LAMPIRAN_PERDA_URL =
+  'https://apbd.jakarta.go.id/doc/publik/6.%20APBD/APBD%202026/PENETAPAN/PERDA/Lampiran%201%20Perda%20APBD%202026.pdf';
+
+/** Artikel BPKD DKI Jakarta tentang postur APBD 2026 beserta infografisnya. */
+export const ARTIKEL_BPKD_URL = 'https://bpkd.jakarta.go.id/artikel/detail/862';
+
+export type DokumenResmi = {
+  judul: string;
+  penerbit: string;
+  jenis: 'PDF' | 'Halaman web';
+  /** Perkiraan ukuran berkas, hanya untuk PDF. */
+  ukuran?: string;
+  isi: string;
+  url: string;
+};
+
+/**
+ * Dokumen resmi yang menjadi rujukan angka APBD. Tautannya langsung ke situs pemerintah, bukan
+ * salinan, supaya isinya selalu yang terbaru dan bisa dicek asalnya. Ketiganya terakhir dibuka
+ * dan dicocokkan pada 2 November 2026.
+ */
+export const DOKUMEN_RESMI: DokumenResmi[] = [
+  {
+    judul: 'Pergub DKI Jakarta No. 44 Tahun 2025',
+    penerbit: 'JDIH Pemprov DKI Jakarta',
+    jenis: 'PDF',
+    ukuran: '0,4 MB',
+    isi: 'Memuat total pendapatan dan belanja daerah 2026 (Pasal 3 dan Pasal 9). Hanya batang tubuh, tanpa lampiran.',
+    url: PERGUB_APBD_URL,
+  },
+  {
+    judul: 'Lampiran I Perda DKI Jakarta No. 4 Tahun 2025',
+    penerbit: 'apbd.jakarta.go.id',
+    jenis: 'PDF',
+    ukuran: '1,5 MB',
+    isi: 'Ringkasan APBD 2026 menurut kelompok dan jenis belanja: pegawai, barang dan jasa, modal, bansos, dan lainnya. Bukan per bidang seperti sepuluh kategori di aplikasi ini.',
+    url: LAMPIRAN_PERDA_URL,
+  },
+  {
+    judul: 'Postur APBD 2026 dan infografisnya',
+    penerbit: 'BPKD DKI Jakarta',
+    jenis: 'Halaman web',
+    isi: 'Penjelasan resmi postur anggaran, termasuk porsi infrastruktur pelayanan publik, dan keterangan pimpinan BPKD.',
+    url: ARTIKEL_BPKD_URL,
+  },
+];
+
 /**
  * Tiga keadaan data APBD per kategori, sesuai kontrak backend:
  * - terverifikasi: status `verified_program` dan punya tautan sumber (satu-satunya yang masuk Bandingkan);

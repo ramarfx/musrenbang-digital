@@ -5,8 +5,9 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { PageLoader } from '@/components/ui/PageLoader';
 import { ApbdTable } from '@/features/apbd/components/ApbdTable';
+import { DokumenResmiKartu } from '@/features/apbd/components/DokumenResmiKartu';
 import { useApbdQuery } from '@/features/apbd/queries';
-import { PERGUB_APBD_URL, statusData } from '@/features/apbd/lib';
+import { statusData } from '@/features/apbd/lib';
 import { useAppConfigQuery } from '@/features/config/queries';
 import { formatRupiah } from '@/lib/format';
 
@@ -71,16 +72,14 @@ export default function Apbd() {
             <b>Data belum ada</b>: tidak dirinci di sumber yang kami punya, dan tidak dikarang.
           </li>
           <li>
-            Total belanja daerah resmi Rp74.285.299.931.740 ada di{' '}
-            <a
-              href={PERGUB_APBD_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-warga underline"
-            >
-              Pergub DKI Jakarta No. 44 Tahun 2025
-            </a>
-            . Rincian per urusan ada di lampiran yang belum kami dapat.{' '}
+            Total belanja daerah resmi Rp74.285.299.931.740, sama di Perda 4/2025 dan Pergub
+            44/2025. Lampiran I Perda memuat ringkasan per jenis belanja, bukan per bidang seperti
+            sepuluh kategori di sini, jadi angka per kategori masih dihimpun dari rincian program.
+            Dokumen sumbernya ada di{' '}
+            <Link to="/apbd#dokumen-resmi" className="font-semibold text-warga underline">
+              daftar dokumen resmi
+            </Link>
+            .{' '}
             <Link to="/metodologi" className="font-semibold text-warga underline">
               Lihat metodologi
             </Link>
@@ -88,6 +87,8 @@ export default function Apbd() {
           </li>
         </ul>
       </Card>
+
+      <DokumenResmiKartu />
 
       {apbdQuery.isPending && <PageLoader label="Memuat data APBD..." />}
 
