@@ -204,7 +204,7 @@ async function readOnlyBaseline(options: { requireDatabase: boolean; enforceHist
     console.log(
       `MIGRATION_HISTORY_${classification.toUpperCase()} ` +
         `remote=${versions.join(',') || '(kosong)'}; ` +
-        `deployedBaseline=${WRITE_TEST_MIGRATIONS.slice(0, 6).join(',')}; ` +
+        `foundationBaseline=${WRITE_TEST_MIGRATIONS.slice(0, 6).join(',')}; ` +
         `writeTest=${WRITE_TEST_MIGRATIONS.join(',')}`,
     );
     preflightBaseline = await snapshot();
@@ -212,9 +212,9 @@ async function readOnlyBaseline(options: { requireDatabase: boolean; enforceHist
   }
   try {
     assertExpectedMigrationHistory(versions, WRITE_TEST_MIGRATIONS);
-    check('History remote cocok dengan delapan migration yang diuji', true);
+    check('History remote cocok dengan sembilan migration yang diuji', true);
   } catch (error) {
-    check('History remote cocok dengan delapan migration yang diuji', false);
+    check('History remote cocok dengan sembilan migration yang diuji', false);
     throw error;
   }
   preflightBaseline = await snapshot();

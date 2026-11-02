@@ -1,6 +1,6 @@
 export const ALLOWED_PROJECT_REF = 'dogyibbzwfslspflsidm';
 export const ALLOWED_PROJECT_URL = `https://${ALLOWED_PROJECT_REF}.supabase.co`;
-export const DEPLOYED_REMOTE_MIGRATIONS = [
+export const FOUNDATION_MIGRATIONS = [
   '20261026090000',
   '20261026090100',
   '20261026090200',
@@ -9,10 +9,14 @@ export const DEPLOYED_REMOTE_MIGRATIONS = [
   '20261027004023',
 ] as const;
 
-export const LOCAL_MVP_MIGRATIONS = ['20261027065525', '20261028135103'] as const;
+export const POST_FOUNDATION_MIGRATIONS = [
+  '20261027065525',
+  '20261028135103',
+  '20261102122158',
+] as const;
 export const WRITE_TEST_MIGRATIONS = [
-  ...DEPLOYED_REMOTE_MIGRATIONS,
-  ...LOCAL_MVP_MIGRATIONS,
+  ...FOUNDATION_MIGRATIONS,
+  ...POST_FOUNDATION_MIGRATIONS,
 ] as const;
 
 function hasExactMigrationHistory(versions: readonly string[], expected: readonly string[]) {
@@ -25,8 +29,8 @@ function hasExactMigrationHistory(versions: readonly string[], expected: readonl
 }
 
 export function classifyRemoteMigrationHistory(versions: readonly string[]) {
-  if (hasExactMigrationHistory(versions, DEPLOYED_REMOTE_MIGRATIONS)) return 'deployed-baseline';
-  if (hasExactMigrationHistory(versions, WRITE_TEST_MIGRATIONS)) return 'mvp-migration-present';
+  if (hasExactMigrationHistory(versions, FOUNDATION_MIGRATIONS)) return 'foundation-only';
+  if (hasExactMigrationHistory(versions, WRITE_TEST_MIGRATIONS)) return 'deployed-baseline';
   return 'unexpected';
 }
 

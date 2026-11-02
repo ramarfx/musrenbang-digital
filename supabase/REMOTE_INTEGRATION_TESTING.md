@@ -1,7 +1,8 @@
 # Remote Auth dan API integration testing
 
-Runner membedakan baseline enam migration dan target tulis delapan migration.
-Mode tulis menolak history lain, termasuk tujuh migration. Status remote terakhir
+Runner membedakan fondasi historis enam migration dan target tulis sembilan migration.
+History remote yang diperiksa pada 2 November 2026 berisi sembilan migration.
+Mode tulis menolak history lain, termasuk tujuh atau delapan migration. Status remote terakhir
 harus diverifikasi ulang sebelum tindakan. Tidak ada izin pengujian tulis dalam catatan ini.
 
 Runner remote terpisah dari `scripts/test-integration.ps1` dan
@@ -27,7 +28,7 @@ pwsh -NoProfile -File scripts/test-remote-integration.ps1 `
 
 Preflight read-only terakhir pada 27 Oktober 2026 memverifikasi target/ref proyek,
 URL API, API key publik pada proyek tersebut, email provider aktif, signup aktif,
-dan email confirmation wajib. Project masih berada pada enam migration. Preflight
+dan email confirmation wajib. Saat itu proyek masih berada pada enam migration. Preflight
 tersebut tidak membuat akun atau fixture dan tidak menulis data.
 
 `SITE_URL`, redirect allowlist, konfigurasi SMTP rinci, dan batas rate belum
@@ -36,10 +37,11 @@ Management API tidak tersedia. `REMOTE_DATABASE_URL` juga belum disediakan, sehi
 preflight itu tidak menghasilkan fingerprint database lengkap. Jangan menafsirkan
 status provider aktif sebagai bukti SMTP mengirim ke mailbox uji.
 
-Mode tulis runner mensyaratkan delapan migration termasuk
-`20261027065525_mvp_public_stats_status_audit` dan `20261028135103_auth_profile_metadata`.
-Remote terakhir diketahui memiliki enam; karena itu
-mode tulis akan berhenti pada pemeriksaan history. Jangan menerapkan migration hanya
+Mode tulis runner mensyaratkan sembilan migration termasuk
+`20261027065525_mvp_public_stats_status_audit`, `20261028135103_auth_profile_metadata`,
+dan `20261102122158_allow_owners_delete_pending_or_rejected_proposals`.
+Remote perlu diperiksa ulang sebelum eksekusi; history selain sembilan versi yang tepat
+akan menghentikan mode tulis. Jangan menerapkan migration hanya
 untuk melewati gate ini; migration memerlukan review dan persetujuan deployment
 terpisah terlebih dahulu.
 
