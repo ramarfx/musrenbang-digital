@@ -2,7 +2,7 @@ import { buttonClass } from '@/components/ui/Button';
 import { PROPOSAL_STATUSES, type ProposalStatus } from '@musrenbang/shared';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ProposalMap } from '@/components/map/ProposalMap';
+import { PanelPetaUsulan } from '@/components/map/PanelPetaUsulan';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { ListSkeleton } from '@/components/ui/Skeleton';
@@ -99,7 +99,7 @@ export default function UsulanWarga() {
         <div className="mb-3">
           <h2 className="text-xl font-bold">Peta usulan</h2>
           <p className="text-sm text-muted">
-            {jumlahBerlokasi} usulan punya titik lokasi dari hasil filter saat ini.
+            {jumlahBerlokasi} usulan punya titik lokasi dari hasil filter saat ini. Pilih wilayah untuk melihat batasnya.
           </p>
         </div>
         {proposalsQuery.isPending ? (
@@ -118,7 +118,7 @@ export default function UsulanWarga() {
             description="Usulan tanpa titik tetap tampil di daftar bawah. Tambahkan titik saat membuat usulan agar mudah ditemukan."
           />
         ) : (
-          <ProposalMap proposals={filtered} />
+          <PanelPetaUsulan proposals={filtered} />
         )}
       </section>
 
@@ -184,7 +184,7 @@ export default function UsulanWarga() {
         )}
 
         {filtered.length > 0 && (
-          <div className="stagger grid gap-4 md:grid-cols-2">
+          <div className="grid gap-5 md:grid-cols-2">
             {filtered.map((proposal) => (
               <ProposalCard key={proposal.id} proposal={proposal} />
             ))}

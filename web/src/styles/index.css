@@ -214,11 +214,6 @@ button {
   background: var(--track);
 }
 
-/* Ubin peta dibuat abu hangat supaya air dan jalan tidak tampil biru. */
-.peta-hangat .leaflet-tile-pane {
-  filter: grayscale(1) sepia(0.18) brightness(1.04) contrast(0.92);
-}
-
 /*
  * Slider: isi slider digambar dengan elemen biasa di belakang input (lihat
  * components/ui/Slider.tsx), jadi trek bawaan dibuat transparan. Tanpa linear-gradient.
@@ -525,10 +520,242 @@ html::-webkit-scrollbar,
   transition-delay: 210ms;
 }
 
+/*
+ * Kartu usulan: memudar naik 16px sekali saat pertama terlihat (lib/reveal.ts), kartu kolom
+ * kanan menyusul 70ms. Sesudah itu garis tahap yang sudah dilalui terisi dari kiri bergiliran
+ * dan bulatan tahap sekarang muncul membesar. Kartu memakai transisi (waktu mulainya
+ * ditentukan scroll); isinya keyframe sekali jalan dengan fill `backwards`.
+ * Hapus: kartu memudar dan mengecil ke 0,96 (data-keluar), tanpa jeda.
+ */
+.kartu-usulan {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 420ms var(--ease-out),
+    transform 420ms var(--ease-out),
+    translate 150ms var(--ease-out),
+    scale 200ms var(--ease-out);
+}
+.kartu-usulan.kartu-tampak {
+  opacity: 1;
+  transform: none;
+}
+@media (min-width: 768px) {
+  .kartu-usulan:nth-child(even) {
+    transition-delay: 70ms, 70ms, 0ms, 0ms;
+  }
+}
+.kartu-usulan[data-keluar] {
+  opacity: 0;
+  scale: 0.96;
+  pointer-events: none;
+  transition-delay: 0ms;
+}
+.kartu-tampak .kartu-pop {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: kartu-pop 380ms var(--ease-out) 520ms backwards;
+}
+.kartu-tampak .kartu-label {
+  animation: kartu-pop 320ms var(--ease-out) 160ms backwards;
+}
+/* Ditolak: ikon silang bergoyang sekali, memberi tanda tanpa berulang. */
+.kartu-tampak .kartu-tolak {
+  animation: kartu-tolak 460ms var(--ease-out) 420ms;
+}
+.kartu-tampak .kartu-ikon {
+  animation: kartu-naik 360ms var(--ease-out) backwards;
+  animation-delay: calc(200ms + var(--urutan, 0) * 50ms);
+}
+.kartu-tampak .kartu-titik {
+  animation: kartu-pop 300ms var(--ease-out) backwards;
+  animation-delay: calc(240ms + var(--urutan, 0) * 60ms);
+}
+.kartu-ruas {
+  transform-origin: left;
+}
+/*
+ * Tahap hijau yang sedang berjalan berdetak terus: bulatan membesar dan mengecil, dan satu
+ * cincin memancar keluar tiap detak, seperti tanda "sedang menunggu". Berhenti di tahap
+ * Selesai dan untuk "kurangi gerakan". Hanya transform dan opacity.
+ */
+.kartu-ring,
+.tl-ring {
+  opacity: 0;
+}
+.kartu-tampak .kartu-ring {
+  animation: kartu-denyut 1200ms ease-out 900ms infinite;
+}
+.kartu-tampak .kartu-detak {
+  animation:
+    kartu-pop 380ms var(--ease-out) 520ms backwards,
+    kartu-detak 1200ms ease-in-out 900ms infinite;
+}
+
+/*
+ * Linimasa di halaman detail: sama dengan kartu tetapi mulai saat komponen dipasang.
+ * Ikon naik bergiliran, garis tinta terisi dari tahap pertama, bulatan yang dilalui muncul
+ * bergiliran, lalu bulatan tahap sekarang (hijau, atau merah bila ditolak) muncul membesar
+ * dengan satu cincin yang memancar.
+ */
+.tl-ikon {
+  animation: kartu-naik 360ms var(--ease-out) backwards;
+  animation-delay: calc(120ms + var(--urutan, 0) * 60ms);
+}
+.tl-titik {
+  animation: kartu-pop 300ms var(--ease-out) backwards;
+  animation-delay: calc(160ms + var(--urutan, 0) * 70ms);
+}
+.tl-isi-h {
+  transform-origin: left;
+  animation: kartu-ruas 420ms var(--ease-out) backwards;
+  animation-delay: calc(220ms + var(--urutan, 0) * 70ms);
+}
+.tl-isi-v {
+  transform-origin: top;
+  animation: kartu-ruas-v 420ms var(--ease-out) backwards;
+  animation-delay: calc(220ms + var(--urutan, 0) * 70ms);
+}
+.tl-kini {
+  animation: kartu-pop 420ms var(--ease-out) backwards;
+  animation-delay: calc(160ms + var(--urutan, 0) * 70ms);
+}
+.tl-ring {
+  animation: kartu-denyut 1200ms ease-out infinite;
+  animation-delay: calc(580ms + var(--urutan, 0) * 70ms);
+}
+.tl-kini.tl-detak {
+  animation:
+    kartu-pop 420ms var(--ease-out) backwards,
+    kartu-detak 1200ms ease-in-out infinite;
+  animation-delay: calc(160ms + var(--urutan, 0) * 70ms), calc(580ms + var(--urutan, 0) * 70ms);
+}
+.tl-kini.tl-tolak {
+  animation:
+    kartu-pop 420ms var(--ease-out) backwards,
+    kartu-tolak 460ms var(--ease-out) 640ms;
+  animation-delay: calc(160ms + var(--urutan, 0) * 70ms), 640ms;
+}
+.kartu-tampak .kartu-ruas {
+  animation: kartu-ruas 420ms var(--ease-out) backwards;
+  animation-delay: calc(260ms + var(--urutan, 0) * 60ms);
+}
+@keyframes kartu-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+@keyframes kartu-naik {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+@keyframes kartu-tolak {
+  0%,
+  100% {
+    transform: none;
+  }
+  20% {
+    transform: translateX(-2px) rotate(-10deg);
+  }
+  45% {
+    transform: translateX(2px) rotate(8deg);
+  }
+  70% {
+    transform: translateX(-1px) rotate(-4deg);
+  }
+}
+@keyframes kartu-detak {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.07);
+  }
+}
+@keyframes kartu-denyut {
+  from {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+@keyframes kartu-ruas-v {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes kartu-ruas {
+  from {
+    transform: scaleX(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kartu-usulan {
+    transform: none;
+    transition: opacity 200ms ease;
+  }
+  .kartu-tampak .kartu-pop,
+  .kartu-tampak .kartu-ruas,
+  .kartu-tampak .kartu-label,
+  .kartu-tampak .kartu-tolak,
+  .kartu-tampak .kartu-ikon,
+  .kartu-tampak .kartu-ring,
+  .kartu-tampak .kartu-detak,
+  .tl-kini.tl-detak,
+  .tl-ikon,
+  .tl-titik,
+  .tl-isi-h,
+  .tl-isi-v,
+  .tl-kini,
+  .tl-kini.tl-tolak,
+  .tl-ring,
+  .kartu-tampak .kartu-titik {
+    animation: none;
+  }
+}
+
 /* Menu HP: turun tipis dari bar atas, 180ms. Keluarnya langsung (tanpa animasi). */
 .anim-menu {
   transform-origin: top;
   animation: anim-menu 180ms var(--ease-out) backwards;
+}
+
+/*
+ * Arsiran wilayah di peta: garis batas tergambar dari ujung ke ujung (pathLength disetel 1
+ * oleh LapisanWilayah, jadi dasharray 1 = seluruh garis), lalu isi arsirannya memudar masuk.
+ * Sekali jalan, tidak berulang; mati untuk "kurangi gerakan".
+ */
+.wilayah-arsir {
+  animation:
+    wilayah-garis 900ms var(--ease-out) backwards,
+    wilayah-isi 700ms var(--ease-out) 260ms backwards;
+}
+@keyframes wilayah-garis {
+  from {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes wilayah-isi {
+  from {
+    fill-opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wilayah-arsir {
+    animation: none;
+  }
 }
 
 /* Titik di peta membesar sedikit saat disorot. */
@@ -710,7 +937,7 @@ html::-webkit-scrollbar,
   }
 }
 
-/* Di mode gelap ubin peta dibalik setelah dijadikan abu, jadi tetap netral dan tidak menyilaukan. */
+/* Mode terang memakai ubin apa adanya. Di mode gelap ubin dijadikan abu lalu dibalik, jadi tetap netral dan tidak menyilaukan. */
 [data-theme='dark'] .peta-hangat .leaflet-tile-pane {
   filter: grayscale(1) invert(0.9) brightness(0.95) contrast(0.9);
 }

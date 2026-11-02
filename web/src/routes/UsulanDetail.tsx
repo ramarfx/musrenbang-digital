@@ -1,6 +1,7 @@
 import { idSchema, type ProposalStatus } from '@musrenbang/shared';
 import { useEffect, useMemo } from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Icon } from '@/components/ui/Icon';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -19,6 +20,14 @@ import { formatRupiah, formatTanggal, formatTanggalWaktu } from '@/lib/format';
 export default function UsulanDetail() {
   const { id } = useParams();
   const { hash } = useLocation();
+  const navigate = useNavigate();
+  // Kembali ke halaman asal (daftar, Usulanku, Beranda). Kalau usulan dibuka langsung dari
+  // tautan tanpa riwayat, jatuh ke daftar usulan warga.
+  const kembali = () => {
+    const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+    if (idx > 0) navigate(-1);
+    else navigate('/usulan');
+  };
   const proposalId = useMemo(() => {
     const parsed = idSchema.safeParse(id);
     return parsed.success ? parsed.data : null;
@@ -82,17 +91,22 @@ export default function UsulanDetail() {
   return (
     <div className="space-y-6">
       <div>
-        <Link
-          to="/beranda"
-          className="inline-flex text-[13px] text-muted transition-colors duration-150 hover:text-ink"
+        <button
+          type="button"
+          onClick={kembali}
+          aria-label="Kembali ke halaman sebelumnya"
+          title="Kembali"
+          className="group/kembali grid size-10 place-items-center rounded-xl border border-border bg-surface text-ink transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.92] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
         >
-          ← Kembali ke daftar usulan
-        </Link>
+          <span className="transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover/kembali:-translate-x-0.5 motion-reduce:transition-none">
+            <Icon name="kembali" size={20} />
+          </span>
+        </button>
         <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3.5">
             <CategoryTile kategori={proposal.kategori} />
             <div className="min-w-0">
-              <h1 className="text-2xl font-bold tracking-[-0.02em] text-ink sm:text-[28px]">
+              <h1 className="text-2xl font-bold tracking-[-0.02em] text-ink sm:text-[28px] [overflow-wrap:anywhere]">
                 {proposal.judul}
               </h1>
               <p className="text-sm text-muted">{proposal.kategori}</p>
@@ -126,7 +140,11 @@ export default function UsulanDetail() {
             ))}
           </div>
         ) : (
-          <StatusTimeline status={proposal.status as ProposalStatus} history={history} />
+          <StatusTimeline
+            status={proposal.status as ProposalStatus}
+            history={history}
+            moderasi={proposal.moderasi}
+          />
         )}
         {historyQuery.isError && (
           <p className="mt-3 text-xs text-red-700">
@@ -138,7 +156,7 @@ export default function UsulanDetail() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="space-y-6">
           <Card>
-            <p className="whitespace-pre-line text-ink">{proposal.deskripsi}</p>
+            <p className="whitespace-pre-line text-ink [overflow-wrap:anywhere]">{proposal.deskripsi}</p>
             <dl className="mt-5 grid gap-x-6 gap-y-4 border-t border-rule pt-5 text-sm sm:grid-cols-2">
               <div>
                 <dt className="text-[13px] text-muted">Estimasi biaya</dt>
@@ -148,11 +166,11 @@ export default function UsulanDetail() {
               </div>
               <div>
                 <dt className="text-[13px] text-muted">Lokasi</dt>
-                <dd className="mt-0.5 font-semibold">{proposal.lokasi || 'Belum diisi'}</dd>
+                <dd className="mt-0.5 font-semibold [overflow-wrap:anywhere]">{proposal.lokasi || 'Belum diisi'}</dd>
               </div>
               <div>
                 <dt className="text-[13px] text-muted">Diusulkan oleh</dt>
-                <dd className="mt-0.5 font-semibold">{proposal.pengusul_nama}</dd>
+                <dd className="mt-0.5 font-semibold [overflow-wrap:anywhere]">{proposal.pengusul_nama}</dd>
               </div>
               <div>
                 <dt className="text-[13px] text-muted">Tanggal diajukan</dt>

@@ -1,6 +1,7 @@
 import type { Proposal } from '@musrenbang/shared';
-import { AttributionControl, MapContainer, Marker, TileLayer } from 'react-leaflet';
-import { ATTRIBUTION_PREFIX } from '@/lib/leaflet';
+import { AttributionControl, MapContainer, Marker } from 'react-leaflet';
+import { ATTRIBUTION_PREFIX, OPSI_PETA } from '@/lib/leaflet';
+import { LapisanPeta } from './LapisanPeta';
 
 type LokasiUsulanProps = {
   proposal: Pick<Proposal, 'judul' | 'lokasi' | 'latitude' | 'longitude'>;
@@ -28,15 +29,12 @@ export function LokasiUsulan({ proposal }: LokasiUsulanProps) {
       <MapContainer
         center={[latitude, longitude]}
         zoom={15}
-        scrollWheelZoom={false}
+        {...OPSI_PETA}
         attributionControl={false}
         className="peta-hangat isolate h-60 w-full rounded-2xl border border-border"
       >
         <AttributionControl prefix={ATTRIBUTION_PREFIX} />
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        <LapisanPeta />
         <Marker position={[latitude, longitude]} />
       </MapContainer>
       {lokasi && <p className="text-[13px] text-muted">{lokasi}</p>}
