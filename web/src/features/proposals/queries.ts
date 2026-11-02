@@ -1,8 +1,10 @@
 import type { Proposal } from '@musrenbang/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { queryKeys } from '@/lib/query-keys';
 import {
   createProposal,
+  deleteProposal,
   getProposal,
   hasVoted,
   listMyStatusChanges,
@@ -10,6 +12,7 @@ import {
   listProposals,
   listStatusHistory,
   toggleVote,
+  updateProposal,
 } from './api';
 
 export function useProposalsQuery() {
@@ -48,6 +51,28 @@ export function useCreateProposalMutation() {
   return useMutation({
     mutationFn: (input: unknown) => createProposal(input),
     onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.proposals });
+    },
+  });
+}
+
+export function useUpdateProposalMutation(proposalId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: unknown) => updateProposal(proposalId, input),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.proposals });
+    },
+  });
+}
+
+export function useDeleteProposalMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (proposalId: number) => deleteProposal(proposalId),
+    // Toast di sini, bukan di pemanggil: kartunya sudah hilang dari layar saat hapus selesai.
+    onSuccess: async () => {
+      toast.success('Usulan dihapus.');
       await queryClient.invalidateQueries({ queryKey: queryKeys.proposals });
     },
   });

@@ -443,7 +443,7 @@ export function DemoUsulan({ onUlang }: { onUlang: () => void }) {
             data-judul
             value={judul}
             onChange={(event) => setJudul(event.target.value)}
-            placeholder="cth. Perbaikan trotoar Jl. Melati"
+            placeholder="cth. Pembangunan trotoar Jl. Melati"
           />
         </Field>
         <Field label="Kategori" htmlFor="demo-kategori">

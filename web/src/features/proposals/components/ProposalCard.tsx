@@ -1,8 +1,12 @@
 import { PROPOSAL_STATUSES, type Proposal, type ProposalStatus } from '@musrenbang/shared';
+import { useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
+import { useAuth } from '@/features/auth';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
+import { cn } from '@/lib/cn';
 import { formatRupiahRingkas, formatTanggal } from '@/lib/format';
 import { Link } from 'react-router-dom';
+import { AksiPemilik, bisaDihapus, bisaDiubah } from './AksiPemilik';
 import { ModerationBadge } from './ModerationBadge';
 import { UpvoteButton } from './UpvoteButton';
 import { StatusBadge } from './StatusBadge';
@@ -32,8 +36,17 @@ function Tahap({ status }: { status: string }) {
  * dan bisa dipakai tanpa membuka usulan.
  */
 export function ProposalCard({ proposal }: { proposal: Proposal }) {
+  const { user } = useAuth();
+  const [keluar, setKeluar] = useState(false);
+  const milikku = user !== null && proposal.pengusul_id === user.id;
+  const punyaAksi = milikku && (bisaDiubah(proposal) || bisaDihapus(proposal));
   return (
-    <article className="group relative flex flex-col rounded-3xl border border-border bg-surface p-5 sm:p-6 transition-[translate,border-color] duration-150 ease-out focus-within:border-ink/40 hover:-translate-y-0.5 hover:border-ink/40">
+    <article
+      className={cn(
+        'group relative flex flex-col rounded-3xl border border-border bg-surface p-5 sm:p-6 transition-[translate,border-color,opacity,scale] duration-200 ease-out focus-within:border-ink/40 hover:-translate-y-0.5 hover:border-ink/40 motion-reduce:transition-none',
+        keluar && 'pointer-events-none scale-[0.96] opacity-0',
+      )}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <CategoryTile kategori={proposal.kategori} />
@@ -89,6 +102,12 @@ export function ProposalCard({ proposal }: { proposal: Proposal }) {
             Komentar
           </Link>
           <span className="ml-auto text-[12.5px] text-muted">oleh {proposal.pengusul_nama}</span>
+        </div>
+      )}
+
+      {punyaAksi && (
+        <div className="relative z-10 mt-4 flex justify-end border-t border-rule pt-3">
+          <AksiPemilik proposal={proposal} onKeluar={setKeluar} />
         </div>
       )}
     </article>

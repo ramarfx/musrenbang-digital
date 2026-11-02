@@ -21,7 +21,7 @@ const MANFAAT: { ikon: IconName; judul: string; isi: string }[] = [
   {
     ikon: 'usulan',
     judul: 'Usulkan program',
-    isi: 'Tulis masalah di lingkunganmu dan tandai lokasinya di peta.',
+    isi: 'Usulkan program pembangunan untuk lingkunganmu dan tandai lokasinya di peta.',
   },
   {
     ikon: 'panah-atas',

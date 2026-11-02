@@ -6,7 +6,7 @@ export default function BuatUsulan() {
     <div className="space-y-6">
       <PageHeader
         title="Buat usulan"
-        description="Tulis masalah di lingkunganmu dan penanganan yang kamu usulkan. Admin memeriksa usulan lebih dulu. Setelah disetujui, usulanmu tampil publik dan bisa di-upvote warga lain."
+        description="Tulis program pembangunan yang kamu harap masuk anggaran tahun depan. Admin memeriksa usulan lebih dulu. Setelah disetujui, usulanmu tampil publik dan bisa di-upvote warga lain. Kerusakan yang perlu segera diperbaiki lebih cepat lewat kanal pengaduan resmi."
       />
       <ProposalForm />
     </div>

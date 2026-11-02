@@ -44,6 +44,46 @@ export async function createProposal(input: unknown) {
   return id.id;
 }
 
+/**
+ * Ubah isi usulan milik sendiri. Database hanya mengizinkannya selama usulan masih Menunggu;
+ * kalau baris tidak tersentuh (sudah disetujui admin), tampilkan pesan yang jelas.
+ */
+export async function updateProposal(proposalId: number, input: unknown) {
+  await requireUser();
+  const parsed = parseWith(proposalInputSchema, input, 'perubahan usulan');
+  const { data, error } = await supabase
+    .from('proposals')
+    .update({
+      judul: parsed.judul,
+      deskripsi: parsed.deskripsi,
+      kategori: parsed.kategori,
+      lokasi: parsed.lokasi ?? null,
+      latitude: parsed.latitude ?? null,
+      longitude: parsed.longitude ?? null,
+      estimasi_biaya: parsed.estimasi_biaya,
+    })
+    .eq('id', proposalId)
+    .select('id');
+  if (error) throw toAppError(error, 'Gagal menyimpan perubahan.');
+  if (!data || data.length === 0) {
+    throw new AppError('Usulan ini sudah tidak bisa diubah, mungkin sudah diperiksa admin.');
+  }
+}
+
+/** Hapus usulan milik sendiri; baris yang tidak terhapus berarti izin database menolaknya. */
+export async function deleteProposal(proposalId: number) {
+  await requireUser();
+  const { data, error } = await supabase
+    .from('proposals')
+    .delete()
+    .eq('id', proposalId)
+    .select('id');
+  if (error) throw toAppError(error, 'Gagal menghapus usulan.');
+  if (!data || data.length === 0) {
+    throw new AppError('Usulan ini tidak bisa dihapus.');
+  }
+}
+
 export async function listStatusHistory(proposalId: number) {
   const data = await unwrap(
     supabase
