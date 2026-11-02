@@ -23,15 +23,15 @@ export type Wilayah = {
   geometri: GeometriWilayah;
 };
 
-/** Satu warna per wilayah supaya mudah dibedakan sekilas; tetap di dalam palet merek. */
+/** Satu warna per wilayah supaya mudah dibedakan sekilas; enam warna sama terang dan jenuhnya, tapi jauh beda hue. */
 const WARNA: Record<KodeWilayah, string> = {
   dki: '#14222B',
-  pusat: '#047857',
-  utara: '#4FC79C',
-  barat: '#F2C46D',
-  selatan: '#EE9F7F',
-  timur: '#065F46',
-  seribu: '#C99A2E',
+  pusat: '#16A34A',
+  utara: '#2563EB',
+  barat: '#D97706',
+  selatan: '#DC2626',
+  timur: '#7C3AED',
+  seribu: '#0891B2',
 };
 
 type FiturWilayah = {
@@ -52,9 +52,8 @@ export const WILAYAH: Wilayah[] = fiturWilayah.map((fitur) => ({
 
 /**
  * Wilayah yang bisa dipilih warga: lima kota administrasi dan Kepulauan Seribu. Poligon
- * provinsi (`dki`) tidak ikut karena mencakup laut sampai Kepulauan Seribu, sehingga petanya
- * ikut mundur jauh dan daratan Jakarta jadi kecil. Untuk tampilan menyeluruh dipakai
- * `BATAS_JAKARTA_DARAT`.
+ * provinsi (`dki`) tidak ikut karena mencakup laut sampai Kepulauan Seribu; poligon Seribu
+ * sendiri hanya berisi pulau-pulaunya.
  */
 export const WILAYAH_PILIHAN: Wilayah[] = WILAYAH.filter((wilayah) => wilayah.kode !== 'dki');
 
@@ -117,22 +116,26 @@ export function titikDiWilayah(geometri: GeometriWilayah, lat: number, lng: numb
   });
 }
 
-/** Gabungan batas lima kota administrasi; tampilan awal peta, tanpa wilayah laut. */
+/** Pilihan di peta: satu wilayah, seluruh Jakarta (`null`), atau tanpa arsiran (`'tanpa'`). */
+export type PilihanWilayah = KodeWilayah | 'tanpa' | null;
+
+/** Gabungan batas lima kota administrasi, tanpa Kepulauan Seribu; tampilan awal peta. */
 export const BATAS_JAKARTA_DARAT: [[number, number], [number, number]] = (() => {
-  const kotaDarat = WILAYAH.filter((wilayah) => wilayah.kode !== 'dki' && wilayah.kode !== 'seribu');
-  let latMin = Infinity;
-  let latMaks = -Infinity;
-  let lngMin = Infinity;
-  let lngMaks = -Infinity;
-  for (const wilayah of kotaDarat) {
-    const [[selatan, barat], [utara, timur]] = hitungBatas(wilayah.geometri);
-    latMin = Math.min(latMin, selatan);
-    latMaks = Math.max(latMaks, utara);
-    lngMin = Math.min(lngMin, barat);
-    lngMaks = Math.max(lngMaks, timur);
-  }
+  const kota = WILAYAH_PILIHAN.filter((wilayah) => wilayah.kode !== 'seribu');
+  const batas = kota.map((wilayah) => hitungBatas(wilayah.geometri));
   return [
-    [latMin, lngMin],
-    [latMaks, lngMaks],
+    [
+      Math.min(...batas.map(([[selatan]]) => selatan!)),
+      Math.min(...batas.map(([[, barat]]) => barat!)),
+    ],
+    [
+      Math.max(...batas.map(([, [utara]]) => utara!)),
+      Math.max(...batas.map(([, [, timur]]) => timur!)),
+    ],
   ];
 })();
+
+/** Kota administrasi (atau Kepulauan Seribu) tempat sebuah titik berada; kosong bila di luar Jakarta. */
+export function wilayahDariTitik(lat: number, lng: number): Wilayah | undefined {
+  return WILAYAH_PILIHAN.find((wilayah) => titikDiWilayah(wilayah.geometri, lat, lng));
+}

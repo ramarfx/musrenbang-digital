@@ -8,7 +8,8 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { PageLoader } from '@/components/ui/PageLoader';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
-import { LokasiUsulan } from '@/components/map/LokasiUsulan';
+import { KeteranganWilayah, LokasiUsulan } from '@/components/map/LokasiUsulan';
+import { wilayahDariTitik } from '@/lib/wilayah';
 import { CommentSection } from '@/features/comments/components/CommentSection';
 import { ModerationBadge } from '@/features/proposals/components/ModerationBadge';
 import { StatusBadge } from '@/features/proposals/components/StatusBadge';
@@ -88,6 +89,27 @@ export default function UsulanDetail() {
   const history = historyQuery.data ?? [];
   const disetujui = proposal.moderasi === 'Disetujui';
 
+  const kartuRiwayat = (
+    <Card>
+      <h2 className="text-lg font-bold text-ink">Riwayat perubahan</h2>
+      {history.length === 0 ? (
+        <p className="mt-2 text-sm text-muted">Belum ada perubahan status tercatat.</p>
+      ) : (
+        <ul className="mt-3 grid gap-3">
+          {[...history].reverse().map((item) => (
+            <li key={item.id} className="border-t border-rule pt-3 first:border-t-0 first:pt-0">
+              <p className="text-sm font-semibold">{item.status_baru}</p>
+              <p className="text-[12.5px] text-muted">
+                {formatTanggalWaktu(item.diubah_pada)} · {item.diubah_oleh_nama ?? 'Sistem'}
+              </p>
+              {item.catatan && <p className="mt-1 text-[13px] text-ink">Catatan: {item.catatan}</p>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+
   return (
     <div className="space-y-6">
       <div>
@@ -153,68 +175,58 @@ export default function UsulanDetail() {
         )}
       </Card>
 
+      {/* Baris berpasangan: tiap baris dua kartu setinggi sama, jadi tidak ada kolom yang lebih
+          panjang dan menyisakan ruang kosong. Di layar sempit semuanya menumpuk berurutan. */}
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <div className="space-y-6">
-          <Card>
-            <p className="whitespace-pre-line text-ink [overflow-wrap:anywhere]">{proposal.deskripsi}</p>
-            <dl className="mt-5 grid gap-x-6 gap-y-4 border-t border-rule pt-5 text-sm sm:grid-cols-2">
-              <div>
-                <dt className="text-[13px] text-muted">Estimasi biaya</dt>
-                <dd className="mt-0.5 text-lg font-semibold tracking-[-0.01em]">
-                  {formatRupiah(proposal.estimasi_biaya)}
+        <Card>
+          <p className="whitespace-pre-line text-ink [overflow-wrap:anywhere]">
+            {proposal.deskripsi}
+          </p>
+          <dl className="mt-5 grid gap-x-6 gap-y-4 border-t border-rule pt-5 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-[13px] text-muted">Estimasi biaya</dt>
+              <dd className="mt-0.5 text-lg font-semibold tracking-[-0.01em]">
+                {formatRupiah(proposal.estimasi_biaya)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[13px] text-muted">Lokasi</dt>
+              <dd className="mt-0.5 font-semibold [overflow-wrap:anywhere]">
+                {proposal.lokasi || 'Belum diisi'}
+              </dd>
+              {proposal.latitude !== null && proposal.longitude !== null && (
+                <dd className="mt-1">
+                  <KeteranganWilayah
+                    wilayah={wilayahDariTitik(proposal.latitude, proposal.longitude)}
+                  />
                 </dd>
-              </div>
-              <div>
-                <dt className="text-[13px] text-muted">Lokasi</dt>
-                <dd className="mt-0.5 font-semibold [overflow-wrap:anywhere]">{proposal.lokasi || 'Belum diisi'}</dd>
-              </div>
-              <div>
-                <dt className="text-[13px] text-muted">Diusulkan oleh</dt>
-                <dd className="mt-0.5 font-semibold [overflow-wrap:anywhere]">{proposal.pengusul_nama}</dd>
-              </div>
-              <div>
-                <dt className="text-[13px] text-muted">Tanggal diajukan</dt>
-                <dd className="mt-0.5 font-semibold">{formatTanggal(proposal.dibuat_pada)}</dd>
-              </div>
-            </dl>
-          </Card>
+              )}
+            </div>
+            <div>
+              <dt className="text-[13px] text-muted">Diusulkan oleh</dt>
+              <dd className="mt-0.5 font-semibold [overflow-wrap:anywhere]">
+                {proposal.pengusul_nama}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[13px] text-muted">Tanggal diajukan</dt>
+              <dd className="mt-0.5 font-semibold">{formatTanggal(proposal.dibuat_pada)}</dd>
+            </div>
+          </dl>
+        </Card>
 
-          <Card>
-            <h2 className="mb-3 text-lg font-bold">Lokasi</h2>
-            <LokasiUsulan proposal={proposal} />
-          </Card>
+        {disetujui ? <VotePanel proposal={proposal} /> : kartuRiwayat}
 
-          <div id="komentar" className="scroll-mt-6 lg:scroll-mt-28">
-            {disetujui && <CommentSection proposalId={proposal.id} />}
-          </div>
+        <Card className={disetujui ? undefined : 'lg:col-span-2'}>
+          <h2 className="mb-3 text-lg font-bold">Lokasi</h2>
+          <LokasiUsulan proposal={proposal} />
+        </Card>
+
+        {disetujui && kartuRiwayat}
+
+        <div id="komentar" className="scroll-mt-6 lg:col-span-2 lg:scroll-mt-28">
+          {disetujui && <CommentSection proposalId={proposal.id} />}
         </div>
-
-        <aside className="stagger space-y-6 lg:sticky lg:top-6 lg:self-start">
-          {disetujui && <VotePanel proposal={proposal} />}
-          <Card>
-            <h2 className="text-lg font-bold text-ink">Riwayat perubahan</h2>
-            {history.length === 0 ? (
-              <p className="mt-2 text-sm text-muted">Belum ada perubahan status tercatat.</p>
-            ) : (
-              <ul className="mt-3 grid gap-3">
-                {[...history].reverse().map((item) => (
-                  <li
-                    key={item.id}
-                    className="border-t border-rule pt-3 first:border-t-0 first:pt-0"
-                  >
-                    <p className="text-sm font-semibold">{item.status_baru}</p>
-                    <p className="text-[12.5px] text-muted">
-                      {formatTanggalWaktu(item.diubah_pada)} · {item.diubah_oleh_nama ?? 'Sistem'}
-                    </p>
-                    {item.catatan && (
-                      <p className="mt-1 text-[13px] text-ink">Catatan: {item.catatan}</p>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-        </aside>
       </div>
     </div>
   );

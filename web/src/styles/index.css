@@ -1133,3 +1133,181 @@ html::-webkit-scrollbar,
     opacity: 0;
   }
 }
+
+/* Daftar wilayah di atas peta: muncul dari pojok tombolnya. */
+.daftar-wilayah {
+  transform-origin: top left;
+  animation: daftar-wilayah-masuk 160ms var(--ease-out);
+}
+@keyframes daftar-wilayah-masuk {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .daftar-wilayah {
+    animation: none;
+  }
+}
+
+/* Pin usulan di peta: jatuh dari atas lalu mantap, berurutan lewat --tunda. */
+.pin-usulan {
+  position: relative;
+  width: 34px;
+  height: 44px;
+  transform-origin: 50% 100%;
+  animation: pin-masuk 380ms var(--ease-out) var(--tunda, 0ms) backwards;
+  transition: transform 150ms var(--ease-out);
+}
+.pin-badan {
+  display: block;
+  filter: drop-shadow(0 1px 1.5px rgb(20 34 43 / 0.35));
+}
+/* Ruas cincin menyala satu per satu setelah pin mendarat. */
+.pin-ruas-nyala {
+  animation: pin-ruas-nyala 260ms var(--ease-out) calc(var(--tunda, 0ms) + 240ms + var(--urut, 0) * 60ms)
+    backwards;
+}
+@keyframes pin-ruas-nyala {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes pin-masuk {
+  from {
+    opacity: 0;
+    transform: translateY(-18px) scale(0.8);
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .pin-usulan:hover {
+    transform: translateY(-2px) scale(1.08);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pin-usulan {
+    animation: pin-pudar 200ms ease-out backwards;
+  }
+  .pin-ruas-nyala {
+    animation: none;
+  }
+}
+@keyframes pin-pudar {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Gugus dan ikon kota memakai pin yang sama, jadi geraknya juga sama dengan pin usulan. */
+.gugus-usulan,
+.kota-usulan {
+  position: relative;
+  transform-origin: 50% 100%;
+  animation: pin-masuk 340ms var(--ease-out) var(--tunda, 0ms) backwards;
+  transition: transform 150ms var(--ease-out);
+}
+.gugus-usulan {
+  width: 32px;
+  height: 41px;
+}
+.kota-usulan {
+  width: 32px;
+  height: 41px;
+}
+/* Nama kota: gelembung ucapan di atas pin, hanya saat kursor di atasnya, turun dari atas. */
+.kota-nama {
+  position: absolute;
+  bottom: 50px;
+  left: 50%;
+  padding: 3px 10px;
+  border: 1.5px solid #14222b;
+  border-radius: 10px;
+  background: #f7f4ef;
+  color: #14222b;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -8px) scale(0.96);
+  transform-origin: 50% 100%;
+  transition:
+    opacity 160ms var(--ease-out),
+    transform 160ms var(--ease-out);
+}
+.kota-nama::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  border-right: 1.5px solid #14222b;
+  border-bottom: 1.5px solid #14222b;
+  background: #f7f4ef;
+  transform: translateX(-50%) rotate(45deg);
+}
+@media (hover: hover) and (pointer: fine) {
+  .gugus-usulan:hover,
+  .kota-usulan:hover {
+    transform: translateY(-2px) scale(1.08);
+  }
+  .kota-usulan:hover .kota-nama {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gugus-usulan,
+  .kota-usulan {
+    animation: pin-pudar 200ms ease-out backwards;
+  }
+}
+
+/* Kartu popup usulan di peta: memakai permukaan dan huruf aplikasi, bukan gaya bawaan Leaflet. */
+.popup-usulan .leaflet-popup-content-wrapper {
+  border: 1px solid var(--edge, #14222b);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 6px 20px rgb(20 34 43 / 0.18);
+  color: var(--ink, #14222b);
+}
+.popup-usulan .leaflet-popup-content {
+  margin: 16px;
+  font: inherit;
+  line-height: normal;
+}
+.popup-usulan .leaflet-popup-tip {
+  background: var(--surface);
+}
+.popup-usulan a.leaflet-popup-close-button {
+  top: 8px;
+  right: 8px;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--muted, #5d6b73);
+  font-size: 18px;
+}
+.popup-usulan a.leaflet-popup-close-button:hover {
+  background: var(--active, rgb(20 34 43 / 0.08));
+  color: var(--ink, #14222b);
+}
+.popup-usulan.leaflet-popup {
+  animation: popup-masuk 180ms var(--ease-out);
+  transform-origin: 50% 100%;
+}
+@keyframes popup-masuk {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .popup-usulan.leaflet-popup {
+    animation: none;
+  }
+}
