@@ -1,11 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, ScrollRestoration, useLocation, useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/cn';
 import { TutorialAwal } from '@/components/tutorial/TutorialAwal';
 import { useAuth } from '@/features/auth';
 import { sudahLihatTutorial, tandaiTutorialSelesai } from '@/lib/tutorial';
 import { Footer } from './Footer';
 import { MobileNav } from './MobileNav';
 import { Sidebar } from './Sidebar';
+
+/** Benar bila navigasi ini dititipi penanda `masukApp` oleh tombol di halaman depan. */
+function masukDariLanding(state: unknown): boolean {
+  return typeof state === 'object' && state !== null && 'masukApp' in state;
+}
 
 export function AppLayout() {
   // Saat menu HP terbuka, isi halaman dibuat inert supaya Tab dan pembaca layar
@@ -14,12 +20,26 @@ export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  // Tombol di halaman depan menitipkan `masukApp`; animasi masuknya hanya sekali dan penandanya
+  // dibuang dari riwayat, jadi memuat ulang halaman tidak mengulangnya.
+  const [masukApp, setMasukApp] = useState(() => masukDariLanding(location.state));
+  useEffect(() => {
+    if (!masukApp) return;
+    navigate(`${location.pathname}${location.search}${location.hash}`, {
+      replace: true,
+      state: null,
+    });
+    const selesai = window.setTimeout(() => setMasukApp(false), 1300);
+    return () => window.clearTimeout(selesai);
+    // Hanya sekali saat tata letak pertama terpasang.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Id akun yang tutorialnya baru ditutup, supaya tidak muncul lagi sebelum halaman dimuat ulang.
   const [tutorialDitutup, setTutorialDitutup] = useState<string | null>(null);
   const tampilTutorial =
     user !== null && tutorialDitutup !== user.id && !sudahLihatTutorial(user.id);
   return (
-    <div className="min-h-dvh bg-ground text-ink lg:flex">
+    <div className={cn('min-h-dvh bg-ground text-ink lg:flex', masukApp && 'app-masuk')}>
       <a
         inert={menuOpen}
         href="#isi"

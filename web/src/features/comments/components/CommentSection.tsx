@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -70,12 +71,20 @@ export function CommentSection({ proposalId }: { proposalId: number }) {
       {commentsQuery.isSuccess && commentsQuery.data.length > 0 && (
         <ul className="mt-4 space-y-3">
           {commentsQuery.data.map((comment) => (
-            <li key={comment.id} className="rounded-lg border border-stone-200 bg-stone-50 p-3">
-              <div className="flex flex-wrap justify-between gap-2 text-xs text-stone-500">
-                <span className="font-medium text-stone-700">{comment.penulis_nama}</span>
-                <span>{formatTanggalWaktu(comment.dibuat_pada)}</span>
+            <li
+              key={comment.id}
+              className="flex gap-3 rounded-lg border border-stone-200 bg-stone-50 p-3"
+            >
+              <Avatar nama={comment.penulis_nama} />
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap justify-between gap-x-2 text-xs text-stone-500">
+                  <span className="font-medium text-stone-700">{comment.penulis_nama}</span>
+                  <span>{formatTanggalWaktu(comment.dibuat_pada)}</span>
+                </div>
+                <p className="mt-1 text-sm whitespace-pre-line text-stone-700 [overflow-wrap:anywhere]">
+                  {comment.isi}
+                </p>
               </div>
-              <p className="mt-1 whitespace-pre-line text-sm text-stone-700 [overflow-wrap:anywhere]">{comment.isi}</p>
             </li>
           ))}
         </ul>

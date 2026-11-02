@@ -12,7 +12,8 @@ import {
 } from 'react';
 import { queryKeys } from '@/lib/query-keys';
 import { supabase } from '@/lib/supabase';
-import { signOut as signOutRequest } from './api';
+import { toast } from 'sonner';
+import { ambilBaruMasuk, signOut as signOutRequest } from './api';
 import { useProfileQuery, useSessionQuery } from './queries';
 
 type AuthState = {
@@ -38,6 +39,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (userId !== null) idTerakhir.current = userId;
   }, [userId]);
+
+  // Notifikasi sekali setelah proses masuk (email atau Google) selesai dan sesinya terbentuk.
+  useEffect(() => {
+    if (!user || !ambilBaruMasuk()) return;
+    const meta = user.user_metadata as Record<string, unknown>;
+    const dariMeta = [meta.nama, meta.full_name, meta.name].find(
+      (nilai): nilai is string => typeof nilai === 'string' && nilai.trim() !== '',
+    );
+    const nama = (dariMeta ?? user.email ?? 'Warga').trim().split(/\s+/)[0];
+    toast.success(`Berhasil masuk. Halo, ${nama}!`);
+  }, [user]);
 
   useEffect(() => {
     const {

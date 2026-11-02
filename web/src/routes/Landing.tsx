@@ -6,6 +6,7 @@ import { Toa } from '@/components/brand/Toa';
 import { buttonClass } from '@/components/ui/Button';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { MenuAkun } from '@/components/layout/MenuAkun';
 import { useAuth } from '@/features/auth';
 import { useCategoriesQuery } from '@/features/categories/queries';
 import { useAppConfigQuery } from '@/features/config/queries';
@@ -265,14 +266,14 @@ export default function Landing() {
         </nav>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          {!loading && (
-            <Link
-              to={user ? '/beranda' : '/login'}
-              className={cn(buttonClass('outline', 'md'), 'border-edge')}
-            >
-              {user ? 'Buka beranda' : 'Masuk'}
-            </Link>
-          )}
+          {!loading &&
+            (user ? (
+              <MenuAkun />
+            ) : (
+              <Link to="/login" className={cn(buttonClass('outline', 'md'), 'border-edge')}>
+                Masuk
+              </Link>
+            ))}
         </div>
       </header>
 
@@ -284,7 +285,7 @@ export default function Landing() {
           <div>
             <h1
               id="judul-utama"
-              className="text-[40px] leading-[1.18] font-bold tracking-[-0.035em] sm:text-[54px]"
+              className="text-[40px] leading-[1.32] font-bold tracking-[-0.035em] sm:text-[54px]"
             >
               Suara warga, sampai ke <span className="stabilo">meja anggaran.</span>
             </h1>
@@ -295,13 +296,15 @@ export default function Landing() {
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link
-                to="/usulan/baru"
+                to="/beranda"
+                state={{ masukApp: true }}
                 className={buttonClass('primary', 'md', 'h-12 px-6 text-[15px]')}
               >
-                Tulis usulan pertamamu
+                Masuk beranda
               </Link>
               <Link
-                to="/beranda"
+                to="/usulan"
+                state={{ masukApp: true }}
                 className={buttonClass('outline', 'md', 'h-12 border-edge px-6 text-[15px]')}
               >
                 Lihat usulan warga
