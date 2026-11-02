@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AttributionControl, MapContainer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import { Icon } from '@/components/ui/Icon';
 import { Input } from '@/components/ui/Input';
 import { Spinner } from '@/components/ui/Spinner';
 import { cariTempat, type HasilCari } from '@/lib/geocode';
 import { ATTRIBUTION_PREFIX, OPSI_PETA } from '@/lib/leaflet';
+import { buatIkonPin } from '@/lib/penanda';
 import { LapisanPeta } from './LapisanPeta';
 import { cn } from '@/lib/cn';
 
@@ -14,6 +15,8 @@ type LocationPickerProps = {
   onChange: (latitude: number, longitude: number) => void;
   /** Nama singkat tempat yang dipilih dari hasil cari, untuk mengisi kolom lokasi. */
   onNama?: (nama: string) => void;
+  /** Kategori usulan; ikon pin di peta mengikutinya dan berganti saat kategori diganti. */
+  kategori?: string;
   className?: string;
 };
 
@@ -53,8 +56,10 @@ export function LocationPicker({
   longitude,
   onChange,
   onNama,
+  kategori = '',
   className = 'h-80',
 }: LocationPickerProps) {
+  const ikonPin = useMemo(() => buatIkonPin(kategori, null, 0), [kategori]);
   const [kata, setKata] = useState('');
   const [hasil, setHasil] = useState<HasilCari[]>([]);
   const [mencari, setMencari] = useState(false);
@@ -211,7 +216,7 @@ export function LocationPicker({
         <LapisanPeta />
         <ClickHandler onChange={onChange} />
         <Terbang tujuan={tujuan} />
-        {punyaTitik && <Marker position={[latitude, longitude]} />}
+        {punyaTitik && <Marker position={[latitude, longitude]} icon={ikonPin} />}
       </MapContainer>
     </div>
   );

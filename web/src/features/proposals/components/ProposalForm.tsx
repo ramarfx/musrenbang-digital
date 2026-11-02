@@ -252,6 +252,7 @@ export function ProposalForm({ proposal, onSaved, onCancel }: ProposalFormProps 
           <LocationPicker
             latitude={latitude}
             longitude={longitude}
+            kategori={form.watch('kategori')}
             onNama={(nama) => {
               if (!form.getValues('lokasi')) {
                 form.setValue('lokasi', nama.slice(0, TEXT_LIMITS.lokasiMaks), {
