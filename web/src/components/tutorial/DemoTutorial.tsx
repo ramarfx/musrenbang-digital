@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
 import { getCategoryInfo } from '@/features/categories/info';
-import { StatusBadge } from '@/features/proposals/components/StatusBadge';
+import { TahapMini } from '@/features/proposals/components/ProposalCard';
+import { IKON_TAHAP } from '@/features/proposals/components/StatusTimeline';
 import { cn } from '@/lib/cn';
 import { formatRupiahRingkas, formatTanggal } from '@/lib/format';
 
@@ -173,6 +174,10 @@ function Panggung({
 
 const kartuClass = 'rounded-3xl border border-border bg-surface p-5';
 
+/** Kartu bercap seperti kartu usulan asli; `kartu-tampak` menyalakan animasi tahapnya. */
+const kartuUsulanClass =
+  'kartu-usulan kartu-tampak rounded-3xl border-[1.5px] border-edge bg-surface p-4 shadow-[0_4px_0_var(--edge)] sm:p-5';
+
 /* ---------- 1. Urutkan prioritas ---------- */
 
 const PROGRAM = ['Kesehatan', 'Pendidikan', 'Infrastruktur dan Jalan'] as const;
@@ -292,18 +297,29 @@ export function DemoUrutkan({ onUlang }: { onUlang: () => void }) {
 
 /* ---------- 2. Dukung usulan ---------- */
 
-function BatangTahap({ sekarang }: { sekarang: number }) {
+/** Baris status kartu: ikon tahap, "Tahap n dari 5", garis tegak, lalu kalimat penjelasnya. */
+function BarisStatus({ tahap, kalimat }: { tahap: number; kalimat: string }) {
+  const nama = PROPOSAL_STATUSES[tahap] ?? PROPOSAL_STATUSES[0];
+  const selesai = tahap === PROPOSAL_STATUSES.length - 1;
   return (
-    <div className="flex gap-1" aria-hidden="true">
-      {PROPOSAL_STATUSES.map((tahap, index) => (
-        <i
-          key={tahap}
-          className={cn(
-            'h-1 flex-1 rounded-full transition-colors duration-300',
-            index <= sekarang ? 'bg-hijau' : 'bg-track',
-          )}
-        />
-      ))}
+    <div className="flex h-6 min-w-0 items-center gap-2">
+      <span className="kartu-label inline-flex flex-none items-center gap-1.5 text-[13px] font-bold text-warga">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          className="size-4"
+        >
+          <path d={IKON_TAHAP[nama]} />
+        </svg>
+        {selesai ? 'Selesai' : `Tahap ${tahap + 1} dari ${PROPOSAL_STATUSES.length}`}
+      </span>
+      <span aria-hidden="true" className="h-3.5 w-px flex-none bg-border" />
+      <span className="truncate text-[12.5px] text-muted">{kalimat}</span>
     </div>
   );
 }
@@ -331,24 +347,26 @@ export function DemoDukung({ onUlang }: { onUlang: () => void }) {
 
   return (
     <Panggung demo={demo} onUlang={onUlang}>
-      <article className={cn(kartuClass, 'sm:p-6')}>
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <CategoryTile kategori="Infrastruktur dan Jalan" />
-            <div className="min-w-0">
-              <h3 className="font-bold text-ink">Lampu jalan Gang Mawar mati</h3>
-              <p className="text-[13px] text-muted">Infrastruktur dan Jalan</p>
-            </div>
+      <article className={kartuUsulanClass}>
+        <div className="flex items-center gap-3">
+          <CategoryTile kategori="Infrastruktur dan Jalan" />
+          <div className="min-w-0">
+            <h3 className="leading-snug font-bold text-ink sm:text-[17px]">
+              Lampu jalan Gang Mawar mati
+            </h3>
+            <p className="text-[13px] text-muted">Infrastruktur dan Jalan</p>
           </div>
-          <StatusBadge status="Diajukan" />
         </div>
         <p className="mt-3 line-clamp-2 text-sm text-ink/80">
           Sudah dua minggu lampu di sepanjang gang padam, warga takut lewat malam hari.
         </p>
-        <div className="mt-4">
-          <BatangTahap sekarang={0} />
+        <div className="mt-3.5">
+          <BarisStatus tahap={0} kalimat="Sudah tampil untuk umum dan bisa didukung warga." />
         </div>
-        <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-rule pt-3 text-sm">
+        <div className="mt-3">
+          <TahapMini tahap={0} />
+        </div>
+        <dl className="mt-3.5 grid grid-cols-2 gap-3 border-t border-rule pt-3 text-sm">
           <div>
             <dt className="text-[12.5px] text-muted">Estimasi</dt>
             <dd className="font-semibold">{formatRupiahRingkas(45_000_000)}</dd>
@@ -358,7 +376,7 @@ export function DemoDukung({ onUlang }: { onUlang: () => void }) {
             <dd className="font-semibold">{formatTanggal(new Date().toISOString())}</dd>
           </div>
         </dl>
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           <button
             type="button"
             data-dukung
@@ -467,27 +485,35 @@ export function DemoUsulan({ onUlang }: { onUlang: () => void }) {
             role="presentation"
             className="relative h-28 cursor-crosshair overflow-hidden rounded-xl border border-border bg-active"
           >
-            <span className="absolute inset-x-0 top-[44px] h-2.5 bg-surface" />
-            <span className="absolute inset-y-0 left-[36%] w-2.5 bg-surface" />
+            <span className="absolute inset-y-0 left-0 w-[30%] bg-[#cfe6c4]" />
+            <span className="absolute top-0 right-0 h-9 w-[28%] bg-[#b7d7ee]" />
+            <span className="absolute inset-x-0 top-[44px] h-2.5 bg-[#f6d98b]" />
+            <span className="absolute inset-y-0 left-[36%] w-2 bg-surface" />
+            <span className="absolute inset-x-0 top-[88px] h-1 bg-surface" />
             {pin && (
-              <span
+              <svg
                 aria-hidden="true"
-                className="tt-jatuh absolute -mt-[26px] -ml-[13px]"
+                viewBox="0 0 34 44"
+                width={30}
+                height={39}
+                className="tt-jatuh absolute -translate-x-1/2 -translate-y-full drop-shadow"
                 style={{ left: `${pin.x * 100}%`, top: `${pin.y * 100}%` }}
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  width={26}
-                  height={26}
-                  fill="var(--hijau-terang)"
-                  stroke="var(--ink)"
-                  strokeWidth={1.8}
+                <path
+                  d="M17 43C17 43 2 28 2 16a15 15 0 0 1 30 0c0 12-15 27-15 27z"
+                  fill="#14222B"
+                />
+                <g
+                  transform="translate(10.4 9.4) scale(0.6)"
+                  fill="none"
+                  stroke="#4FC79C"
+                  strokeWidth={2.2}
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 >
-                  <path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11Z" />
-                </svg>
-              </span>
+                  <path d={getCategoryInfo(kategori).ikon} />
+                </g>
+              </svg>
             )}
           </div>
         </div>
@@ -509,6 +535,14 @@ export function DemoUsulan({ onUlang }: { onUlang: () => void }) {
 }
 
 /* ---------- 4. Pantau status ---------- */
+
+const KALIMAT_TAHAP = [
+  'Sudah tampil untuk umum dan bisa didukung warga.',
+  'Admin sudah memeriksa dan menyatakan usulan layak.',
+  'Masuk daftar program anggaran daerah.',
+  'Program sedang dikerjakan di lapangan.',
+  'Program selesai dilaksanakan.',
+];
 
 export function DemoPantau({ onUlang }: { onUlang: () => void }) {
   const [tahap, setTahap] = useState(0);
@@ -536,29 +570,21 @@ export function DemoPantau({ onUlang }: { onUlang: () => void }) {
 
   return (
     <Panggung demo={demo} onUlang={onUlang}>
-      <div className={kartuClass}>
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <CategoryTile kategori="Infrastruktur dan Jalan" />
-            <div className="min-w-0">
-              <h3 className="font-bold text-ink">Lampu jalan Gang Mawar mati</h3>
-              <p className="text-[13px] text-muted">Usulanmu</p>
-            </div>
+      <div className={kartuUsulanClass}>
+        <div className="flex items-center gap-3">
+          <CategoryTile kategori="Infrastruktur dan Jalan" />
+          <div className="min-w-0">
+            <h3 className="leading-snug font-bold text-ink sm:text-[17px]">
+              Lampu jalan Gang Mawar mati
+            </h3>
+            <p className="text-[13px] text-muted">Usulanmu</p>
           </div>
-          <StatusBadge status={status} />
         </div>
-        <div className="mt-4">
-          <BatangTahap sekarang={tahap} />
-          <ol className="mt-2 flex justify-between text-[10.5px] text-muted">
-            {PROPOSAL_STATUSES.map((nama, index) => (
-              <li
-                key={nama}
-                className={cn('flex-1 text-center', index === tahap && 'font-bold text-ink')}
-              >
-                {nama}
-              </li>
-            ))}
-          </ol>
+        <div className="mt-3.5">
+          <BarisStatus tahap={tahap} kalimat={KALIMAT_TAHAP[tahap] ?? ''} />
+        </div>
+        <div className="mt-3">
+          <TahapMini tahap={tahap} />
         </div>
         {pesan > 0 && (
           <div

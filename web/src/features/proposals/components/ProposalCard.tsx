@@ -70,7 +70,7 @@ function keadaanUsulan(proposal: Proposal): Keadaan {
  * Tinta dicentang = dilalui, stabilo bercincin = sekarang (berdetak terus sampai tahap
  * Selesai), garis pudar = belum. Ditolak: bulatan pertama merah dengan silang.
  */
-function TahapMini({ tahap, ditolak }: { tahap: number; ditolak?: boolean }) {
+export function TahapMini({ tahap, ditolak }: { tahap: number; ditolak?: boolean }) {
   const terakhir = PROPOSAL_STATUSES.length - 1;
   return (
     <ol className="grid grid-cols-5" aria-label="Tahap usulan">
