@@ -50,15 +50,21 @@ export default function Metodologi() {
           >
             Pergub DKI Jakarta No. 44 Tahun 2025
           </a>
-          . Pergub itu hanya memuat total besar. Angka per bidang ada di lampirannya, yang tidak
-          tersedia di situs JDIH.
+          . Pergub itu hanya memuat total besar. Lampiran I Perda APBD 2026 di apbd.jakarta.go.id
+          memuat ringkasan per jenis belanja, tetapi bukan per bidang seperti sepuluh kategori di
+          sini. Ketiga dokumen resmi yang dirujuk bisa dibuka di{' '}
+          <Link to="/apbd#dokumen-resmi" className="font-semibold text-warga underline">
+            halaman APBD
+          </Link>
+          .
         </p>
         <p>
           Karena itu angka per kategori di aplikasi ini bukan angka resmi per kategori. Angkanya
           dijumlahkan dari program yang dirinci pemberitaan (detiksatu.com, saiber.tv, dan
-          maklumat.id) tentang APBD {tahun} yang disahkan. Dua rujukan resmi sudah dicocokkan: total
-          belanja daerah, dan porsi fungsi pendidikan 26,59% dari belanja daerah. Sisanya belum
-          dicocokkan ke lampiran.
+          maklumat.id) tentang APBD {tahun} yang disahkan. Total belanja daerah dan rincian per
+          jenis belanja sudah dicocokkan ke dokumen resmi, begitu pula porsi fungsi pendidikan
+          26,59% dari belanja daerah. Angka per kategori belum punya padanan resmi, karena APBD
+          tidak disusun dengan sepuluh kategori ini.
         </p>
         <p>
           Tiap kategori punya salah satu dari tiga status: terverifikasi (ada tautan sumber), belum

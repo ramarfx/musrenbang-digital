@@ -1,4 +1,5 @@
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { buttonClass } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { BudgetSimulator } from '@/features/allocations/components/BudgetSimulator';
 import { PrioritasSimulator } from '@/features/allocations/components/PrioritasSimulator';
@@ -32,6 +33,11 @@ export default function Simulator() {
           cara === 'prioritas'
             ? 'Urutkan program dari yang paling penting (nomor 1) sampai yang paling tidak. Setiap nomor hanya dipakai sekali. Urutan semua warga digabung dan dibandingkan dengan APBD di halaman Bandingkan.'
             : `Setiap warga mendapat anggaran virtual ${formatRupiah(budget)} untuk dibagikan ke seluruh kategori. Ini bukan uang nyata; agregat semua warga tampil di halaman Bandingkan.`
+        }
+        actions={
+          <Link to="/apbd#dokumen-resmi" className={buttonClass('outline', 'sm')}>
+            Asal angka APBD
+          </Link>
         }
       />
 

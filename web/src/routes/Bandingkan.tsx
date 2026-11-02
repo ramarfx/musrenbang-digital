@@ -67,6 +67,9 @@ export default function Bandingkan() {
             <Link to="/apbd" className={buttonClass('outline', 'sm')}>
               Lihat data APBD
             </Link>
+            <Link to="/apbd#dokumen-resmi" className={buttonClass('outline', 'sm')}>
+              Dokumen resmi
+            </Link>
             {gapQuery.isSuccess && ringkasan.rows.length > 0 && (
               <Button variant="outline" size="sm" onClick={unduhCsv}>
                 Unduh data (CSV)
