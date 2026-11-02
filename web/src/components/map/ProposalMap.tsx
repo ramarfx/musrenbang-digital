@@ -1,9 +1,10 @@
 import type { Proposal } from '@musrenbang/shared';
 import { ATTRIBUTION_PREFIX, OPSI_PETA } from '@/lib/leaflet';
-import type { PilihanWilayah } from '@/lib/wilayah';
+import { BATAS_JAKARTA_DARAT, cariWilayah, hitungBatas, type PilihanWilayah } from '@/lib/wilayah';
 import { LapisanPeta } from './LapisanPeta';
 import { LapisanPin } from './LapisanPin';
 import { LapisanWilayah } from './LapisanWilayah';
+import { TombolKembaliPeta } from './TombolKembaliPeta';
 import { AttributionControl, MapContainer } from 'react-leaflet';
 
 type ProposalMapProps = {
@@ -21,6 +22,10 @@ export function ProposalMap({ proposals, className = 'h-96', wilayah = null }: P
       proposal.latitude !== null && proposal.longitude !== null,
   );
 
+  // Tampilan awal: wilayah yang dipilih, atau seluruh Jakarta daratan, sama dengan tujuan terbang.
+  const pilihan = wilayah === null || wilayah === 'tanpa' ? undefined : cariWilayah(wilayah);
+  const batasAwal = pilihan ? hitungBatas(pilihan.geometri) : BATAS_JAKARTA_DARAT;
+
   return (
     <MapContainer
       center={JAKARTA_CENTER}
@@ -33,6 +38,7 @@ export function ProposalMap({ proposals, className = 'h-96', wilayah = null }: P
       <LapisanPeta />
       <LapisanWilayah kode={wilayah} />
       <LapisanPin titik={denganLokasi} />
+      <TombolKembaliPeta tujuan={{ batas: batasAwal }} />
     </MapContainer>
   );
 }
