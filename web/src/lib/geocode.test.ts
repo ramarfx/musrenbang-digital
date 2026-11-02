@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { bacaHasilCari } from './geocode';
+import { bacaAlamat, bacaHasilCari } from './geocode';
 
 describe('bacaHasilCari', () => {
   test('mengubah balasan Nominatim dan menyingkat nama', () => {
@@ -25,5 +25,32 @@ describe('bacaHasilCari', () => {
   test('membuang balasan yang bentuknya salah atau koordinat di luar batas', () => {
     expect(bacaHasilCari({ error: 'x' })).toEqual([]);
     expect(bacaHasilCari([{ display_name: 'A', lat: '999', lon: '106' }])).toEqual([]);
+  });
+});
+
+describe('bacaAlamat', () => {
+  test('menyusun jalan, kelurahan, kecamatan, dan kota', () => {
+    expect(
+      bacaAlamat({
+        address: {
+          road: 'Jalan Suwiryo',
+          village: 'Gondangdia',
+          suburb: 'Menteng',
+          city_district: 'Jakarta Pusat',
+          city: 'Daerah Khusus Ibukota Jakarta',
+        },
+      }),
+    ).toBe('Jalan Suwiryo, Gondangdia, Menteng, Jakarta Pusat');
+  });
+
+  test('memakai nama lengkap bila rincian alamat tidak ada', () => {
+    expect(bacaAlamat({ display_name: 'Kramat Jati, Jakarta Timur, DKI Jakarta, Indonesia' })).toBe(
+      'Kramat Jati, Jakarta Timur, DKI Jakarta',
+    );
+  });
+
+  test('kosong untuk balasan yang tidak berisi alamat atau bentuknya salah', () => {
+    expect(bacaAlamat({ error: 'Unable to geocode' })).toBeNull();
+    expect(bacaAlamat('x')).toBeNull();
   });
 });

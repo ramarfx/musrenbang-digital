@@ -1,10 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { TEXT_LIMITS, proposalInputSchema, type Proposal } from '@musrenbang/shared';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useForm, type FieldPath } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { KeteranganWilayah } from '@/components/map/LokasiUsulan';
 import { LocationPicker } from '@/components/map/LocationPicker';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -15,6 +16,8 @@ import { Select } from '@/components/ui/Select';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Textarea } from '@/components/ui/Textarea';
 import { useCategoriesQuery } from '@/features/categories/queries';
+import { useAlamatTitik } from '@/lib/useAlamatTitik';
+import { wilayahDariTitik } from '@/lib/wilayah';
 import { useCreateProposalMutation, useUpdateProposalMutation } from '../queries';
 
 const formSchema = z.object({
@@ -73,6 +76,17 @@ export function ProposalForm({ proposal, onSaved, onCancel }: ProposalFormProps 
     },
   });
 
+  const titik = useAlamatTitik();
+  // Alamat dari peta hanya mengisi kolom lokasi yang kosong atau yang isinya hasil pengisian
+  // otomatis sebelumnya, jadi tulisan warga sendiri tidak pernah ditimpa.
+  const lokasiOtomatis = useRef('');
+  const isiLokasi = (alamat: string) => {
+    const kini = form.getValues('lokasi');
+    if (kini && kini !== lokasiOtomatis.current) return;
+    const nilai = alamat.slice(0, TEXT_LIMITS.lokasiMaks);
+    lokasiOtomatis.current = nilai;
+    form.setValue('lokasi', nilai, { shouldValidate: true });
+  };
   const latitude = form.watch('latitude');
   const longitude = form.watch('longitude');
 
@@ -116,7 +130,8 @@ export function ProposalForm({ proposal, onSaved, onCancel }: ProposalFormProps 
     createMutation.mutate(parsed.data, {
       onSuccess: (id) => {
         toast.success('Usulan terkirim. Admin akan memeriksanya sebelum tampil publik.');
-        navigate(`/usulan/${id}`);
+        // `milikku` membuat menu samping langsung menyala di Usulanku, tanpa menunggu data dimuat.
+        navigate(`/usulan/${id}`, { state: { milikku: true } });
       },
       onError: (error) => {
         toast.error(error.message);
@@ -231,7 +246,9 @@ export function ProposalForm({ proposal, onSaved, onCancel }: ProposalFormProps 
           <div>
             <h2 className="font-semibold text-stone-900">Titik di peta (opsional)</h2>
             <p className="text-sm text-stone-500">
-              Cari daerahnya, pakai lokasimu sekarang, atau klik peta untuk menandai titiknya. Titik membantu warga lain menemukan usulanmu.
+              Cari daerahnya, pakai lokasimu sekarang, atau klik peta untuk menandai titiknya. Titik
+              membantu warga lain menemukan usulanmu, dan alamatnya dicari otomatis lewat
+              OpenStreetMap, jadi koordinat titik terkirim ke layanan itu.
             </p>
           </div>
           {latitude !== null && longitude !== null && (
@@ -253,23 +270,31 @@ export function ProposalForm({ proposal, onSaved, onCancel }: ProposalFormProps 
             latitude={latitude}
             longitude={longitude}
             kategori={form.watch('kategori')}
-            onNama={(nama) => {
-              if (!form.getValues('lokasi')) {
-                form.setValue('lokasi', nama.slice(0, TEXT_LIMITS.lokasiMaks), {
-                  shouldValidate: true,
-                });
-              }
-            }}
-            onChange={(lat, lng) => {
+            onChange={(lat, lng, nama) => {
               form.setValue('latitude', lat, { shouldValidate: true });
               form.setValue('longitude', lng, { shouldValidate: true });
+              if (nama) {
+                isiLokasi(nama);
+                titik.tetapkan(nama);
+              } else {
+                titik.minta(lat, lng, isiLokasi);
+              }
             }}
           />
         </div>
         {latitude !== null && longitude !== null && (
-          <p className="mt-2 text-sm text-stone-600">
-            Dipilih: {latitude.toFixed(5)}, {longitude.toFixed(5)}
-          </p>
+          <div className="mt-3 space-y-1 text-sm">
+            <KeteranganWilayah wilayah={wilayahDariTitik(latitude, longitude)} />
+            <p className="text-stone-600 [overflow-wrap:anywhere]">
+              {titik.mencari
+                ? 'Mencari alamat titik...'
+                : titik.alamat
+                  ? `Alamat titik: ${titik.alamat}`
+                  : titik.gagal
+                    ? 'Alamat titik belum bisa dicari. Isi kolom lokasi sendiri.'
+                    : `Koordinat: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`}
+            </p>
+          </div>
         )}
         {form.formState.errors.latitude?.message && (
           <p className="mt-2 text-sm text-red-700">{form.formState.errors.latitude.message}</p>

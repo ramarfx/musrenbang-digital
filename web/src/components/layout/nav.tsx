@@ -1,9 +1,10 @@
-import { useNavigate, Link, NavLink, useLocation } from 'react-router-dom';
+import { useNavigate, Link, useLocation, useMatch } from 'react-router-dom';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { useAuth } from '@/features/auth';
 import { useAppConfigQuery } from '@/features/config/queries';
+import { useProposalQuery } from '@/features/proposals/queries';
 import { NotificationBell } from './NotificationBell';
 import { cn } from '@/lib/cn';
 
@@ -48,46 +49,68 @@ export function buildNav(isAdmin: boolean, sudahMasuk = false): NavGroup[] {
 const ALAS = '#035C42';
 
 /**
+ * Menu aktif ditentukan NavList, bukan dicocokkan alamatnya sendiri-sendiri, karena halaman
+ * detail usulan bisa milik Usulan warga atau Usulanku tergantung siapa pemiliknya.
+ */
+function useMenuAktif() {
+  const { pathname, state } = useLocation();
+  const { user } = useAuth();
+  const detail = useMatch('/usulan/:id');
+  const idDetail = detail ? Number(detail.params.id) : NaN;
+  const proposal = useProposalQuery(Number.isInteger(idDetail) ? idDetail : null);
+  // Detail usulan milik sendiri: dari penanda saat baru dikirim, atau dari data usulannya.
+  const detailMilikku =
+    Number.isInteger(idDetail) &&
+    ((state as { milikku?: boolean } | null)?.milikku === true ||
+      (user !== null && proposal.data?.pengusul_id === user.id));
+
+  const aktif = (item: NavItem): boolean => {
+    if (item.to === '/usulan') {
+      return pathname === '/usulan' || pathname.startsWith('/usulan/') ? !detailMilikku : false;
+    }
+    if (item.to === '/usulan-saya') return pathname === '/usulan-saya' || detailMilikku;
+    return item.end
+      ? pathname === item.to
+      : pathname === item.to || pathname.startsWith(`${item.to}/`);
+  };
+  return { aktif, kunci: `${pathname}|${detailMilikku}` };
+}
+
+/**
  * Satu menu sidebar. Tuts aktifnya bukan milik menu ini, melainkan satu tuts bersama yang
  * meluncur di belakang semua menu (lihat NavList). Menu aktif hanya mengganti warna teks dan
  * bulatan ikonnya, lalu ikut turun 4px saat ditekan seperti tombol.
  */
-function TutsMenu({ item }: { item: NavItem }) {
+function TutsMenu({ item, aktif }: { item: NavItem; aktif: boolean }) {
   return (
-    <NavLink
+    <Link
       to={item.to}
-      end={item.end}
-      className={({ isActive }) =>
-        cn(
-          'group relative isolate flex h-[46px] items-center rounded-[14px] pr-3 pb-1 pl-[9px] text-[15px] font-semibold transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2',
-          isActive
-            ? 'text-ink'
-            : // Latar hover hanya seluas muka tuts, tidak menutupi bagian alas 4px di bawahnya.
-              'text-white after:absolute after:inset-x-0 after:top-0 after:bottom-1 after:-z-10 after:rounded-[14px] after:bg-white/15 after:opacity-0 after:transition-opacity after:duration-150 hover:after:opacity-100',
-        )
-      }
-    >
-      {({ isActive }) => (
-        <>
-          <span
-            className={cn(
-              'flex items-center gap-2.5 transition-transform duration-[80ms] motion-reduce:transition-none',
-              isActive && 'group-active:translate-y-1',
-            )}
-          >
-            <span
-              className={cn(
-                'grid size-[30px] flex-none place-items-center rounded-full transition-colors duration-200',
-                isActive && 'bg-zamrud text-white',
-              )}
-            >
-              <Icon name={item.icon} />
-            </span>
-            <span>{item.label}</span>
-          </span>
-        </>
+      aria-current={aktif ? 'page' : undefined}
+      className={cn(
+        'group relative isolate flex h-[46px] items-center rounded-[14px] pr-3 pb-1 pl-[9px] text-[15px] font-semibold transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2',
+        aktif
+          ? 'text-ink'
+          : // Latar hover hanya seluas muka tuts, tidak menutupi bagian alas 4px di bawahnya.
+            'text-white after:absolute after:inset-x-0 after:top-0 after:bottom-1 after:-z-10 after:rounded-[14px] after:bg-white/15 after:opacity-0 after:transition-opacity after:duration-150 hover:after:opacity-100',
       )}
-    </NavLink>
+    >
+      <span
+        className={cn(
+          'flex items-center gap-2.5 transition-transform duration-[80ms] motion-reduce:transition-none',
+          aktif && 'group-active:translate-y-1',
+        )}
+      >
+        <span
+          className={cn(
+            'grid size-[30px] flex-none place-items-center rounded-full transition-colors duration-200',
+            aktif && 'bg-zamrud text-white',
+          )}
+        >
+          <Icon name={item.icon} />
+        </span>
+        <span>{item.label}</span>
+      </span>
+    </Link>
   );
 }
 
@@ -99,11 +122,13 @@ function TutsMenu({ item }: { item: NavItem }) {
  */
 function TutsMeluncur({
   kunciMenu,
+  kunciAktif,
 }: {
   /** Berubah saat daftar menu berubah (mis. sesudah masuk), supaya posisi diukur ulang. */
   kunciMenu: string;
+  /** Berubah saat menu aktif berganti, termasuk di halaman yang alamatnya sama. */
+  kunciAktif: string;
 }) {
-  const { pathname } = useLocation();
   const tutsRef = useRef<HTMLSpanElement>(null);
   const [posisi, setPosisi] = useState<number | null>(null);
   const [siap, setSiap] = useState(false);
@@ -114,7 +139,7 @@ function TutsMeluncur({
     const aktif =
       tutsRef.current?.parentElement?.querySelector<HTMLElement>('a[aria-current="page"]');
     setPosisi(aktif ? aktif.offsetTop : null);
-  }, [pathname, kunciMenu]);
+  }, [kunciAktif, kunciMenu]);
 
   // Transisi baru dinyalakan sesudah posisi pertama tergambar, supaya tuts tidak meluncur dari
   // atas saat halaman dibuka.
@@ -145,11 +170,13 @@ function TutsMeluncur({
 
 /** `dark` = di atas sidebar hijau; tanpa dark = menu HP di atas kertas. */
 export function NavList({ groups, dark }: { groups: NavGroup[]; dark: boolean }) {
+  const { aktif, kunci } = useMenuAktif();
   return (
     <nav aria-label="Navigasi utama" className="relative isolate flex flex-col">
       {dark && (
         <TutsMeluncur
           kunciMenu={groups.flatMap((group) => group.items.map((item) => item.to)).join('|')}
+          kunciAktif={kunci}
         />
       )}
       {groups.map((group, index) => (
@@ -163,21 +190,19 @@ export function NavList({ groups, dark }: { groups: NavGroup[]; dark: boolean })
             {group.items.map((item) => (
               <li key={item.to}>
                 {dark ? (
-                  <TutsMenu item={item} />
+                  <TutsMenu item={item} aktif={aktif(item)} />
                 ) : (
-                  <NavLink
+                  <Link
                     to={item.to}
-                    end={item.end}
-                    className={({ isActive }) =>
-                      cn(
-                        'relative flex h-11 items-center gap-3 rounded-[14px] px-3 text-[15px] font-medium text-ink transition-colors duration-150 ease-out hover:bg-active',
-                        isActive && 'bg-active font-bold',
-                      )
-                    }
+                    aria-current={aktif(item) ? 'page' : undefined}
+                    className={cn(
+                      'relative flex h-11 items-center gap-3 rounded-[14px] px-3 text-[15px] font-medium text-ink transition-colors duration-150 ease-out hover:bg-active',
+                      aktif(item) && 'bg-active font-bold',
+                    )}
                   >
                     <Icon name={item.icon} />
                     <span>{item.label}</span>
-                  </NavLink>
+                  </Link>
                 )}
               </li>
             ))}
