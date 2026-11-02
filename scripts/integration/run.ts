@@ -71,9 +71,9 @@ async function run() {
   const migrations =
     await db`SELECT version FROM supabase_migrations.schema_migrations ORDER BY version`;
   check(
-    'Delapan migration tercatat persisten pada database lokal',
+    'Sepuluh migration tercatat persisten pada database lokal',
     migrations.map((row: { version: string }) => row.version).join(',') ===
-      '20261026090000,20261026090100,20261026090200,20261026090300,20261026195414,20261027004023,20261027065525,20261028135103',
+      '20261026090000,20261026090100,20261026090200,20261026090300,20261026195414,20261027004023,20261027065525,20261028135103,20261102122158,20261102141207',
   );
   await beginFixtureRun();
   const allocationBaseline = await db<{ total: number }[]>`
@@ -87,7 +87,13 @@ async function run() {
   );
   const password = `Local!${crypto.randomUUID()}aZ9`;
   const a = await signup('warga-a', password, { nama: 'Warga A', peran: 'admin', role: 'admin' });
-  const b = await signup('warga-b', password, { nama: '  ', full_name: '  Warga B Google  ', name: 'Nama Cadangan', peran: 'admin', role: 'admin' });
+  const b = await signup('warga-b', password, {
+    nama: '  ',
+    full_name: '  Warga B Google  ',
+    name: 'Nama Cadangan',
+    peran: 'admin',
+    role: 'admin',
+  });
   const admin = await signup('admin', password, { nama: 'Admin Fixture' });
   for (const actor of [a, b, admin]) {
     const profile = await rows(`profiles?id=eq.${actor.id}`, actor);
@@ -103,7 +109,8 @@ async function run() {
   const googleMetadataProfile = await rows('profiles?id=eq.' + b.id, b);
   check(
     'Signup Auth dengan metadata berbentuk Google memakai full_name dan tetap warga',
-    googleMetadataProfile[0]?.nama === 'Warga B Google' && googleMetadataProfile[0]?.peran === 'warga',
+    googleMetadataProfile[0]?.nama === 'Warga B Google' &&
+      googleMetadataProfile[0]?.peran === 'warga',
   );
   await db`UPDATE public.profiles SET peran='admin' WHERE id=${admin.id}::uuid`;
   check(
@@ -343,11 +350,17 @@ async function run() {
     ['Warga A', a],
     ['Warga B', b],
   ] as const) {
-    await denied(label + ' tidak dapat memanggil RPC status bercatatan', '/rest/v1/rpc/change_proposal_status_with_note', actor, 'POST', {
-      p_proposal_id: p,
-      p_status: 'Diverifikasi',
-      p_catatan: 'Percobaan tidak berwenang',
-    });
+    await denied(
+      label + ' tidak dapat memanggil RPC status bercatatan',
+      '/rest/v1/rpc/change_proposal_status_with_note',
+      actor,
+      'POST',
+      {
+        p_proposal_id: p,
+        p_status: 'Diverifikasi',
+        p_catatan: 'Percobaan tidak berwenang',
+      },
+    );
   }
   const emptyStatusNote = await request<{ code?: string }>(
     '/rest/v1/rpc/change_proposal_status_with_note',
@@ -709,8 +722,14 @@ async function run() {
   check('Client sesi yang sama masuk sebagai B', !loginB.error && loginB.data.user?.id === b.id);
   const hiddenA = await sessionClient.from('profiles').select('id').eq('id', a.id);
   const ownBProfile = await sessionClient.from('profiles').select('id').eq('id', b.id);
-  check('Setelah pergantian sesi B tidak membaca profil A', !hiddenA.error && hiddenA.data?.length === 0);
-  check('Setelah pergantian sesi B membaca profil sendiri', !ownBProfile.error && ownBProfile.data?.length === 1);
+  check(
+    'Setelah pergantian sesi B tidak membaca profil A',
+    !hiddenA.error && hiddenA.data?.length === 0,
+  );
+  check(
+    'Setelah pergantian sesi B membaca profil sendiri',
+    !ownBProfile.error && ownBProfile.data?.length === 1,
+  );
   const logoutB = await sessionClient.auth.signOut({ scope: 'local' });
   check('Client sesi keluar dari B', !logoutB.error);
 

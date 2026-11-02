@@ -107,6 +107,11 @@ export type Database = {
         AllocationInsert,
         { jumlah?: number }
       >;
+      priority_rankings: TableDefinition<
+        { user_id: string; kategori: string; posisi: number },
+        never,
+        never
+      >;
       config: TableDefinition<ConfigRow, ConfigRow, { nilai?: string }>;
     };
     Views: {
@@ -123,6 +128,15 @@ export type Database = {
         undefined
       >;
       save_allocations: FunctionDefinition<{ p_rows: Json }, undefined>;
+      save_priority_rankings: FunctionDefinition<{ p_rows: Json }, undefined>;
+      get_priority_rankings: FunctionDefinition<
+        Record<string, never>,
+        { kategori: string; posisi: number }[]
+      >;
+      get_priority_ranking_summary: FunctionDefinition<
+        Record<string, never>,
+        { kategori: string; skor: number; jumlah_partisipan: number }[]
+      >;
       change_proposal_status: FunctionDefinition<
         { p_proposal_id: number; p_status: string },
         undefined

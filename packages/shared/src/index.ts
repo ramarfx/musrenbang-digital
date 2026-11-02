@@ -10,6 +10,7 @@ export * from './schemas/config';
 export * from './schemas/env';
 export * from './schemas/gap';
 export * from './schemas/profile';
+export * from './schemas/priority-ranking';
 export * from './schemas/proposal';
 export * from './schemas/stats';
 export * from './types/database';

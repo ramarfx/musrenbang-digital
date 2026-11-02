@@ -389,6 +389,101 @@ SELECT pg_temp.check_true((SELECT jumlah_usulan_disetujui=1 AND jumlah_pemberi_s
 SELECT pg_temp.check_true(NOT has_table_privilege('anon','public.v_admin_stats','SELECT'), 'Anon tidak dapat membaca view statistik admin');
 
 RESET ROLE;
+-- Fixture DELETE terpisah dari fixture utama agar assertion yang ada tetap utuh.
+INSERT INTO public.proposals (id, judul, deskripsi, kategori, pengusul_id, moderasi, catatan_moderasi, estimasi_biaya)
+OVERRIDING SYSTEM VALUE VALUES
+  (91000011, 'Hapus menunggu warga A', 'Deskripsi fixture untuk pengujian DELETE menunggu.', 'Pendidikan', '11111111-1111-4111-8111-111111111111', 'Menunggu', NULL, 1000),
+  (91000012, 'Hapus ditolak warga A', 'Deskripsi fixture untuk pengujian DELETE ditolak.', 'Pendidikan', '11111111-1111-4111-8111-111111111111', 'Ditolak', 'Alasan pengujian', 1000),
+  (91000013, 'Hapus disetujui warga A', 'Deskripsi fixture untuk pengujian DELETE disetujui.', 'Pendidikan', '11111111-1111-4111-8111-111111111111', 'Disetujui', NULL, 1000),
+  (91000014, 'Hapus menunggu warga B', 'Deskripsi fixture untuk pengujian DELETE orang lain.', 'Pendidikan', '22222222-2222-4222-8222-222222222222', 'Menunggu', NULL, 1000),
+  (91000015, 'Hapus usulan oleh admin', 'Deskripsi fixture untuk pengujian DELETE oleh admin.', 'Pendidikan', '11111111-1111-4111-8111-111111111111', 'Disetujui', NULL, 1000);
+INSERT INTO public.comments (proposal_id, user_id, isi) VALUES
+  (91000011, '11111111-1111-4111-8111-111111111111', 'Fixture cascade komentar'),
+  (91000015, '11111111-1111-4111-8111-111111111111', 'Fixture cascade admin');
+INSERT INTO public.votes (proposal_id, user_id) VALUES
+  (91000011, '11111111-1111-4111-8111-111111111111'),
+  (91000015, '11111111-1111-4111-8111-111111111111');
+SELECT pg_temp.check_true((SELECT count(*) = 2 FROM public.proposal_status_history WHERE proposal_id IN (91000011, 91000015)), 'Fixture DELETE memiliki riwayat sebelum cascade');
+
+SET LOCAL ROLE anon;
+SELECT set_config('request.jwt.claims', '{"role":"anon"}', true);
+SELECT set_config('request.jwt.claim.sub', '', true);
+SELECT pg_temp.expect_error('DELETE FROM public.proposals WHERE id=91000011', '42501', 'Anon tidak memiliki hak DELETE proposals');
+RESET ROLE;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claims', '{"role":"authenticated","sub":"22222222-2222-4222-8222-222222222222"}', true);
+SELECT set_config('request.jwt.claim.sub', '22222222-2222-4222-8222-222222222222', true);
+WITH deleted AS (DELETE FROM public.proposals WHERE id=91000013 RETURNING id)
+SELECT pg_temp.check_true((SELECT count(*)=0 FROM deleted), 'B tidak menghapus usulan publik milik A');
+SELECT set_config('request.jwt.claims', '{"role":"authenticated","sub":"11111111-1111-4111-8111-111111111111"}', true);
+SELECT set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
+WITH deleted AS (DELETE FROM public.proposals WHERE id=91000014 RETURNING id)
+SELECT pg_temp.check_true((SELECT count(*)=0 FROM deleted), 'A tidak menghapus usulan milik B');
+WITH deleted AS (DELETE FROM public.proposals WHERE id=91000013 RETURNING id)
+SELECT pg_temp.check_true((SELECT count(*)=0 FROM deleted), 'A tidak menghapus usulan sendiri yang disetujui');
+WITH deleted AS (DELETE FROM public.proposals WHERE id=91000011 RETURNING id)
+SELECT pg_temp.check_true((SELECT count(*)=1 FROM deleted), 'A menghapus usulan menunggu miliknya');
+WITH deleted AS (DELETE FROM public.proposals WHERE id=91000012 RETURNING id)
+SELECT pg_temp.check_true((SELECT count(*)=1 FROM deleted), 'A menghapus usulan ditolak miliknya');
+SELECT set_config('request.jwt.claims', '{"role":"authenticated","sub":"33333333-3333-4333-8333-333333333333"}', true);
+SELECT set_config('request.jwt.claim.sub', '33333333-3333-4333-8333-333333333333', true);
+WITH deleted AS (DELETE FROM public.proposals WHERE id=91000015 RETURNING id)
+SELECT pg_temp.check_true((SELECT count(*)=1 FROM deleted), 'Admin dapat menghapus usulan disetujui sesuai policy admin');
+RESET ROLE;
+SELECT pg_temp.check_true((SELECT count(*)=2 FROM public.proposals WHERE id IN (91000013, 91000014)), 'Usulan yang terlarang tetap utuh');
+SELECT pg_temp.check_true(NOT EXISTS (SELECT 1 FROM public.comments WHERE proposal_id IN (91000011, 91000015)), 'DELETE melakukan cascade komentar fixture');
+SELECT pg_temp.check_true(NOT EXISTS (SELECT 1 FROM public.votes WHERE proposal_id IN (91000011, 91000015)), 'DELETE melakukan cascade vote fixture');
+SELECT pg_temp.check_true(NOT EXISTS (SELECT 1 FROM public.proposal_status_history WHERE proposal_id IN (91000011, 91000015)), 'DELETE melakukan cascade riwayat fixture');
+
+CREATE FUNCTION pg_temp.ranking_payload(p_reverse boolean DEFAULT false) RETURNS jsonb
+LANGUAGE sql AS $$
+  SELECT jsonb_agg(jsonb_build_object('kategori', nama, 'posisi', CASE WHEN p_reverse THEN 11-n ELSE n END) ORDER BY n)
+  FROM (SELECT nama, row_number() OVER (ORDER BY nama) AS n FROM public.categories) c;
+$$;
+CREATE FUNCTION pg_temp.fail_priority_insert() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF current_setting('test.fail_priority', true) = 'on' THEN RAISE EXCEPTION 'Simulated insert failure'; END IF; RETURN NEW; END; $$;
+CREATE TRIGGER test_fail_priority BEFORE INSERT ON public.priority_rankings FOR EACH ROW EXECUTE FUNCTION pg_temp.fail_priority_insert();
+SET LOCAL ROLE anon;
+SELECT set_config('request.jwt.claims', '{"role":"anon"}', true);
+SELECT set_config('request.jwt.claim.sub', '', true);
+SELECT pg_temp.expect_error('SELECT public.save_priority_rankings(''[]''::jsonb)', '42501', 'Anon tidak menyimpan ranking');
+SELECT pg_temp.expect_error('SELECT * FROM public.get_priority_ranking_summary()', '42501', 'Anon tidak membaca agregat ranking');
+SELECT pg_temp.expect_error('SELECT * FROM public.priority_rankings', '42501', 'Anon tidak membaca tabel ranking');
+RESET ROLE;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claims', '{"role":"authenticated","sub":"11111111-1111-4111-8111-111111111111"}', true);
+SELECT set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
+SELECT public.save_priority_rankings(pg_temp.ranking_payload());
+SELECT pg_temp.check_true((SELECT count(*)=10 AND min(posisi)=1 AND max(posisi)=10 FROM public.get_priority_rankings()), 'A menyimpan ranking valid');
+SELECT pg_temp.check_true((SELECT sum(jumlah)=2000000 FROM public.allocations), 'Ranking tidak mengubah allocations A');
+SELECT pg_temp.expect_error('SELECT public.save_priority_rankings((SELECT jsonb_agg(x) FROM (SELECT x FROM jsonb_array_elements(pg_temp.ranking_payload()) x LIMIT 9) s))', '22023', 'Ranking tidak lengkap ditolak');
+SELECT pg_temp.expect_error('SELECT public.save_priority_rankings(jsonb_set(pg_temp.ranking_payload(), ''{0,kategori}'', pg_temp.ranking_payload()->1->''kategori''))', '22023', 'Kategori duplikat ditolak');
+SELECT pg_temp.expect_error('SELECT public.save_priority_rankings(jsonb_set(pg_temp.ranking_payload(), ''{0,posisi}'', ''2''::jsonb))', '22023', 'Posisi duplikat ditolak');
+SELECT pg_temp.expect_error('SELECT public.save_priority_rankings(jsonb_set(pg_temp.ranking_payload(), ''{0,kategori}'', ''"tidak dikenal"''::jsonb))', '22023', 'Kategori tidak dikenal ditolak');
+SELECT pg_temp.check_true((SELECT count(*)=10 AND min(posisi)=1 FROM public.get_priority_rankings()), 'Validasi gagal mempertahankan ranking sebelumnya');
+SELECT pg_temp.expect_error('INSERT INTO public.priority_rankings VALUES (''11111111-1111-4111-8111-111111111111'', ''Pendidikan'', 1)', '42501', 'Tulis langsung ditolak');
+SELECT pg_temp.expect_error('SELECT * FROM public.get_priority_ranking_summary()', '42501', 'Warga tidak membaca agregat');
+SELECT set_config('test.fail_priority', 'on', true);
+SELECT pg_temp.expect_error('SELECT public.save_priority_rankings(pg_temp.ranking_payload(true))', 'P0001', 'Kegagalan INSERT membatalkan penghapusan sebelumnya');
+SELECT set_config('test.fail_priority', 'off', true);
+SELECT pg_temp.check_true((SELECT posisi=1 FROM public.get_priority_rankings() ORDER BY kategori LIMIT 1), 'Ranking awal utuh setelah rollback subtransaksi');
+SELECT public.save_priority_rankings(pg_temp.ranking_payload(true));
+SELECT pg_temp.check_true((SELECT posisi=10 FROM public.get_priority_rankings() ORDER BY kategori LIMIT 1), 'Pembaruan ranking mengganti urutan');
+SELECT public.save_allocations('[{"kategori":"Pendidikan","jumlah":1000000}]'::jsonb);
+SELECT pg_temp.check_true((SELECT posisi=10 FROM public.get_priority_rankings() ORDER BY kategori LIMIT 1), 'Penyimpanan allocations tidak mengubah ranking');
+SELECT pg_temp.expect_error('SELECT public.save_allocations(''[{"kategori":"Pendidikan","jumlah":10000001}]''::jsonb)', '22003', 'Batas anggaran tetap berlaku');
+SELECT set_config('request.jwt.claims', '{"role":"authenticated","sub":"33333333-3333-4333-8333-333333333333"}', true);
+SELECT set_config('request.jwt.claim.sub', '33333333-3333-4333-8333-333333333333', true);
+SELECT pg_temp.check_true((SELECT count(*)=0 FROM public.get_priority_ranking_summary()), 'Agregat satu peserta tidak tersedia');
+SELECT set_config('request.jwt.claims', '{"role":"authenticated","sub":"22222222-2222-4222-8222-222222222222"}', true);
+SELECT set_config('request.jwt.claim.sub', '22222222-2222-4222-8222-222222222222', true);
+SELECT pg_temp.check_true((SELECT count(*)=0 FROM public.priority_rankings), 'B tidak melihat ranking A');
+SELECT public.save_priority_rankings(pg_temp.ranking_payload());
+SELECT pg_temp.check_true((SELECT count(*)=10 AND bool_and(user_id='22222222-2222-4222-8222-222222222222'::uuid) FROM public.priority_rankings), 'B hanya melihat ranking sendiri');
+SELECT set_config('request.jwt.claims', '{"role":"authenticated","sub":"33333333-3333-4333-8333-333333333333"}', true);
+SELECT set_config('request.jwt.claim.sub', '33333333-3333-4333-8333-333333333333', true);
+SELECT pg_temp.check_true((SELECT count(*)=10 AND bool_and(skor=11 AND jumlah_partisipan=2) FROM public.get_priority_ranking_summary()), 'Agregat Borda dua ranking berlawanan benar');
+RESET ROLE;
+
 -- Hak TRUNCATE tidak tunduk pada RLS, jadi harus benar-benar dicabut.
 SELECT pg_temp.check_true(NOT EXISTS (
   SELECT 1 FROM (VALUES ('anon'), ('authenticated')) r(nama)

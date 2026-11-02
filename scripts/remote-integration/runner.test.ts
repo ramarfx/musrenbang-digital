@@ -8,7 +8,7 @@ import { runTrackedWrite } from './tracking';
 import {
   ALLOWED_PROJECT_REF,
   ALLOWED_PROJECT_URL,
-  DEPLOYED_REMOTE_MIGRATIONS,
+  FOUNDATION_MIGRATIONS,
   WRITE_TEST_MIGRATIONS,
   assertExpectedMigrationHistory,
   assertRecoveryManifest,
@@ -42,19 +42,24 @@ function manifestFixture(): FixtureManifest {
 }
 
 describe('remote runner safety gates', () => {
-  test('membedakan enam migration remote dari target delapan migration', () => {
-    expect(DEPLOYED_REMOTE_MIGRATIONS).toHaveLength(6);
-    expect(WRITE_TEST_MIGRATIONS).toHaveLength(8);
+  test('membedakan enam migration remote dari target sembilan migration', () => {
+    expect(FOUNDATION_MIGRATIONS).toHaveLength(6);
+    expect(WRITE_TEST_MIGRATIONS).toHaveLength(9);
+    expect(classifyRemoteMigrationHistory(WRITE_TEST_MIGRATIONS.slice(0, 8))).toBe('unexpected');
+    expect(() => assertExpectedMigrationHistory(WRITE_TEST_MIGRATIONS.slice(0, 8))).toThrow();
+    expect(() =>
+      assertExpectedMigrationHistory([...WRITE_TEST_MIGRATIONS, WRITE_TEST_MIGRATIONS[8]]),
+    ).toThrow();
     expect(classifyRemoteMigrationHistory(WRITE_TEST_MIGRATIONS.slice(0, 7))).toBe('unexpected');
     expect(() => assertExpectedMigrationHistory(WRITE_TEST_MIGRATIONS.slice(0, 7))).toThrow();
-    expect(classifyRemoteMigrationHistory(DEPLOYED_REMOTE_MIGRATIONS)).toBe('deployed-baseline');
-    expect(classifyRemoteMigrationHistory(WRITE_TEST_MIGRATIONS)).toBe('mvp-migration-present');
+    expect(classifyRemoteMigrationHistory(FOUNDATION_MIGRATIONS)).toBe('foundation-only');
+    expect(classifyRemoteMigrationHistory(WRITE_TEST_MIGRATIONS)).toBe('deployed-baseline');
     expect(() => assertExpectedMigrationHistory(WRITE_TEST_MIGRATIONS)).not.toThrow();
-    expect(() => assertExpectedMigrationHistory(DEPLOYED_REMOTE_MIGRATIONS)).toThrow();
+    expect(() => assertExpectedMigrationHistory(FOUNDATION_MIGRATIONS)).toThrow();
     expect(() =>
       assertExpectedMigrationHistory([...WRITE_TEST_MIGRATIONS, '20990101000000']),
     ).toThrow();
-    expect(classifyRemoteMigrationHistory([...DEPLOYED_REMOTE_MIGRATIONS, '20990101000000'])).toBe(
+    expect(classifyRemoteMigrationHistory([...FOUNDATION_MIGRATIONS, '20990101000000'])).toBe(
       'unexpected',
     );
     expect(shouldEnforceExpectedMigrationHistory(false, false)).toBe(false);
