@@ -1,14 +1,27 @@
-import { ATTRIBUTION_PREFIX } from '@/lib/leaflet';
-import { AttributionControl, MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet';
+import { useEffect, useRef, useState } from 'react';
+import { AttributionControl, MapContainer, Marker, useMap, useMapEvents } from 'react-leaflet';
+import { Icon } from '@/components/ui/Icon';
+import { Input } from '@/components/ui/Input';
+import { Spinner } from '@/components/ui/Spinner';
+import { cariTempat, type HasilCari } from '@/lib/geocode';
+import { ATTRIBUTION_PREFIX, OPSI_PETA } from '@/lib/leaflet';
+import { LapisanPeta } from './LapisanPeta';
+import { cn } from '@/lib/cn';
 
 type LocationPickerProps = {
   latitude: number | null;
   longitude: number | null;
   onChange: (latitude: number, longitude: number) => void;
+  /** Nama singkat tempat yang dipilih dari hasil cari, untuk mengisi kolom lokasi. */
+  onNama?: (nama: string) => void;
   className?: string;
 };
 
 const JAKARTA_CENTER: [number, number] = [-6.2088, 106.8456];
+const ZOOM_TEMPAT = 16;
+
+const tombolIkon =
+  'inline-flex size-11 flex-none items-center justify-center rounded-xl border border-edge bg-surface text-ink transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.92] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga';
 
 function ClickHandler({ onChange }: { onChange: (latitude: number, longitude: number) => void }) {
   useMapEvents({
@@ -19,27 +32,187 @@ function ClickHandler({ onChange }: { onChange: (latitude: number, longitude: nu
   return null;
 }
 
+/** Terbang halus ke titik tujuan tiap kali `tujuan` berganti (hasil cari atau lokasi saya). */
+function Terbang({ tujuan }: { tujuan: { lat: number; lng: number; id: number } | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!tujuan) return;
+    const kurangiGerak = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    map.flyTo([tujuan.lat, tujuan.lng], ZOOM_TEMPAT, { animate: !kurangiGerak, duration: 0.9 });
+  }, [map, tujuan]);
+  return null;
+}
+
+/**
+ * Pemilih titik di peta: klik peta, cari daerah lewat kotak cari, atau pakai lokasi saat ini.
+ * Kotak cari ini tidak berada di dalam <form> karena komponen ini dipakai di dalam formulir
+ * usulan; Enter menjalankan pencarian lewat onKeyDown.
+ */
 export function LocationPicker({
   latitude,
   longitude,
   onChange,
+  onNama,
   className = 'h-80',
 }: LocationPickerProps) {
+  const [kata, setKata] = useState('');
+  const [hasil, setHasil] = useState<HasilCari[]>([]);
+  const [mencari, setMencari] = useState(false);
+  const [mencariPosisi, setMencariPosisi] = useState(false);
+  const [pesan, setPesan] = useState<string | null>(null);
+  const [tujuan, setTujuan] = useState<{ lat: number; lng: number; id: number } | null>(null);
+  const permintaan = useRef<AbortController | null>(null);
+  const punyaTitik = latitude !== null && longitude !== null;
+
+  useEffect(() => () => permintaan.current?.abort(), []);
+
+  const pilih = (lat: number, lng: number, nama?: string) => {
+    onChange(lat, lng);
+    if (nama) onNama?.(nama);
+    setTujuan({ lat, lng, id: Date.now() });
+  };
+
+  const cari = async () => {
+    if (kata.trim().length < 3) {
+      setPesan('Ketik minimal 3 huruf, misalnya nama kelurahan atau jalan.');
+      setHasil([]);
+      return;
+    }
+    permintaan.current?.abort();
+    const kontrol = new AbortController();
+    permintaan.current = kontrol;
+    setMencari(true);
+    setPesan(null);
+    try {
+      const data = await cariTempat(kata, kontrol.signal);
+      setHasil(data);
+      if (data.length === 0) setPesan('Tempat itu tidak ketemu. Coba nama yang lebih umum.');
+    } catch (error) {
+      if (kontrol.signal.aborted) return;
+      setHasil([]);
+      setPesan(error instanceof Error ? error.message : 'Pencarian gagal.');
+    } finally {
+      if (!kontrol.signal.aborted) setMencari(false);
+    }
+  };
+
+  const lokasiSaya = () => {
+    if (!('geolocation' in navigator)) {
+      setPesan('Peramban ini tidak bisa membaca lokasi. Cari lewat kotak cari atau klik peta.');
+      return;
+    }
+    setMencariPosisi(true);
+    setPesan(null);
+    setHasil([]);
+    navigator.geolocation.getCurrentPosition(
+      (posisi) => {
+        setMencariPosisi(false);
+        pilih(posisi.coords.latitude, posisi.coords.longitude);
+      },
+      (galat) => {
+        setMencariPosisi(false);
+        setPesan(
+          galat.code === galat.PERMISSION_DENIED
+            ? 'Izin lokasi ditolak. Izinkan di pengaturan peramban, atau cari lewat kotak cari.'
+            : 'Lokasimu belum terbaca. Coba lagi, atau klik langsung di peta.',
+        );
+      },
+      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 30_000 },
+    );
+  };
+
   return (
-    <MapContainer
-      center={JAKARTA_CENTER}
-      zoom={11}
-      scrollWheelZoom={false}
-      attributionControl={false}
-      className={`peta-hangat ${className} isolate w-full rounded-3xl border border-border`}
-    >
-      <AttributionControl prefix={ATTRIBUTION_PREFIX} />
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      <ClickHandler onChange={onChange} />
-      {latitude !== null && longitude !== null && <Marker position={[latitude, longitude]} />}
-    </MapContainer>
+    <div className="space-y-2.5">
+      <div role="search" className="flex gap-2">
+        <Input
+          type="search"
+          aria-label="Cari daerah, jalan, atau tempat"
+          placeholder="Cari daerah, jalan, atau tempat"
+          value={kata}
+          maxLength={120}
+          onChange={(event) => setKata(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              void cari();
+            }
+          }}
+        />
+        <button
+          type="button"
+          aria-label="Cari di peta"
+          title="Cari"
+          onClick={() => void cari()}
+          disabled={mencari}
+          className={tombolIkon}
+        >
+          {mencari ? <Spinner label="Mencari" /> : <Icon name="cari" size={20} />}
+        </button>
+        <button
+          type="button"
+          aria-label="Pakai lokasiku sekarang"
+          title="Lokasiku sekarang"
+          onClick={lokasiSaya}
+          disabled={mencariPosisi}
+          className={cn(tombolIkon, 'group/lokasi')}
+        >
+          {mencariPosisi ? (
+            <Spinner label="Membaca lokasi" />
+          ) : (
+            <span className="transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover/lokasi:rotate-90 motion-reduce:transition-none">
+              <Icon name="sasaran" size={20} />
+            </span>
+          )}
+        </button>
+      </div>
+
+      {pesan && (
+        <p role="status" className="text-[13px] text-muted">
+          {pesan}
+        </p>
+      )}
+
+      {hasil.length > 0 && (
+        <ul className="stagger grid gap-1 rounded-2xl border border-border bg-surface p-1.5">
+          {hasil.map((item) => (
+            <li key={`${item.lat},${item.lng}`}>
+              <button
+                type="button"
+                onClick={() => {
+                  pilih(item.lat, item.lng, item.singkat);
+                  setHasil([]);
+                  setKata(item.singkat);
+                }}
+                className="flex w-full items-start gap-2.5 rounded-xl px-2.5 py-2 text-left transition-colors duration-150 hover:bg-active focus-visible:outline-2 focus-visible:outline-warga"
+              >
+                <span className="mt-0.5 text-warga">
+                  <Icon name="lokasi" size={18} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-semibold text-ink">
+                    {item.singkat}
+                  </span>
+                  <span className="block truncate text-[12.5px] text-muted">{item.nama}</span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <MapContainer
+        center={punyaTitik ? [latitude, longitude] : JAKARTA_CENTER}
+        zoom={punyaTitik ? ZOOM_TEMPAT : 11}
+        {...OPSI_PETA}
+        attributionControl={false}
+        className={`peta-hangat ${className} isolate w-full rounded-3xl border border-border`}
+      >
+        <AttributionControl prefix={ATTRIBUTION_PREFIX} />
+        <LapisanPeta />
+        <ClickHandler onChange={onChange} />
+        <Terbang tujuan={tujuan} />
+        {punyaTitik && <Marker position={[latitude, longitude]} />}
+      </MapContainer>
+    </div>
   );
 }

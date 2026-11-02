@@ -1,16 +1,21 @@
 import type { Proposal } from '@musrenbang/shared';
-import { ATTRIBUTION_PREFIX } from '@/lib/leaflet';
+import { ATTRIBUTION_PREFIX, OPSI_PETA } from '@/lib/leaflet';
+import type { KodeWilayah } from '@/lib/wilayah';
+import { LapisanPeta } from './LapisanPeta';
+import { LapisanWilayah } from './LapisanWilayah';
 import { Link } from 'react-router-dom';
-import { AttributionControl, MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
+import { AttributionControl, MapContainer, Marker, Popup } from 'react-leaflet';
 
 type ProposalMapProps = {
   proposals: Proposal[];
   className?: string;
+  /** Wilayah yang diarsir dan dituju peta; null berarti tampilan Jakarta penuh. */
+  wilayah?: KodeWilayah | null;
 };
 
 const JAKARTA_CENTER: [number, number] = [-6.2088, 106.8456];
 
-export function ProposalMap({ proposals, className = 'h-96' }: ProposalMapProps) {
+export function ProposalMap({ proposals, className = 'h-96', wilayah = null }: ProposalMapProps) {
   const denganLokasi = proposals.filter(
     (proposal): proposal is Proposal & { latitude: number; longitude: number } =>
       proposal.latitude !== null && proposal.longitude !== null,
@@ -20,15 +25,13 @@ export function ProposalMap({ proposals, className = 'h-96' }: ProposalMapProps)
     <MapContainer
       center={JAKARTA_CENTER}
       zoom={11}
-      scrollWheelZoom={false}
+      {...OPSI_PETA}
       attributionControl={false}
       className={`peta-hangat ${className} isolate w-full rounded-3xl border border-border`}
     >
       <AttributionControl prefix={ATTRIBUTION_PREFIX} />
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
+      <LapisanPeta />
+      <LapisanWilayah kode={wilayah} />
       {denganLokasi.map((proposal) => (
         <Marker key={proposal.id} position={[proposal.latitude, proposal.longitude]}>
           <Popup>

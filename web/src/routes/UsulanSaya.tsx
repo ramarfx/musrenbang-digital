@@ -96,7 +96,7 @@ export default function UsulanSaya() {
             </Card>
           </section>
 
-          <div className="stagger grid gap-4 md:grid-cols-2">
+          <div className="grid gap-5 md:grid-cols-2">
             {[...milikku]
               .sort((a, b) => new Date(b.dibuat_pada).getTime() - new Date(a.dibuat_pada).getTime())
               .map((proposal) => (

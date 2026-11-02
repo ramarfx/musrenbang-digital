@@ -231,7 +231,7 @@ export function ProposalForm({ proposal, onSaved, onCancel }: ProposalFormProps 
           <div>
             <h2 className="font-semibold text-stone-900">Titik di peta (opsional)</h2>
             <p className="text-sm text-stone-500">
-              Klik peta untuk menandai lokasi. Titik membantu warga lain menemukan usulanmu.
+              Cari daerahnya, pakai lokasimu sekarang, atau klik peta untuk menandai titiknya. Titik membantu warga lain menemukan usulanmu.
             </p>
           </div>
           {latitude !== null && longitude !== null && (
@@ -252,6 +252,13 @@ export function ProposalForm({ proposal, onSaved, onCancel }: ProposalFormProps 
           <LocationPicker
             latitude={latitude}
             longitude={longitude}
+            onNama={(nama) => {
+              if (!form.getValues('lokasi')) {
+                form.setValue('lokasi', nama.slice(0, TEXT_LIMITS.lokasiMaks), {
+                  shouldValidate: true,
+                });
+              }
+            }}
             onChange={(lat, lng) => {
               form.setValue('latitude', lat, { shouldValidate: true });
               form.setValue('longitude', lng, { shouldValidate: true });

@@ -75,7 +75,7 @@ export function CommentSection({ proposalId }: { proposalId: number }) {
                 <span className="font-medium text-stone-700">{comment.penulis_nama}</span>
                 <span>{formatTanggalWaktu(comment.dibuat_pada)}</span>
               </div>
-              <p className="mt-1 whitespace-pre-line text-sm text-stone-700">{comment.isi}</p>
+              <p className="mt-1 whitespace-pre-line text-sm text-stone-700 [overflow-wrap:anywhere]">{comment.isi}</p>
             </li>
           ))}
         </ul>

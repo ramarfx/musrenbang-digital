@@ -70,7 +70,7 @@ export function AksiPemilik({
             onClick={() => setDialog('hapus')}
             className={cn(
               tombolIkon,
-              'hover:border-[#b42318] hover:bg-[#fdecea] hover:text-[#b42318]',
+              'hover:border-red-200 hover:bg-red-50 hover:text-red-700',
             )}
           >
             <span className="transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover/aksi:scale-110 motion-reduce:transition-none">
@@ -113,13 +113,15 @@ export function AksiPemilik({
         className="w-[min(420px,calc(100vw-24px))]"
       >
         <div className="p-6">
-          <span className="grid size-11 place-items-center rounded-full bg-[#fdecea] text-[#b42318]">
+          <span className="grid size-11 place-items-center rounded-full bg-red-50 text-red-700">
             <Icon name="sampah" size={20} />
           </span>
           <h2 id={`hapus-usulan-${proposal.id}`} className="mt-4 text-lg font-bold">
             Hapus usulan ini?
           </h2>
-          <p className="mt-1 line-clamp-2 text-sm font-semibold text-ink">{proposal.judul}</p>
+          <p className="mt-1 line-clamp-2 text-sm font-semibold text-ink [overflow-wrap:anywhere]">
+            {proposal.judul}
+          </p>
           <p className="mt-2 text-sm text-muted">
             Usulan ini hilang dari daftar dan tidak bisa dikembalikan.
           </p>
