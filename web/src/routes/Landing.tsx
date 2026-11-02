@@ -65,7 +65,7 @@ type Fitur = {
 const FITUR: Fitur[] = [
   {
     judul: 'Usulkan program',
-    isi: 'Tulis masalah di sekitarmu, pilih bidangnya, dan tandai lokasinya di peta.',
+    isi: 'Usulkan program pembangunan di sekitarmu, pilih bidangnya, dan tandai lokasinya di peta.',
     ke: '/usulan/baru',
     aksi: 'Tulis usulan',
     ikon: 'usulan',

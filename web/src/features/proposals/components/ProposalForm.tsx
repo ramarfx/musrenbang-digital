@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { TEXT_LIMITS, proposalInputSchema } from '@musrenbang/shared';
+import { TEXT_LIMITS, proposalInputSchema, type Proposal } from '@musrenbang/shared';
 import { useEffect } from 'react';
 import { useForm, type FieldPath } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
@@ -15,7 +15,7 @@ import { Select } from '@/components/ui/Select';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Textarea } from '@/components/ui/Textarea';
 import { useCategoriesQuery } from '@/features/categories/queries';
-import { useCreateProposalMutation } from '../queries';
+import { useCreateProposalMutation, useUpdateProposalMutation } from '../queries';
 
 const formSchema = z.object({
   judul: z
@@ -45,20 +45,31 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function ProposalForm() {
+type ProposalFormProps = {
+  /** Diisi saat mengubah usulan yang sudah ada; kosong berarti membuat usulan baru. */
+  proposal?: Proposal;
+  /** Dipanggil sesudah perubahan tersimpan (mode ubah). */
+  onSaved?: () => void;
+  /** Tombol Batal; bawaannya kembali ke halaman sebelumnya. */
+  onCancel?: () => void;
+};
+
+export function ProposalForm({ proposal, onSaved, onCancel }: ProposalFormProps = {}) {
   const navigate = useNavigate();
   const categoriesQuery = useCategoriesQuery();
-  const mutation = useCreateProposalMutation();
+  const createMutation = useCreateProposalMutation();
+  const updateMutation = useUpdateProposalMutation(proposal?.id ?? 0);
+  const mutation = proposal ? updateMutation : createMutation;
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      judul: '',
-      deskripsi: '',
-      kategori: '',
-      lokasi: '',
-      estimasi_biaya: '',
-      latitude: null,
-      longitude: null,
+      judul: proposal?.judul ?? '',
+      deskripsi: proposal?.deskripsi ?? '',
+      kategori: proposal?.kategori ?? '',
+      lokasi: proposal?.lokasi ?? '',
+      estimasi_biaya: proposal ? String(proposal.estimasi_biaya) : '',
+      latitude: proposal?.latitude ?? null,
+      longitude: proposal?.longitude ?? null,
     },
   });
 
@@ -89,7 +100,20 @@ export function ProposalForm() {
       return;
     }
 
-    mutation.mutate(parsed.data, {
+    if (proposal) {
+      updateMutation.mutate(parsed.data, {
+        onSuccess: () => {
+          toast.success('Perubahan usulan tersimpan.');
+          onSaved?.();
+        },
+        onError: (error) => {
+          toast.error(error.message);
+        },
+      });
+      return;
+    }
+
+    createMutation.mutate(parsed.data, {
       onSuccess: (id) => {
         toast.success('Usulan terkirim. Admin akan memeriksanya sebelum tampil publik.');
         navigate(`/usulan/${id}`);
@@ -132,7 +156,7 @@ export function ProposalForm() {
         >
           <Input
             id="judul"
-            placeholder="cth. Perbaikan trotoar dan penerangan Jl. Melati"
+            placeholder="cth. Pembangunan trotoar dan penerangan Jl. Melati"
             invalid={Boolean(form.formState.errors.judul)}
             {...form.register('judul')}
           />
@@ -142,13 +166,13 @@ export function ProposalForm() {
           label="Deskripsi"
           htmlFor="deskripsi"
           error={form.formState.errors.deskripsi?.message}
-          hint={`Jelaskan masalah, lokasi, dan manfaatnya. Minimal ${TEXT_LIMITS.deskripsiMin} karakter.`}
+          hint={`Jelaskan program yang diusulkan, lokasinya, dan manfaatnya bagi warga. Minimal ${TEXT_LIMITS.deskripsiMin} karakter.`}
           required
         >
           <Textarea
             id="deskripsi"
             rows={5}
-            placeholder="Apa masalahnya, siapa yang terdampak, dan apa yang perlu dilakukan?"
+            placeholder="Program apa yang diusulkan, siapa yang terbantu, dan apa manfaatnya?"
             invalid={Boolean(form.formState.errors.deskripsi)}
             {...form.register('deskripsi')}
           />
@@ -245,25 +269,30 @@ export function ProposalForm() {
       </Card>
 
       {mutation.error && (
-        <ErrorState title="Gagal mengirim usulan" message={mutation.error.message} />
+        <ErrorState
+          title={proposal ? 'Gagal menyimpan perubahan' : 'Gagal mengirim usulan'}
+          message={mutation.error.message}
+        />
       )}
 
       <div className="flex flex-wrap gap-3">
         <Button type="submit" isLoading={mutation.isPending}>
-          Kirim Usulan
+          {proposal ? 'Simpan perubahan' : 'Kirim Usulan'}
         </Button>
-        <Button type="button" variant="ghost" onClick={() => navigate(-1)}>
+        <Button type="button" variant="ghost" onClick={onCancel ?? (() => navigate(-1))}>
           Batal
         </Button>
       </div>
 
-      <p className="text-xs text-stone-500">
-        Semua usulan tampil publik. Jangan mencantumkan data pribadi yang sensitif. Baca{' '}
-        <Link to="/apbd" className="underline">
-          data APBD
-        </Link>{' '}
-        sebelum mengusulkan.
-      </p>
+      {!proposal && (
+        <p className="text-xs text-stone-500">
+          Semua usulan tampil publik. Jangan mencantumkan data pribadi yang sensitif. Baca{' '}
+          <Link to="/apbd" className="underline">
+            data APBD
+          </Link>{' '}
+          sebelum mengusulkan.
+        </p>
+      )}
     </form>
   );
 }

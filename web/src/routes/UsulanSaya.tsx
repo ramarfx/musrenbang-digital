@@ -60,7 +60,7 @@ export default function UsulanSaya() {
       {proposalsQuery.isSuccess && milikku.length === 0 && (
         <EmptyState
           title="Kamu belum membuat usulan"
-          description="Tulis satu masalah di lingkunganmu dan tandai lokasinya di peta. Setelah admin menyetujuinya, usulanmu tampil publik dan bisa di-upvote warga lain."
+          description="Usulkan satu program pembangunan untuk lingkunganmu dan tandai lokasinya di peta. Setelah admin menyetujuinya, usulanmu tampil publik dan bisa di-upvote warga lain."
           action={
             <Link to="/usulan/baru" className={buttonClass('primary', 'md')}>
               Buat usulan pertama
