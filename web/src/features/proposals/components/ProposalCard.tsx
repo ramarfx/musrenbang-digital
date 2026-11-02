@@ -66,6 +66,26 @@ function keadaanUsulan(proposal: Proposal): Keadaan {
 }
 
 /**
+ * Tanda apakah usulan sudah tayang untuk umum, hanya di kartu milik sendiri (kartu usulan
+ * orang lain di daftar publik pasti sudah tayang). Mata terbuka = terlihat publik, mata dicoret
+ * = belum atau tidak. Teks polos berikon, tanpa kapsul berwarna.
+ */
+function TandaTayang({ moderasi }: { moderasi: Proposal['moderasi'] }) {
+  const tayang = moderasi === 'Disetujui';
+  return (
+    <p
+      className={cn(
+        'mb-2.5 flex items-center gap-1.5 text-[12.5px] font-semibold',
+        tayang ? 'text-warga' : moderasi === 'Ditolak' ? 'text-red-700' : 'text-mustard-tua',
+      )}
+    >
+      <Icon name={tayang ? 'mata' : 'mataCoret'} size={15} />
+      {tayang ? 'Tayang untuk umum' : moderasi === 'Ditolak' ? 'Tidak tayang' : 'Belum tayang'}
+    </p>
+  );
+}
+
+/**
  * Lima tahap kecil berikon, sama dengan linimasa di halaman detail: ikon di atas bulatan.
  * Tinta dicentang = dilalui, stabilo bercincin = sekarang (berdetak terus sampai tahap
  * Selesai), garis pudar = belum. Ditolak: bulatan pertama merah dengan silang.
@@ -209,6 +229,8 @@ export function ProposalCard({ proposal }: { proposal: Proposal }) {
         tampak && 'kartu-tampak',
       )}
     >
+      {milikku && <TandaTayang moderasi={proposal.moderasi} />}
+
       <div className="flex items-center gap-3">
         <CategoryTile kategori={proposal.kategori} />
         <div className="min-w-0">
@@ -224,7 +246,9 @@ export function ProposalCard({ proposal }: { proposal: Proposal }) {
         </div>
       </div>
 
-      <p className="mt-3 line-clamp-2 min-h-[2lh] text-sm text-ink/80 [overflow-wrap:anywhere]">{proposal.deskripsi}</p>
+      <p className="mt-3 line-clamp-2 min-h-[2lh] text-sm text-ink/80 [overflow-wrap:anywhere]">
+        {proposal.deskripsi}
+      </p>
 
       <div className="mt-3.5 flex h-6 min-w-0 items-center gap-2">
         <span

@@ -12,9 +12,8 @@ import { cn } from '@/lib/cn';
 type LocationPickerProps = {
   latitude: number | null;
   longitude: number | null;
-  onChange: (latitude: number, longitude: number) => void;
-  /** Nama singkat tempat yang dipilih dari hasil cari, untuk mengisi kolom lokasi. */
-  onNama?: (nama: string) => void;
+  /** `nama` terisi bila titik dipilih dari hasil cari (nama singkat tempatnya). */
+  onChange: (latitude: number, longitude: number, nama?: string) => void;
   /** Kategori usulan; ikon pin di peta mengikutinya dan berganti saat kategori diganti. */
   kategori?: string;
   className?: string;
@@ -55,7 +54,6 @@ export function LocationPicker({
   latitude,
   longitude,
   onChange,
-  onNama,
   kategori = '',
   className = 'h-80',
 }: LocationPickerProps) {
@@ -72,8 +70,7 @@ export function LocationPicker({
   useEffect(() => () => permintaan.current?.abort(), []);
 
   const pilih = (lat: number, lng: number, nama?: string) => {
-    onChange(lat, lng);
-    if (nama) onNama?.(nama);
+    onChange(lat, lng, nama);
     setTujuan({ lat, lng, id: Date.now() });
   };
 
