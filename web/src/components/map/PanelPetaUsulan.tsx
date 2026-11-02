@@ -4,7 +4,14 @@ import { Icon } from '@/components/ui/Icon';
 import { Modal } from '@/components/ui/Modal';
 import { cn } from '@/lib/cn';
 import { formatAngka } from '@/lib/format';
-import { WILAYAH, cariWilayah, titikDiWilayah, type KodeWilayah } from '@/lib/wilayah';
+import {
+  WILAYAH,
+  cariWilayah,
+  titikDiWilayah,
+  type KodeWilayah,
+  type PilihanWilayah,
+} from '@/lib/wilayah';
+import { FilterKategori } from './FilterKategori';
 import { FilterWilayah } from './FilterWilayah';
 import { ProposalMap } from './ProposalMap';
 
@@ -13,20 +20,38 @@ const tombolIkon =
 
 /**
  * Peta usulan dengan pilihan wilayah dan tombol perbesar. Memilih wilayah mengarsir batasnya,
- * menerbangkan peta ke sana, dan menyaring penanda usulan ke wilayah itu. Peta di pop-up baru
- * dibuat saat pop-up terbuka, supaya Leaflet mengukur ukurannya setelah ada ruang.
+ * menerbangkan peta ke sana, dan menyaring penanda usulan ke wilayah itu. Perbesar membuka
+ * pop-up yang hampir memenuhi layar; petanya baru dibuat saat pop-up terbuka, supaya Leaflet
+ * mengukur ukurannya setelah ada ruang.
  */
 export function PanelPetaUsulan({ proposals }: { proposals: Proposal[] }) {
-  const [wilayah, setWilayah] = useState<KodeWilayah | null>(null);
+  const [wilayah, setWilayah] = useState<PilihanWilayah>(null);
   const [besar, setBesar] = useState(false);
+  const [disembunyikan, setDisembunyikan] = useState<string[]>([]);
+  const [titikTampil, setTitikTampil] = useState(true);
 
-  const berlokasi = useMemo(
+  const semuaBerlokasi = useMemo(
     () =>
       proposals.filter(
         (proposal): proposal is Proposal & { latitude: number; longitude: number } =>
           proposal.latitude !== null && proposal.longitude !== null,
       ),
     [proposals],
+  );
+
+  const kategori = useMemo(() => {
+    const hitung = new Map<string, number>();
+    for (const proposal of semuaBerlokasi) {
+      hitung.set(proposal.kategori, (hitung.get(proposal.kategori) ?? 0) + 1);
+    }
+    return [...hitung]
+      .map(([nama, jumlah]) => ({ nama, jumlah }))
+      .sort((a, b) => b.jumlah - a.jumlah);
+  }, [semuaBerlokasi]);
+
+  const berlokasi = useMemo(
+    () => semuaBerlokasi.filter((proposal) => !disembunyikan.includes(proposal.kategori)),
+    [semuaBerlokasi, disembunyikan],
   );
 
   const jumlah = useMemo(() => {
@@ -45,22 +70,31 @@ export function PanelPetaUsulan({ proposals }: { proposals: Proposal[] }) {
   }, [berlokasi]);
 
   const tersaring = useMemo(() => {
-    const pilihan = wilayah === null ? undefined : cariWilayah(wilayah);
+    if (!titikTampil) return [];
+    const pilihan = wilayah === null || wilayah === 'tanpa' ? undefined : cariWilayah(wilayah);
     if (!pilihan) return berlokasi;
     return berlokasi.filter((proposal) =>
       titikDiWilayah(pilihan.geometri, proposal.latitude, proposal.longitude),
     );
-  }, [berlokasi, wilayah]);
+  }, [berlokasi, wilayah, titikTampil]);
 
-  const namaWilayah = wilayah === null ? null : (cariWilayah(wilayah)?.nama ?? null);
+  const namaWilayah =
+    wilayah === null || wilayah === 'tanpa' ? null : (cariWilayah(wilayah)?.nama ?? null);
 
   const kendali = (
-    <div className="flex flex-wrap items-center justify-between gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <FilterWilayah
         terpilih={wilayah}
         onPilih={setWilayah}
         jumlah={jumlah}
         total={berlokasi.length}
+      />
+      <FilterKategori
+        kategori={kategori}
+        disembunyikan={disembunyikan}
+        onUbah={setDisembunyikan}
+        titikTampil={titikTampil}
+        onTitik={setTitikTampil}
       />
     </div>
   );
@@ -92,34 +126,29 @@ export function PanelPetaUsulan({ proposals }: { proposals: Proposal[] }) {
         open={besar}
         onClose={() => setBesar(false)}
         labelledBy="peta-besar-judul"
-        className="w-[min(1100px,calc(100vw-24px))]"
+        className="h-[calc(100dvh-24px)] w-[calc(100vw-24px)] max-w-none overflow-hidden"
       >
         {besar && (
-          <div className="flex max-h-[calc(100dvh-24px)] flex-col p-4 sm:p-5">
-            <div className="mb-3 flex items-start justify-between gap-3">
-              <div>
-                <h2 id="peta-besar-judul" className="text-lg font-bold">
-                  Peta usulan {namaWilayah ?? 'DKI Jakarta'}
-                </h2>
-                <p className="text-[13px] text-muted">
-                  Pilih wilayah untuk melihat batas dan usulan di dalamnya.
-                </p>
+          <div className="flex h-full flex-col gap-3 p-3 sm:p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 id="peta-besar-judul" className="text-lg font-bold">
+                Peta usulan {namaWilayah ?? 'DKI Jakarta'}
+              </h2>
+              <div className="flex items-center gap-2">
+                {kendali}
+                <button
+                  type="button"
+                  aria-label="Tutup peta"
+                  onClick={() => setBesar(false)}
+                  className="grid size-9 flex-none place-items-center rounded-xl border border-border bg-surface text-ink transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.92] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
+                >
+                  <Icon name="tutup" size={17} />
+                </button>
               </div>
-              <button
-                type="button"
-                aria-label="Tutup peta"
-                onClick={() => setBesar(false)}
-                className="grid size-9 flex-none place-items-center rounded-xl border border-border bg-surface text-ink transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.92] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
-              >
-                <Icon name="tutup" size={17} />
-              </button>
             </div>
-            <div className="mb-3">{kendali}</div>
-            <ProposalMap
-              proposals={tersaring}
-              wilayah={wilayah}
-              className="h-[min(62dvh,640px)]"
-            />
+            <div className="min-h-0 flex-1">
+              <ProposalMap proposals={tersaring} wilayah={wilayah} className="h-full" />
+            </div>
           </div>
         )}
       </Modal>

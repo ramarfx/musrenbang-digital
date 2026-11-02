@@ -3,9 +3,11 @@ import { useEffect } from 'react';
 import { useMap } from 'react-leaflet';
 import {
   BATAS_JAKARTA_DARAT,
+  WILAYAH_PILIHAN,
   cariWilayah,
   hitungBatas,
-  type KodeWilayah,
+  type PilihanWilayah,
+  type Wilayah,
 } from '@/lib/wilayah';
 
 /** Batas percobaan menunggu peta punya ukuran, kira-kira satu detik pada 60 bingkai per detik. */
@@ -15,30 +17,29 @@ const BATAS_TUNGGU = 60;
 const TINTA = '#14222B';
 
 /**
- * Arsiran batas wilayah terpilih di atas peta, lalu peta terbang ke wilayah itu. Batasnya
- * digambar dua kali: garis tinta tebal di bawah, lalu garis warna wilayah di atasnya. Tanpa
- * garis bawah itu, warna muda seperti mustard tenggelam di peta yang juga kekuningan.
- * Garisnya tergambar dari ujung ke ujung dan arsirannya memudar masuk (kelas `wilayah-*` di
+ * Arsiran wilayah di atas peta, lalu peta terbang ke sana. Tiap wilayah punya warnanya sendiri,
+ * sama dengan titik warna di daftar pilihan. Batasnya digambar dua kali: garis tinta tipis di
+ * bawah, lalu garis warna wilayah di atasnya, supaya warna muda tidak tenggelam di peta.
+ * Arsiran baru muncul setelah peta selesai terbang. Garisnya tergambar dari ujung ke ujung dan arsirannya memudar masuk (kelas `wilayah-*` di
  * index.css); `pathLength` disetel 1 supaya panjang garis tidak perlu diukur sendiri.
- * Arsirannya tipis supaya penanda usulan di atasnya tetap terbaca, dan hanya satu wilayah
- * tampil pada satu waktu, jadi petanya tidak penuh garis. Tanpa wilayah terpilih tidak ada
- * arsiran dan peta kembali ke seluruh Jakarta daratan.
+ * Tanpa pilihan, enam wilayah diarsir sekaligus tetapi peta hanya menyesuaikan diri ke kota
+ * daratan, jadi tidak mundur jauh ke Kepulauan Seribu. Pilihan `'tanpa'` tidak mengarsir apa pun.
  */
-export function LapisanWilayah({ kode }: { kode: KodeWilayah | null }) {
+export function LapisanWilayah({ kode }: { kode: PilihanWilayah }) {
   const map = useMap();
 
   useEffect(() => {
-    const wilayah = kode === null ? undefined : cariWilayah(kode);
-    const batas = wilayah ? hitungBatas(wilayah.geometri) : BATAS_JAKARTA_DARAT;
+    const satu = kode === null || kode === 'tanpa' ? undefined : cariWilayah(kode);
+    const digambar: Wilayah[] = satu ? [satu] : kode === 'tanpa' ? [] : WILAYAH_PILIHAN;
+    const batas = satu ? hitungBatas(satu.geometri) : BATAS_JAKARTA_DARAT;
 
-    const fitur = wilayah && ({
-      type: 'Feature',
-      properties: {},
-      geometry: wilayah.geometri,
-    } as GeoJSON.Feature);
-
-    const gambar = (gaya: L.PathOptions) => {
-      if (!fitur) return undefined;
+    const lapisanGambar: L.GeoJSON[] = [];
+    const gambar = (wilayah: Wilayah, gaya: L.PathOptions) => {
+      const fitur = {
+        type: 'Feature',
+        properties: {},
+        geometry: wilayah.geometri,
+      } as GeoJSON.Feature;
       const lapisan = L.geoJSON(fitur, { interactive: false, style: gaya }).addTo(map);
       for (const path of lapisan.getLayers()) {
         const elemen = (path as L.Path).getElement();
@@ -46,32 +47,48 @@ export function LapisanWilayah({ kode }: { kode: KodeWilayah | null }) {
         elemen.setAttribute('pathLength', '1');
         elemen.classList.add('wilayah-arsir');
       }
-      return lapisan;
+      lapisanGambar.push(lapisan);
     };
 
-    const bawah = gambar({ color: TINTA, weight: 6, opacity: 0.5, fill: false });
-    const atas = wilayah
-      ? gambar({
+    // Arsiran baru digambar setelah peta selesai terbang, supaya animasinya tidak berjalan
+    // sambil peta masih bergerak.
+    let sudahGambar = false;
+    const arsir = () => {
+      if (sudahGambar) return;
+      sudahGambar = true;
+      for (const wilayah of digambar) {
+        gambar(wilayah, { color: TINTA, weight: 3, opacity: 0.35, fill: false });
+      }
+      for (const wilayah of digambar) {
+        gambar(wilayah, {
           color: wilayah.warna,
-          weight: 3,
+          weight: 1.5,
           fillColor: wilayah.warna,
-          fillOpacity: 0.18,
-        })
-      : undefined;
+          fillOpacity: 0.3,
+        });
+      }
+    };
 
-    // Peta di dalam pop-up baru punya ukuran sesudah dialognya terbuka. Menghitung zoom dari
-    // ukuran nol menghasilkan NaN dan membuat Leaflet berhenti, jadi tunggu sampai terukur.
+    // Peta di pop-up baru punya ukuran sesudah tampil. Menghitung zoom dari ukuran nol
+    // menghasilkan NaN dan membuat Leaflet berhenti, jadi tunggu sampai terukur.
     let bingkai = 0;
     let sisa = BATAS_TUNGGU;
+    let cadangan = 0;
     const terbang = () => {
       const ukuran = map.getSize();
       if (ukuran.x === 0 || ukuran.y === 0) {
-        if (sisa <= 0) return;
+        if (sisa <= 0) {
+          arsir();
+          return;
+        }
         sisa -= 1;
         bingkai = requestAnimationFrame(terbang);
         return;
       }
       const kurangiGerak = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      map.once('moveend', arsir);
+      // Jika peta sudah di tujuan, moveend bisa tidak terpicu; cadangan menjamin arsiran tampil.
+      cadangan = window.setTimeout(arsir, kurangiGerak ? 50 : 1300);
       map.flyToBounds(batas, {
         padding: [24, 24],
         animate: !kurangiGerak,
@@ -82,8 +99,9 @@ export function LapisanWilayah({ kode }: { kode: KodeWilayah | null }) {
 
     return () => {
       cancelAnimationFrame(bingkai);
-      if (bawah) map.removeLayer(bawah);
-      if (atas) map.removeLayer(atas);
+      clearTimeout(cadangan);
+      map.off('moveend', arsir);
+      for (const lapisan of lapisanGambar) map.removeLayer(lapisan);
     };
   }, [map, kode]);
 

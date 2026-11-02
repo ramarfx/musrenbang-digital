@@ -17,7 +17,7 @@ export function VotePanel({ proposal }: { proposal: Proposal }) {
   const sudahMemilih = hasVotedQuery.data ?? false;
 
   return (
-    <HeroCard>
+    <HeroCard className="h-full" isiClassName="flex h-full flex-col">
       <p className="text-[13px] text-white/75">Upvote warga</p>
       <p className="mt-1 text-[44px] leading-none font-semibold tracking-[-0.04em]">
         {formatAngka(proposal.jumlah_suara)}
@@ -28,7 +28,7 @@ export function VotePanel({ proposal }: { proposal: Proposal }) {
       </p>
       {mutation.error && <p className="mt-2 text-sm text-white">{mutation.error.message}</p>}
 
-      <div className="mt-5">
+      <div className="mt-auto pt-5">
         {user ? (
           <Button
             type="button"

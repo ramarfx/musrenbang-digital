@@ -16,7 +16,11 @@ export function Card({ children, className, as: Tag = 'section' }: CardProps) {
 }
 
 /** Kartu panel gelap untuk temuan utama, dengan lingkaran dekorasi di pojok. Tanpa gradasi. */
-export function HeroCard({ children, className }: Omit<CardProps, 'as'>) {
+export function HeroCard({
+  children,
+  className,
+  isiClassName,
+}: Omit<CardProps, 'as'> & { isiClassName?: string }) {
   return (
     <section
       className={cn(
@@ -25,7 +29,7 @@ export function HeroCard({ children, className }: Omit<CardProps, 'as'>) {
       )}
     >
       <DecorRings className="-right-16 -bottom-16 size-44 transition-transform duration-[400ms] ease-out group-hover:scale-110" />
-      <div className="relative">{children}</div>
+      <div className={cn('relative', isiClassName)}>{children}</div>
     </section>
   );
 }

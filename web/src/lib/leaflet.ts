@@ -27,7 +27,8 @@ export const ZOOM_MIN_PETA = 4;
  * Opsi bersama semua peta: roda mouse men-zoom peta dan ruang gerak dibatasi ke Indonesia.
  * `zoomSnap: 0` memperbolehkan tingkat zoom pecahan, supaya peta bisa pas mengisi batas
  * wilayah; tanpa itu Leaflet membulatkan ke bawah dan wilayahnya tampil kekecilan. Tombol
- * tambah dan kurang tetap melangkah satu tingkat lewat `zoomDelta`.
+ * tambah dan kurang tetap melangkah satu tingkat lewat `zoomDelta`. Roda mouse dibuat lebih
+ * peka (bawaan Leaflet 60 piksel per tingkat) supaya zoom tidak terasa lambat.
  */
 export const OPSI_PETA = {
   scrollWheelZoom: true,
@@ -35,6 +36,8 @@ export const OPSI_PETA = {
   maxZoom: 18,
   zoomSnap: 0,
   zoomDelta: 1,
+  wheelPxPerZoomLevel: 10,
+  wheelDebounceTime: 10,
   maxBounds: BATAS_INDONESIA,
   maxBoundsViscosity: 1,
 } as const;
