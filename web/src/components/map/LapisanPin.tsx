@@ -1,10 +1,11 @@
-import type { Proposal } from '@musrenbang/shared';
+import { PROPOSAL_STATUSES, type Proposal, type ProposalStatus } from '@musrenbang/shared';
 import L from 'leaflet';
 import { useMemo, useState } from 'react';
 import { Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import { Link } from 'react-router-dom';
 import { Icon } from '@/components/ui/Icon';
 import { getCategoryInfo } from '@/features/categories/info';
+import { IKON_TAHAP } from '@/features/proposals/components/StatusTimeline';
 import { UpvoteButton } from '@/features/proposals/components/UpvoteButton';
 import { buatIkonGugus, buatIkonKota, buatIkonPin, hitungTingkat } from '@/lib/penanda';
 import {
@@ -210,6 +211,7 @@ function PinUsulan({
   tunda: number;
   suaraTerbanyak: number;
 }) {
+  const status = (proposal.status as ProposalStatus) ?? 'Diajukan';
   const tingkat = hitungTingkat(proposal.jumlah_suara, suaraTerbanyak);
   const ikon = useMemo(
     () => buatIkonPin(proposal.kategori, tingkat, tunda),
@@ -239,8 +241,28 @@ function PinUsulan({
           </svg>
           {proposal.kategori}
         </div>
-        <p className="line-clamp-2 !mt-2 !mb-4 text-[15px] leading-snug font-bold [overflow-wrap:anywhere] text-ink">
+        <p className="line-clamp-2 !mt-2 !mb-3 text-[15px] leading-snug font-bold [overflow-wrap:anywhere] text-ink">
           {proposal.judul}
+        </p>
+        <p className="!mt-0 !mb-4 flex items-center gap-1.5 text-[13px] leading-tight font-semibold text-warga">
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            className="flex-none"
+          >
+            <path d={IKON_TAHAP[status]} />
+          </svg>
+          {status}
+          <span className="font-medium text-muted">
+            · tahap {PROPOSAL_STATUSES.indexOf(status) + 1} dari {PROPOSAL_STATUSES.length}
+          </span>
         </p>
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">

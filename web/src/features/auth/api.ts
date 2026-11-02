@@ -76,11 +76,38 @@ export async function updateProfileName(userId: string, nama: string): Promise<P
   return parseWith(profileSchema, data, 'profil');
 }
 
+const KUNCI_BARU_MASUK = 'musrenbang:baru-masuk';
+
+/**
+ * Menandai bahwa pengguna baru saja memulai proses masuk, supaya notifikasi "Berhasil masuk"
+ * tampil sekali setelah sesinya terbentuk. Perlu penanda karena sesi Google baru ada setelah
+ * halaman dimuat ulang, dan sesi yang dipulihkan biasa (buka tab lagi) tidak boleh memunculkannya.
+ */
+export function tandaiBaruMasuk() {
+  try {
+    sessionStorage.setItem(KUNCI_BARU_MASUK, '1');
+  } catch {
+    // Penyimpanan diblokir: notifikasi saja yang hilang, masuknya tetap jalan.
+  }
+}
+
+/** Mengambil lalu menghapus penanda baru masuk; benar hanya sekali per proses masuk. */
+export function ambilBaruMasuk(): boolean {
+  try {
+    const ada = sessionStorage.getItem(KUNCI_BARU_MASUK) === '1';
+    sessionStorage.removeItem(KUNCI_BARU_MASUK);
+    return ada;
+  } catch {
+    return false;
+  }
+}
+
 export async function signIn(input: LoginInput) {
   const parsed = parseWith(loginSchema, input, 'login');
   const { data, error } = await supabase.auth.signInWithPassword(parsed);
   if (error) throw friendlyAuthError(error, 'Gagal masuk.');
   if (!data.user) throw new AppError('Sesi login tidak terbentuk. Coba lagi.');
+  tandaiBaruMasuk();
   const profile = await ensureProfile(data.user);
   return { session: data.session, profile };
 }
@@ -100,6 +127,7 @@ export async function signUp(input: RegisterInput) {
     return { session: null, profile: null as Profile | null };
   }
 
+  tandaiBaruMasuk();
   const profile = await ensureProfile(data.user);
   return { session: data.session, profile };
 }
@@ -110,11 +138,19 @@ export async function signUp(input: RegisterInput) {
  * Authorized JavaScript origins dan Redirect URLs milik proyek Supabase dan Google.
  */
 export async function signInWithGoogle() {
+  tandaiBaruMasuk();
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: `${window.location.origin}/` },
   });
-  if (error) throw friendlyAuthError(error, 'Gagal membuka login Google.');
+  if (error) {
+    try {
+      sessionStorage.removeItem(KUNCI_BARU_MASUK);
+    } catch {
+      // Tidak ada penanda yang perlu dihapus.
+    }
+    throw friendlyAuthError(error, 'Gagal membuka login Google.');
+  }
 }
 
 export async function signOut() {

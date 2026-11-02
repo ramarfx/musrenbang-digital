@@ -13,7 +13,7 @@ import { buildNav, NavList, RegionBox, UserRow } from './nav';
 export function Sidebar() {
   const { isAdmin, user } = useAuth();
   return (
-    <aside className="sticky top-0 z-30 hidden h-dvh w-[272px] flex-none flex-col bg-zamrud px-4 pt-5 pb-4 text-white lg:flex [&_*:focus-visible]:outline-white">
+    <aside className="masuk-sidebar sticky top-0 z-30 hidden h-dvh w-[272px] flex-none flex-col bg-zamrud px-4 pt-5 pb-4 text-white lg:flex [&_*:focus-visible]:outline-white">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
         <DecorRings className="-right-[70px] bottom-[120px] size-[200px] shadow-[0_0_0_38px_rgb(255_255_255/0.05),0_0_0_78px_rgb(255_255_255/0.03)]" />
       </div>
