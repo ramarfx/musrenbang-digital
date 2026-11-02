@@ -6,7 +6,10 @@ import { Spinner } from '@/components/ui/Spinner';
 import { cariTempat, type HasilCari } from '@/lib/geocode';
 import { ATTRIBUTION_PREFIX, OPSI_PETA } from '@/lib/leaflet';
 import { buatIkonPin } from '@/lib/penanda';
+import { BATAS_GERAK_JAKARTA, BATAS_JAKARTA_DARAT, dalamJakarta } from '@/lib/wilayah';
+import { BatasJakartaPeta } from './BatasJakartaPeta';
 import { LapisanPeta } from './LapisanPeta';
+import { TombolKembaliPeta } from './TombolKembaliPeta';
 import { cn } from '@/lib/cn';
 
 type LocationPickerProps = {
@@ -25,7 +28,11 @@ const ZOOM_TEMPAT = 16;
 const tombolIkon =
   'inline-flex size-11 flex-none items-center justify-center rounded-xl border border-edge bg-surface text-ink transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.92] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga';
 
-function ClickHandler({ onChange }: { onChange: (latitude: number, longitude: number) => void }) {
+function ClickHandler({
+  onChange,
+}: {
+  onChange: (latitude: number, longitude: number) => unknown;
+}) {
   useMapEvents({
     click(event) {
       onChange(event.latlng.lat, event.latlng.lng);
@@ -69,9 +76,19 @@ export function LocationPicker({
 
   useEffect(() => () => permintaan.current?.abort(), []);
 
-  const pilih = (lat: number, lng: number, nama?: string) => {
+  /** Satu-satunya jalan titik masuk: titik di luar Jakarta ditolak dengan penjelasan. */
+  const terima = (lat: number, lng: number, nama?: string): boolean => {
+    if (!dalamJakarta(lat, lng)) {
+      setPesan('Titik harus ada di wilayah DKI Jakarta, di dalam garis hijau putus-putus.');
+      return false;
+    }
+    setPesan(null);
     onChange(lat, lng, nama);
-    setTujuan({ lat, lng, id: Date.now() });
+    return true;
+  };
+
+  const pilih = (lat: number, lng: number, nama?: string) => {
+    if (terima(lat, lng, nama)) setTujuan({ lat, lng, id: Date.now() });
   };
 
   const cari = async () => {
@@ -206,13 +223,23 @@ export function LocationPicker({
         center={punyaTitik ? [latitude, longitude] : JAKARTA_CENTER}
         zoom={punyaTitik ? ZOOM_TEMPAT : 11}
         {...OPSI_PETA}
+        maxBounds={BATAS_GERAK_JAKARTA}
+        minZoom={9}
         attributionControl={false}
         className={`peta-hangat ${className} isolate w-full rounded-3xl border border-border`}
       >
         <AttributionControl prefix={ATTRIBUTION_PREFIX} />
         <LapisanPeta />
-        <ClickHandler onChange={onChange} />
+        <BatasJakartaPeta />
+        <ClickHandler onChange={terima} />
         <Terbang tujuan={tujuan} />
+        <TombolKembaliPeta
+          tujuan={
+            punyaTitik
+              ? { pusat: [latitude, longitude], zoom: ZOOM_TEMPAT }
+              : { batas: BATAS_JAKARTA_DARAT }
+          }
+        />
         {punyaTitik && <Marker position={[latitude, longitude]} icon={ikonPin} />}
       </MapContainer>
     </div>

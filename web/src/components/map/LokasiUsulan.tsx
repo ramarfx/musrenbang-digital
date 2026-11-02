@@ -4,9 +4,10 @@ import { AttributionControl, MapContainer, Marker, useMap } from 'react-leaflet'
 import { Icon } from '@/components/ui/Icon';
 import { ATTRIBUTION_PREFIX, OPSI_PETA } from '@/lib/leaflet';
 import { buatIkonPin } from '@/lib/penanda';
-import { wilayahDariTitik, type Wilayah } from '@/lib/wilayah';
+import { hitungBatas, wilayahDariTitik, type Wilayah } from '@/lib/wilayah';
 import { LapisanPeta } from './LapisanPeta';
 import { LapisanWilayah } from './LapisanWilayah';
+import { TombolKembaliPeta } from './TombolKembaliPeta';
 
 type LokasiUsulanProps = {
   proposal: Pick<Proposal, 'judul' | 'lokasi' | 'latitude' | 'longitude' | 'kategori'>;
@@ -52,6 +53,13 @@ export function LokasiUsulan({ proposal }: LokasiUsulanProps) {
           <LapisanPeta />
           {wilayah && <LapisanWilayah kode={wilayah.kode} />}
           <Marker position={[latitude, longitude]} icon={ikon} />
+          <TombolKembaliPeta
+            tujuan={
+              wilayah
+                ? { batas: hitungBatas(wilayah.geometri) }
+                : { pusat: [latitude, longitude], zoom: 15 }
+            }
+          />
           <TombolDekatkan titik={[latitude, longitude]} />
         </MapContainer>
       </div>

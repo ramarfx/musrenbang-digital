@@ -139,3 +139,27 @@ export const BATAS_JAKARTA_DARAT: [[number, number], [number, number]] = (() => 
 export function wilayahDariTitik(lat: number, lng: number): Wilayah | undefined {
   return WILAYAH_PILIHAN.find((wilayah) => titikDiWilayah(wilayah.geometri, lat, lng));
 }
+
+/** Benar bila titik ada di salah satu kota administrasi atau pulau Kepulauan Seribu. */
+export function dalamJakarta(lat: number, lng: number): boolean {
+  return wilayahDariTitik(lat, lng) !== undefined;
+}
+
+/**
+ * Kotak gerak peta pemilih lokasi: seluruh Jakarta termasuk Kepulauan Seribu, ditambah ruang
+ * sedikit di tepinya supaya garis batas tidak menempel ke pinggir peta.
+ */
+export const BATAS_GERAK_JAKARTA: [[number, number], [number, number]] = (() => {
+  const batas = WILAYAH_PILIHAN.map((wilayah) => hitungBatas(wilayah.geometri));
+  const ruang = 0.12;
+  return [
+    [
+      Math.min(...batas.map(([[selatan]]) => selatan!)) - ruang,
+      Math.min(...batas.map(([[, barat]]) => barat!)) - ruang,
+    ],
+    [
+      Math.max(...batas.map(([, [utara]]) => utara!)) + ruang,
+      Math.max(...batas.map(([, [, timur]]) => timur!)) + ruang,
+    ],
+  ];
+})();

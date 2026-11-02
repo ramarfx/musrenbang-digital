@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   WILAYAH,
   cariWilayah,
+  dalamJakarta,
   hitungBatas,
   titikDiWilayah,
   type GeometriWilayah,
@@ -122,5 +123,19 @@ describe('titikDiWilayah', () => {
     expect(titikDiWilayah(pusat!.geometri, -6.1754, 106.8272)).toBe(true);
     expect(titikDiWilayah(dki!.geometri, -6.1754, 106.8272)).toBe(true);
     expect(titikDiWilayah(timur!.geometri, -6.1754, 106.8272)).toBe(false);
+  });
+});
+
+describe('dalamJakarta', () => {
+  test('titik di dalam kota administrasi dihitung di Jakarta', () => {
+    expect(dalamJakarta(-6.1754, 106.8272)).toBe(true); // Monas
+    expect(dalamJakarta(-6.2615, 106.8106)).toBe(true); // Jakarta Selatan
+  });
+
+  test('titik di luar Jakarta ditolak', () => {
+    expect(dalamJakarta(-6.595, 106.8166)).toBe(false); // Bogor
+    expect(dalamJakarta(-6.9175, 107.6191)).toBe(false); // Bandung
+    expect(dalamJakarta(-6.3, 107.3)).toBe(false); // Karawang
+    expect(dalamJakarta(-5.0, 106.8)).toBe(false); // laut utara Kepulauan Seribu
   });
 });
