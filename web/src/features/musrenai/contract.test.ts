@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { parseChatResponse } from './contract';
+import { chatErrorMessage, parseChatResponse } from './contract';
 
 const valid = {
   answer: 'Contoh jawaban',
@@ -25,4 +25,12 @@ describe('kontrak respons MusrenAI', () => {
     expect(() => parseChatResponse({ ...valid, answer: '' })).toThrow();
     expect(() => parseChatResponse({ error: 'unavailable' })).toThrow();
   });
+});
+
+test('pesan kegagalan HTTP tidak menampilkan detail backend', () => {
+  for (const status of [400, 401, 403, 429, 503, 504, 500]) {
+    expect(chatErrorMessage(status)).toBeTruthy();
+  }
+  expect(chatErrorMessage(403)).toContain('ditolak');
+  expect(chatErrorMessage(504)).toContain('lama');
 });
