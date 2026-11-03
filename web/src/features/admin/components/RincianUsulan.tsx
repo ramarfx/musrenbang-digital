@@ -1,3 +1,4 @@
+import { AnalisisAi } from './AnalisisAi';
 import type { Proposal } from '@musrenbang/shared';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
@@ -81,6 +82,8 @@ export function RincianUsulan({
               <b>Alasan penolakan:</b> {proposal.catatan_moderasi}
             </p>
           )}
+
+          <AnalisisAi proposalId={proposal.id} />
 
           <div className="mt-auto flex flex-wrap gap-2.5 pt-5">
             {proposal.moderasi !== 'Disetujui' && (

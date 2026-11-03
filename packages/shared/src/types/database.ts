@@ -123,6 +123,16 @@ export type Database = {
       v_admin_stats: ViewDefinition<AdminStats>;
     };
     Functions: {
+      get_proposal_ai_review: FunctionDefinition<
+        { p_proposal_id: number },
+        {
+          state: string;
+          flags: Json;
+          reason: string | null;
+          model: string | null;
+          updated_at: string | null;
+        }[]
+      >;
       moderate_proposal: FunctionDefinition<
         { p_proposal_id: number; p_moderasi: string; p_catatan?: string | null },
         undefined
