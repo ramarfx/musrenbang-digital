@@ -71,6 +71,25 @@ Storage. Sumber:
    Bila ada langkah yang gagal atau cakupan tidak dapat dibuktikan, gate backup
    tetap gagal dan migration production tidak dijalankan.
 
+## Latihan sintetis lokal
+
+Jalankan `pwsh scripts/test-synthetic-auth-restore.ps1` hanya pada stack lokal
+`supabase_db_foundation-local`. Runner membuat dua database fixture bernama
+unik, memasang sepuluh migration awal pada sumber sintetis, membentuk satu akun,
+profil dan usulan sintetis, lalu mengekspor dan memulihkan schema/data terpilih.
+Pengujian memeriksa jumlah akun, profil dan usulan, kemudian membersihkan kedua
+database fixture. Latihan ini lulus pada PostgreSQL lokal 17.
+
+Latihan menggunakan role superuser lokal untuk restore dan menonaktifkan trigger
+pada target fixture; hal ini tidak mengubah production dan tidak boleh ditiru
+secara sembarang pada schema managed. Restore tanpa ownership dan grants ini
+belum memverifikasi RLS/grants, login Auth, Storage, konfigurasi, secret, backup
+production aktual maupun kemampuan restore project Free. Salinan schema Auth
+lokal yang digunakan hanya untuk fixture PostgreSQL, bukan instruksi menimpa
+schema managed Supabase. Kegagalan latihan awal restore semua schema platform
+menunjukkan adanya objek Realtime yang memerlukan izin khusus; gunakan prosedur
+Supabase yang sesuai untuk target sesungguhnya.
+
 ## Jika terjadi insiden setelah deployment
 
 Hentikan perubahan, pertahankan bukti dan batasi akses hanya melalui prosedur
