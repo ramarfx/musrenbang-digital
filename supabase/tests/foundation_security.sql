@@ -586,6 +586,31 @@ SELECT pg_temp.check_true(
   AND (date_trunc('day', '2026-11-01 12:00:00+00'::timestamptz AT TIME ZONE 'America/Los_Angeles') AT TIME ZONE 'America/Los_Angeles') = '2026-11-01 07:00:00+00'::timestamptz
   AND (date_trunc('day', '2026-11-02 12:00:00+00'::timestamptz AT TIME ZONE 'America/Los_Angeles') AT TIME ZONE 'America/Los_Angeles') = '2026-11-02 08:00:00+00'::timestamptz,
   'Batas hari Pacific mengikuti perubahan DST musim semi dan gugur');
+-- Copy the actual function definition into pg_temp and replace only the clock
+-- expression; this exercises its production logic at a deterministic DST instant.
+DO $$
+DECLARE source text; controlled text;
+BEGIN
+  source := pg_catalog.pg_get_functiondef('public.reserve_musrenai_provider_attempt(text)'::regprocedure);
+  IF position('public.reserve_musrenai_provider_attempt(p_feature text)' IN source) = 0
+     OR position('pg_catalog.clock_timestamp()' IN source) = 0 THEN
+    RAISE EXCEPTION 'Definisi limiter berubah, uji waktu terkendali harus diperbarui';
+  END IF;
+  controlled := replace(source, 'public.reserve_musrenai_provider_attempt(p_feature text)',
+    'pg_temp.reserve_provider_at(p_feature text, p_test_now timestamptz)');
+  controlled := replace(controlled, 'pg_catalog.clock_timestamp()', 'p_test_now');
+  EXECUTE controlled;
+END $$;
+DELETE FROM private.musrenai_provider_attempts;
+INSERT INTO private.musrenai_provider_attempts(feature,attempted_at)
+SELECT 'warga', '2026-11-01 07:10:00+00'::timestamptz FROM generate_series(1,300);
+SELECT pg_temp.check_true(NOT pg_temp.reserve_provider_at('admin','2026-11-02 07:30:00+00'::timestamptz),
+  'Hari Pacific 25 jam membatasi 300 percobaan meskipun di luar rolling 24 jam');
+SELECT pg_temp.check_true((SELECT count(*)=300 FROM private.musrenai_provider_attempts),
+  'Riwayat hari Pacific yang diperlukan tidak dibersihkan terlalu dini');
+SELECT pg_temp.check_true(pg_temp.reserve_provider_at('admin','2026-11-02 08:01:00+00'::timestamptz),
+  'Reservasi kembali tersedia setelah hari Pacific dan rolling 24 jam berganti');
+DELETE FROM private.musrenai_provider_attempts;
 -- Admin-only aspiration statistics use database counts and validated filters.
 SET LOCAL ROLE anon;
 SELECT pg_temp.expect_error('SELECT public.get_aspiration_statistics()', '42501', 'Anon tidak membaca statistik aspirasi');
