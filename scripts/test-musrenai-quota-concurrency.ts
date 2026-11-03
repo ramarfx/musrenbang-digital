@@ -1,11 +1,16 @@
 import { SQL } from 'bun';
-const database = process.env.MUSRENAI_QUOTA_TEST_DATABASE ?? '';
-if (!/^musrenai_quota_test_[a-f0-9]{16}$/.test(database))
+const target = process.env.MUSRENAI_QUOTA_TEST_DATABASE_URL ?? '';
+const url = new URL(target);
+if (
+  !['postgres:', 'postgresql:'].includes(url.protocol) ||
+  !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) ||
+  url.port !== '54322' ||
+  !/^\/musrenai_quota_test_[a-f0-9]{16}$/.test(url.pathname) ||
+  url.search ||
+  url.hash
+)
   throw new Error('Database fixture lokal tidak valid');
-const connections = Array.from(
-  { length: 2 },
-  () => new SQL(`postgresql://postgres:postgres@127.0.0.1:54322/${database}`),
-);
+const connections = Array.from({ length: 2 }, () => new SQL(target));
 try {
   const batches = await Promise.all(
     connections.map(async (sql, index) => {

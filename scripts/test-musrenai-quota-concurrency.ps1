@@ -17,11 +17,16 @@ try {
       docker exec -i $container psql -X -v ON_ERROR_STOP=1 -U postgres -d $name | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'Migration fixture gagal' }
   }
-  $env:MUSRENAI_QUOTA_TEST_DATABASE = $name
+  $status = bunx --bun supabase --workdir (Join-Path $root '.tmp/foundation-local') status --output json 2>$null | ConvertFrom-Json
+  if ($LASTEXITCODE -ne 0 -or -not $status.DB_URL) { throw 'Status database lokal tidak tersedia' }
+  $target = [UriBuilder]::new($status.DB_URL)
+  if ($target.Host -notin @('localhost', '127.0.0.1', '::1') -or $target.Port -ne 54322) { throw 'Target bukan database fixture lokal' }
+  $target.Path = "/$name"
+  $env:MUSRENAI_QUOTA_TEST_DATABASE_URL = $target.Uri.AbsoluteUri
   bun run (Join-Path $root 'scripts/test-musrenai-quota-concurrency.ts')
   if ($LASTEXITCODE -ne 0) { throw 'Tes concurrency gagal' }
 } finally {
-  Remove-Item Env:MUSRENAI_QUOTA_TEST_DATABASE -ErrorAction SilentlyContinue
+  Remove-Item Env:MUSRENAI_QUOTA_TEST_DATABASE_URL -ErrorAction SilentlyContinue
   if ($created -and $name -match '^musrenai_quota_test_[a-f0-9]{16}$') {
     docker exec $container dropdb -U postgres $name
     if ($LASTEXITCODE -ne 0) { Write-Error "Cleanup database fixture $name gagal" }
