@@ -3,12 +3,18 @@ export type RuntimeConfig = {
   databaseUrl?: string;
   intervalMs: number;
   retentionDays: number | null;
+  basicLog: boolean;
 };
 
 // This project is explicitly out of scope for execution until a separate activation review.
 const blockedProject = 'dogyibbzwfslspflsidm';
 export function parseConfig(env: Record<string, string | undefined>): RuntimeConfig {
-  const disabled: RuntimeConfig = { enabled: false, intervalMs: 60000, retentionDays: null };
+  const disabled: RuntimeConfig = {
+    enabled: false,
+    intervalMs: 60000,
+    retentionDays: null,
+    basicLog: false,
+  };
   if (env.MUSRENAI_WORKER_ENABLED !== 'true') return disabled;
   if (env.MUSRENAI_WORKER_MODE !== 'mock') throw new Error('worker configuration invalid');
   const ref = env.MUSRENAI_WORKER_PROJECT_REF ?? '';
@@ -38,7 +44,15 @@ export function parseConfig(env: Record<string, string | undefined>): RuntimeCon
     if (!Number.isInteger(retentionDays) || retentionDays < 30 || retentionDays > 3650)
       throw new Error('worker configuration invalid');
   }
-  return { enabled: true, databaseUrl: url.toString(), intervalMs: seconds * 1000, retentionDays };
+  const logLevel = env.MUSRENAI_WORKER_LOG_LEVEL ?? 'off';
+  if (!['off', 'basic'].includes(logLevel)) throw new Error('worker configuration invalid');
+  return {
+    enabled: true,
+    databaseUrl: url.toString(),
+    intervalMs: seconds * 1000,
+    retentionDays,
+    basicLog: logLevel === 'basic',
+  };
 }
 
 export interface WorkerActions {

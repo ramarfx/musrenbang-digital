@@ -1,7 +1,12 @@
 import { describe, expect, test } from 'bun:test';
 import { runScheduler } from './worker';
 import type { RuntimeConfig, WorkerActions } from './config';
-const config: RuntimeConfig = { enabled: true, intervalMs: 30000, retentionDays: null };
+const config: RuntimeConfig = {
+  enabled: true,
+  intervalMs: 30000,
+  retentionDays: null,
+  basicLog: false,
+};
 describe('scheduler', () => {
   test('tidak berjalan ketika nonaktif', async () => {
     let calls = 0;

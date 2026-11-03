@@ -70,6 +70,7 @@ export async function runScheduler(
 ): Promise<void> {
   while (!signal.aborted && config.enabled) {
     await tick(config, actions);
+    if (config.basicLog) console.log('Siklus worker selesai.');
     if (signal.aborted) break;
     await new Promise<void>((resolve) => {
       const done = () => {
