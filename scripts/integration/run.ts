@@ -72,9 +72,9 @@ async function run() {
   const migrations =
     await db`SELECT version FROM supabase_migrations.schema_migrations ORDER BY version`;
   check(
-    'Tiga belas migration tercatat persisten pada database lokal',
+    'Empat belas migration tercatat persisten pada database lokal',
     migrations.map((row: { version: string }) => row.version).join(',') ===
-      '20261026090000,20261026090100,20261026090200,20261026090300,20261026195414,20261027004023,20261027065525,20261028135103,20261102122158,20261102141207,20261103031212,20261103100955,20261103102540',
+      '20261026090000,20261026090100,20261026090200,20261026090300,20261026195414,20261027004023,20261027065525,20261028135103,20261102122158,20261102141207,20261103031212,20261103100955,20261103102540,20261103104403',
   );
   await beginFixtureRun();
   const allocationBaseline = await db<{ total: number }[]>`
@@ -195,6 +195,74 @@ async function run() {
     'Admin membaca status pemeriksaan AI pending melalui JWT',
     aiReview.status === 200 && aiReview.data[0]?.state === 'pending',
   );
+  const summaryFilter = {
+    p_from: new Date(Date.now() - 86400000).toISOString(),
+    p_to: new Date(Date.now() + 86400000).toISOString(),
+  };
+  for (const [label, actor] of [
+    ['Anon', null],
+    ['Warga A', a],
+    ['Warga B', b],
+  ] as const) {
+    await denied(
+      `${label} tidak dapat membaca statistik aspirasi`,
+      '/rest/v1/rpc/get_aspiration_statistics',
+      actor,
+      'POST',
+      summaryFilter,
+    );
+    await denied(
+      `${label} tidak dapat meminta snapshot aspirasi`,
+      '/rest/v1/rpc/request_aspiration_summary',
+      actor,
+      'POST',
+      summaryFilter,
+    );
+  }
+  const stats = await request<{ total: number; moderation_filter: string }>(
+    '/rest/v1/rpc/get_aspiration_statistics',
+    admin,
+    'POST',
+    summaryFilter,
+  );
+  check(
+    'Statistik aspirasi admin memakai filter Menunggu',
+    stats.status === 200 &&
+      stats.data.moderation_filter === 'Menunggu' &&
+      Number(stats.data.total) >= 3,
+  );
+  const snapshot = await request<{ summary_id: number; state: string }[]>(
+    '/rest/v1/rpc/request_aspiration_summary',
+    admin,
+    'POST',
+    summaryFilter,
+  );
+  check(
+    'Admin meminta snapshot aspirasi melalui JWT',
+    snapshot.status === 200 && snapshot.data[0]?.state === 'pending',
+  );
+  const summaryId = Number(snapshot.data[0]?.summary_id);
+  if (!Number.isSafeInteger(summaryId) || summaryId < 1)
+    throw new Error('Fixture snapshot tidak valid');
+  try {
+    const readSummary = await request<{ state: string; stale: boolean }[]>(
+      '/rest/v1/rpc/get_aspiration_summary',
+      admin,
+      'POST',
+      { p_summary_id: summaryId },
+    );
+    check(
+      'Admin membaca snapshot tanpa stale',
+      readSummary.status === 200 &&
+        readSummary.data[0]?.state === 'pending' &&
+        readSummary.data[0]?.stale === false,
+    );
+    await denied('Warga tidak membaca snapshot', '/rest/v1/rpc/get_aspiration_summary', a, 'POST', {
+      p_summary_id: summaryId,
+    });
+  } finally {
+    await db`DELETE FROM private.aspiration_summaries WHERE id=${summaryId}`;
+  }
   const query = `id=eq.${p}`;
   for (const table of ['proposals', 'v_proposals']) {
     check(
