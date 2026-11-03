@@ -11,7 +11,7 @@ Project target adalah `dogyibbzwfslspflsidm`. Backup manual yang ada dalam
 folder lokal khusus di luar repository berisi dump schema dan data
 `public,private`. Kedua file dapat dibaca, tetapi belum memuat data Auth
 secara lengkap, objek Storage, konfigurasi managed, dan belum diuji restore.
-Pada pemeriksaan read-only terdapat akun Auth dan profil yang saling
+Pada pemeriksaan read-only 3 November 2026 terdapat 7 akun Auth, 7 profil, serta 0 bucket dan 0 objek Storage. Angka dapat berubah dan harus diperiksa lagi sebelum backup. Terdapat akun Auth dan profil yang saling
 berelasi, sehingga dump tersebut tidak cukup sebagai bukti recovery lengkap.
 
 Supabase menjelaskan bahwa proyek Free tidak memiliki backup harian otomatis.
