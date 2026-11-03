@@ -4,6 +4,7 @@ import { runOnce, type Job, type Result } from '../musrenai-admin/worker';
 import { createLocalSummaryQueue } from '../musrenai-summary/local-worker';
 import { processOne, type Narrative, type SummaryJob } from '../musrenai-summary/core';
 import { parseConfig, tick, type RuntimeConfig, type WorkerActions } from './config';
+import { mockAdminContentProvider } from './admin-provider';
 
 export function createActions(sql: SQL): WorkerActions {
   async function scoped<T>(operation: (connection: SQL) => Promise<T>): Promise<T> {
@@ -31,11 +32,12 @@ export function createActions(sql: SQL): WorkerActions {
       });
     },
     async proposal() {
-      await runOnce(proposalQueue, async () => ({
-        flags: ['needs_review'],
-        reason: 'Hasil mock memerlukan tinjauan admin.',
-        model: 'mock',
-      }));
+      await runOnce(proposalQueue, (job) =>
+        mockAdminContentProvider(
+          { title: job.judul, description: job.deskripsi, category: job.kategori },
+          new AbortController().signal,
+        ),
+      );
     },
     async summary() {
       await processOne(summaryQueue);
