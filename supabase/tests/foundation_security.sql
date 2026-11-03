@@ -213,7 +213,7 @@ SELECT pg_temp.check_true(private.proposal_vote_count(91000001)=0, 'Helper vote 
 SELECT pg_temp.check_true(NOT (SELECT prosecdef FROM pg_proc WHERE oid='public.is_admin()'::regprocedure), 'RPC public.is_admin berjalan sebagai invoker');
 SELECT pg_temp.check_true((SELECT prosecdef FROM pg_proc WHERE oid='private.is_admin()'::regprocedure), 'Pemeriksaan peran terbatas pada helper private');
 SELECT pg_temp.check_true(NOT has_schema_privilege('anon','private','CREATE') AND NOT has_schema_privilege('authenticated','private','CREATE'), 'Role aplikasi tidak dapat membuat objek dalam schema private');
-SELECT pg_temp.check_true((SELECT count(*)=14 AND bool_and(prosecdef AND proconfig @> ARRAY['search_path=""'] AND pg_get_userbyid(proowner) NOT IN ('anon','authenticated')) FROM pg_proc WHERE pronamespace='private'::regnamespace), 'Seluruh helper private memiliki owner tepercaya dan search_path kosong');
+SELECT pg_temp.check_true((SELECT count(*)=20 AND bool_and((prosecdef OR oid='private.proposal_ai_hash(public.proposals)'::regprocedure) AND proconfig @> ARRAY['search_path=""'] AND pg_get_userbyid(proowner) NOT IN ('anon','authenticated')) FROM pg_proc WHERE pronamespace='private'::regnamespace), 'Seluruh helper private memiliki owner tepercaya dan search_path kosong');
 SELECT pg_temp.check_true(NOT EXISTS (SELECT 1 FROM pg_proc p CROSS JOIN LATERAL aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) a WHERE p.pronamespace='private'::regnamespace AND a.grantee=0 AND a.privilege_type='EXECUTE'), 'Tidak ada EXECUTE helper private melalui grant PUBLIC');
 SELECT pg_temp.check_true(has_function_privilege('anon','public.is_admin()','EXECUTE'), 'Anon tetap dapat memanggil pemeriksaan peran yang aman');
 SELECT pg_temp.check_true((SELECT bool_and(prosecdef AND proconfig @> ARRAY['search_path=""']) FROM pg_proc WHERE oid IN ('private.change_proposal_status_with_note(bigint,text,text)'::regprocedure, 'public.moderate_proposal(bigint,text,text)'::regprocedure, 'public.save_allocations(jsonb)'::regprocedure)), 'Worker berhak istimewa memakai search_path kosong');
@@ -490,6 +490,45 @@ SELECT pg_temp.check_true(NOT EXISTS (
   CROSS JOIN (VALUES ('profiles'),('proposals'),('comments'),('votes'),('allocations'),('proposal_status_history'),('categories'),('apbd_items'),('config')) t(nama)
   WHERE has_table_privilege(r.nama, 'public.' || t.nama, 'TRUNCATE')
 ), 'Anon dan authenticated tidak memiliki TRUNCATE pada tabel aplikasi');
+-- Auto-flagging is advisory and jobs are not accessible to API roles.
+INSERT INTO public.proposals(id,judul,deskripsi,kategori,estimasi_biaya,pengusul_id)
+OVERRIDING SYSTEM VALUE VALUES (98000001,'Perbaikan jalan lokal','Tolong perbaiki jalan berlubang di lingkungan kami.','Pendidikan',1000,'11111111-1111-4111-8111-111111111111');
+SELECT pg_temp.check_true((SELECT count(*)=1 FROM private.proposal_ai_jobs j JOIN private.proposal_ai_reviews r ON r.id=j.review_id WHERE r.proposal_id=98000001), 'Auto flag enqueue proposal');
+SELECT pg_temp.check_true((SELECT moderasi='Menunggu' FROM public.proposals WHERE id=98000001), 'Auto flag tidak mengubah moderasi');
+SELECT private.enqueue_proposal_ai(98000001);
+SELECT pg_temp.check_true((SELECT count(*)=1 FROM private.proposal_ai_reviews WHERE proposal_id=98000001), 'Enqueue idempotent');
+SELECT pg_temp.check_true(NOT has_table_privilege('anon','private.proposal_ai_reviews','SELECT') AND NOT has_table_privilege('authenticated','private.proposal_ai_jobs','SELECT'), 'Tabel hasil dan antrean tidak terbuka ke API');
+SET LOCAL ROLE anon;
+SELECT pg_temp.expect_error('SELECT * FROM public.get_proposal_ai_review(98000001)', '42501', 'Anon tidak membaca hasil auto flag');
+RESET ROLE;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
+SELECT pg_temp.expect_error('SELECT * FROM public.get_proposal_ai_review(98000001)', '42501', 'Warga tidak membaca hasil auto flag');
+SELECT set_config('request.jwt.claim.sub', '33333333-3333-4333-8333-333333333333', true);
+SELECT pg_temp.check_true((SELECT state='pending' FROM public.get_proposal_ai_review(98000001)), 'Admin melihat pending berbeda dari hasil selesai');
+RESET ROLE;
+DELETE FROM private.proposal_ai_jobs WHERE review_id=(SELECT id FROM private.proposal_ai_reviews WHERE proposal_id=98000001);
+DELETE FROM private.proposal_ai_reviews WHERE proposal_id=98000001;
+SELECT private.reconcile_proposal_ai(1000);
+SELECT pg_temp.check_true((SELECT count(*)=1 FROM private.proposal_ai_reviews WHERE proposal_id=98000001), 'Rekonsiliasi memperbaiki enqueue yang hilang');
+UPDATE public.proposals SET deskripsi='Jalan berlubang ini menyebabkan banjir saat hujan.' WHERE id=98000001;
+SELECT pg_temp.check_true((SELECT count(*)=2 FROM private.proposal_ai_reviews WHERE proposal_id=98000001), 'Perubahan konten menghasilkan versi baru');
+-- Simulate queue unavailability; proposal insert must still succeed.
+CREATE FUNCTION pg_temp.fail_ai_job() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'queue failure'; END $$;
+CREATE TRIGGER test_ai_failure BEFORE INSERT ON private.proposal_ai_jobs FOR EACH ROW EXECUTE FUNCTION pg_temp.fail_ai_job();
+INSERT INTO public.proposals(id,judul,deskripsi,kategori,estimasi_biaya,pengusul_id)
+OVERRIDING SYSTEM VALUE VALUES (98000002,'Saluran air rusak','Tolong perbaiki saluran air di sekitar lingkungan kami.','Pendidikan',1000,'11111111-1111-4111-8111-111111111111');
+SELECT pg_temp.check_true((SELECT moderasi='Menunggu' FROM public.proposals WHERE id=98000002), 'Kegagalan antrean tidak membatalkan usulan');
+DROP TRIGGER test_ai_failure ON private.proposal_ai_jobs;
+SELECT private.reconcile_proposal_ai(1000);
+SELECT pg_temp.check_true((SELECT count(*)=1 FROM private.proposal_ai_reviews WHERE proposal_id=98000002), 'Rekonsiliasi memulihkan antrean gagal');
+UPDATE private.proposal_ai_jobs SET available_at=now()+interval '1 day' WHERE review_id NOT IN (SELECT id FROM private.proposal_ai_reviews WHERE proposal_id=98000002);
+CREATE TEMP TABLE ai_claim AS SELECT * FROM private.claim_proposal_ai();
+SELECT pg_temp.check_true((SELECT count(*)=1 FROM ai_claim), 'Worker mendapat satu lease');
+SELECT pg_temp.expect_error('SELECT private.finish_proposal_ai((SELECT review_id FROM ai_claim), gen_random_uuid(), ''[]''::jsonb, ''x'', NULL, false)', 'P0001', 'Token lease salah ditolak');
+UPDATE public.proposals SET deskripsi='Air menggenang karena saluran tersumbat ketika hujan.' WHERE id=98000002;
+SELECT pg_temp.check_true((SELECT private.finish_proposal_ai(review_id, token, '[]'::jsonb, 'Tidak ada indikasi', NULL, false)='stale' FROM ai_claim), 'Hasil versi lama ditandai stale');
+SELECT pg_temp.check_true((SELECT moderasi='Menunggu' FROM public.proposals WHERE id=98000002), 'Pemrosesan stale tidak mengubah moderasi');
 SELECT jsonb_build_object('lulus', count(*), 'gagal', 0, 'pengujian', jsonb_agg(nama ORDER BY nomor)) AS hasil
 FROM security_results;
 ROLLBACK;
