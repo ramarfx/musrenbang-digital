@@ -72,9 +72,9 @@ async function run() {
   const migrations =
     await db`SELECT version FROM supabase_migrations.schema_migrations ORDER BY version`;
   check(
-    'Sebelas migration tercatat persisten pada database lokal',
+    'Tiga belas migration tercatat persisten pada database lokal',
     migrations.map((row: { version: string }) => row.version).join(',') ===
-      '20261026090000,20261026090100,20261026090200,20261026090300,20261026195414,20261027004023,20261027065525,20261028135103,20261102122158,20261102141207,20261103031212',
+      '20261026090000,20261026090100,20261026090200,20261026090300,20261026195414,20261027004023,20261027065525,20261028135103,20261102122158,20261102141207,20261103031212,20261103100955,20261103102540',
   );
   await beginFixtureRun();
   const allocationBaseline = await db<{ total: number }[]>`
@@ -165,6 +165,36 @@ async function run() {
   const p = await proposal(a, 'menunggu-a');
   const ownB = await proposal(b, 'menunggu-b');
   const rejected = await proposal(a, 'ditolak-a');
+  for (const [label, actor] of [
+    ['Anon', null],
+    ['Warga A', a],
+    ['Warga B', b],
+  ] as const) {
+    await denied(
+      `${label} tidak membaca hasil AI admin`,
+      '/rest/v1/rpc/get_proposal_ai_review',
+      actor,
+      'POST',
+      { p_proposal_id: p },
+    );
+    await denied(
+      `${label} tidak dapat reservasi kuota provider`,
+      '/rest/v1/rpc/reserve_musrenai_provider_attempt',
+      actor,
+      'POST',
+      { p_feature: 'admin' },
+    );
+  }
+  const aiReview = await request<{ state: string }[]>(
+    '/rest/v1/rpc/get_proposal_ai_review',
+    admin,
+    'POST',
+    { p_proposal_id: p },
+  );
+  check(
+    'Admin membaca status pemeriksaan AI pending melalui JWT',
+    aiReview.status === 200 && aiReview.data[0]?.state === 'pending',
+  );
   const query = `id=eq.${p}`;
   for (const table of ['proposals', 'v_proposals']) {
     check(
@@ -534,6 +564,18 @@ async function run() {
     a,
     b,
     admin,
+  );
+  // Priority scenario exercises allocation replacement; restore the Gap fixture it changed.
+  check(
+    'Alokasi fixture Gap dipulihkan setelah tes ranking',
+    (
+      await request('/rest/v1/rpc/save_allocations', a, 'POST', {
+        p_rows: [
+          { kategori: 'Pendidikan', jumlah: 6000000 },
+          { kategori: 'Kesehatan', jumlah: 4000000 },
+        ],
+      })
+    ).status === 204,
   );
   const gapAnon = await rows('v_gap', null);
   const gapA = await rows('v_gap', a);
