@@ -58,4 +58,32 @@ describe('provider retries', () => {
     await expect(run(input, controller.signal)).rejects.toThrow();
     expect(calls).toBe(1);
   });
+  test('respons 503 dari adapter diulang dengan kuota tambahan', async () => {
+    let requests = 0,
+      reservations = 0;
+    const provider = geminiProvider('synthetic-key', 'synthetic-model', async () => {
+      requests++;
+      if (requests === 1) return new Response('unavailable', { status: 503 });
+      return Response.json({
+        candidates: [
+          { content: { parts: [{ text: '{"answer":"Halo","route_ids":[],"disclaimer":null}' }] } },
+        ],
+      });
+    });
+    const run = withBoundedRetries(
+      provider,
+      async () => {
+        reservations++;
+        return true;
+      },
+      { wait: async () => {} },
+    );
+    expect(await run(input, new AbortController().signal)).toEqual({
+      answer: 'Halo',
+      route_ids: [],
+      disclaimer: null,
+    });
+    expect(requests).toBe(2);
+    expect(reservations).toBe(1);
+  });
 });
