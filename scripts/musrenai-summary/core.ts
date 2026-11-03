@@ -27,10 +27,10 @@ export function mockNarrative(sources: Source[], coverage: 'sample' | 'complete'
     })),
     limitations:
       sources.length === 0
-        ? 'Data belum mencukupi untuk merangkum aspirasi.'
+        ? 'Mock hanya mengelompokkan kategori; data belum mencukupi untuk dirangkum.'
         : coverage === 'sample'
-          ? 'Ringkasan berdasarkan sampel dan tidak mewakili seluruh usulan.'
-          : 'Ringkasan membantu tinjauan dan bukan keputusan moderasi.',
+          ? 'Mock hanya mengelompokkan kategori, bukan isi usulan. sampel tidak mewakili seluruh usulan.'
+          : 'Mock hanya mengelompokkan kategori, bukan isi usulan atau keputusan moderasi.',
   };
 }
 

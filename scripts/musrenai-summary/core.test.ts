@@ -17,6 +17,7 @@ describe('ringkasan aspirasi mock', () => {
     const out = mockNarrative(job.sources, job.coverage);
     expect(out.themes[0].source_ids).toEqual([42]);
     expect(out.limitations).toContain('sampel');
+    expect(out.limitations).toContain('bukan isi usulan');
   });
   test('sumber asing dan angka karangan ditolak', () => {
     expect(() =>
