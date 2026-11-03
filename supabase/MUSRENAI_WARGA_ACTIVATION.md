@@ -34,6 +34,28 @@ data pribadi; filter teknis bukan jaminan penghapusan seluruh data pribadi.
 - Selesaikan browser/JWT/CORS dan koneksi worker pada staging terpisah sesuai
   kebutuhan. Worker Admin bukan syarat untuk menjalankan chat warga.
 
+## Keputusan model dan batas yang masih perlu diterapkan
+
+- Kandidat utama: `gemini-3.5-flash-lite` pada Free tier. Tim telah
+  memverifikasi batas proyek Google: 15 RPM, 250.000 input TPM dan 500 RPD.
+  Simpan satu key sebagai secret backend `GEMINI_API_KEY`; tetapkan
+  `GEMINI_MODEL` saat aktivasi yang disetujui.
+- Target aplikasi: maksimum 10 percobaan provider dalam 60 detik dan 300 per
+  hari secara global, termasuk retry Warga dan Admin. Pembatas pesan warga
+  terpisah dari pembatas percobaan provider.
+- Implementasi saat ini belum memenuhi target tersebut. Reservasi bersama
+  memakai penguncian database dan mencatat setiap retry, tetapi hanya membatasi
+  jumlah harian berdasarkan nilai default 300 yang masih dapat diubah di atas 300. Belum ada pemeriksaan global per 60 detik atau penghitung input TPM.
+- Hari pada limiter aplikasi dimulai pukul 00.00 WIB, sedangkan kuota RPD
+  Google direset pukul 00.00 waktu Pacific. Karena batas hari berbeda, 300 per
+  hari WIB tidak menjamin konsumsi di bawah 500 dalam hari provider. Layanan
+  atau key lain dalam proyek Google yang sama juga berbagi kuota provider.
+- Sebelum aktivasi, dibutuhkan pembatas bersama yang atomik lintas instance,
+  mencakup semua pemanggil dan retry, dengan batas per menit dan per hari yang
+  sesuai. Sediakan uji concurrency, batas waktu dan pergantian hari. Perubahan
+  yang memerlukan migration atau konfigurasi remote belum diizinkan dan belum
+  dilakukan. Jangan gunakan limiter memori per instance sebagai jaminan global.
+
 ## Urutan yang memerlukan persetujuan terpisah
 
 1. Tentukan cakupan migration yang benar dan setujui dampak trigger Admin.
@@ -48,7 +70,7 @@ data pribadi; filter teknis bukan jaminan penghapusan seluruh data pribadi.
    hanya di runtime backend.
 5. Setelah persetujuan FAQ, privasi dan biaya, atur
    `MUSRENAI_FAQ_APPROVED=true` dan `MUSRENAI_GEMINI_ENABLED=true`.
-   Batasi kuota sesuai keputusan tim; 300 percobaan provider per hari adalah
+   Selesaikan blocker pembatas global yang dicatat di atas; batas 300 per hari adalah
    batas demo, bukan jaminan batas tagihan provider.
 6. Jalankan smoke test dengan identitas dan pesan sintetis, termasuk JWT valid,
    invalid, origin terlarang, kuota dan kesalahan provider. Jangan menampilkan
