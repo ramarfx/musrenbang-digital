@@ -559,6 +559,21 @@ SELECT pg_temp.check_true((SELECT count(*)=2 FROM private.musrenai_provider_atte
 SELECT pg_temp.check_true((SELECT count(*)=0 FROM private.musrenai_requests), 'Reservasi provider tidak memotong kuota pesan warga');
 UPDATE private.musrenai_provider_attempts SET attempted_at=(date_trunc('day',now() AT TIME ZONE 'Asia/Jakarta') AT TIME ZONE 'Asia/Jakarta') - interval '1 second';
 SELECT pg_temp.check_true(public.reserve_musrenai_provider_attempt('admin'), 'Kuota provider memakai batas pergantian hari WIB');
+-- Admin-only aspiration statistics use database counts and validated filters.
+SET LOCAL ROLE anon;
+SELECT pg_temp.expect_error('SELECT public.get_aspiration_statistics()', '42501', 'Anon tidak membaca statistik aspirasi');
+RESET ROLE;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
+SELECT pg_temp.expect_error('SELECT public.get_aspiration_statistics()', '42501', 'Warga tidak membaca statistik aspirasi');
+SELECT set_config('request.jwt.claim.sub', '33333333-3333-4333-8333-333333333333', true);
+SELECT pg_temp.check_true((public.get_aspiration_statistics(now()-interval '1 day', now()+interval '1 day', 'Menunggu', 'Pendidikan')->>'total')::integer = (SELECT count(*) FROM public.proposals WHERE dibuat_pada >= now()-interval '1 day' AND dibuat_pada < now()+interval '1 day' AND moderasi='Menunggu' AND kategori='Pendidikan'), 'Statistik aspirasi menghitung filter SQL');
+SELECT pg_temp.check_true(public.get_aspiration_statistics(now()-interval '1 day', now()+interval '1 day', 'Semua', NULL)->>'moderation_filter'='Semua', 'Filter semua moderasi diterima');
+SELECT pg_temp.check_true(public.get_aspiration_statistics()->>'moderation_filter'='Menunggu', 'Filter default menunggu');
+SELECT pg_temp.expect_error('SELECT public.get_aspiration_statistics(now(),now(),''Menunggu'',NULL)', '22023', 'Periode kosong ditolak');
+SELECT pg_temp.expect_error('SELECT public.get_aspiration_statistics(now()-interval ''1 day'',now(),''Ditolak'',NULL)', '22023', 'Filter moderasi asing ditolak');
+SELECT pg_temp.expect_error('SELECT public.get_aspiration_statistics(now()-interval ''1 day'',now(),''Menunggu'',''tidak ada'')', '22023', 'Kategori asing ditolak');
+RESET ROLE;
 SELECT jsonb_build_object('lulus', count(*), 'gagal', 0, 'pengujian', jsonb_agg(nama ORDER BY nomor)) AS hasil
 FROM security_results;
 ROLLBACK;
