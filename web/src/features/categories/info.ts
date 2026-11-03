@@ -60,14 +60,34 @@ const CATEGORY_INFO: Record<string, CategoryInfo> = {
   },
 };
 
+const WARNA: Record<string, { latar: string; kuat: string }> = {
+  'Air Bersih dan Drainase': { latar: '#BFE8D0', kuat: '#0E7C55' },
+  'Ekonomi dan UMKM': { latar: '#F6D98B', kuat: '#9A6F00' },
+  'Infrastruktur dan Jalan': { latar: '#F5C79B', kuat: '#B35C0E' },
+  'Keamanan dan Penerangan': { latar: '#D9CCF0', kuat: '#5B3FA0' },
+  'Kesehatan': { latar: '#F5B9B0', kuat: '#B03A32' },
+  'Lingkungan dan Sampah': { latar: '#D3E8A3', kuat: '#4F7A12' },
+  'Pendidikan': { latar: '#A9E0DC', kuat: '#0F6B66' },
+  'Sosial dan Budaya': { latar: '#F2C4DB', kuat: '#9B3F6E' },
+  'Teknologi dan Layanan Digital': { latar: '#C9D4DC', kuat: '#3D5566' },
+  'Transportasi Publik': { latar: '#EDB59E', kuat: '#A94423' },
+};
+const WARNA_UMUM = { latar: '#E4DFD2', kuat: '#5A5648' };
+
 const ORDER = Object.keys(CATEGORY_INFO);
 
-export function getCategoryInfo(nama: string): CategoryInfo & { tone: 'hijau' | 'pasir' } {
+export function getCategoryInfo(
+  nama: string,
+): CategoryInfo & { tone: 'hijau' | 'pasir'; warna: { latar: string; kuat: string } } {
   const info = CATEGORY_INFO[nama] ?? {
     kode: nama.slice(0, 2),
     deskripsi: '',
     ikon: IKON_UMUM,
   };
   // Kotak kategori bergantian hijau pucat dan pasir, seperti Desain 1 versi terang.
-  return { ...info, tone: ORDER.indexOf(nama) % 2 === 0 ? 'hijau' : 'pasir' };
+  return {
+    ...info,
+    tone: ORDER.indexOf(nama) % 2 === 0 ? 'hijau' : 'pasir',
+    warna: WARNA[nama] ?? WARNA_UMUM,
+  };
 }

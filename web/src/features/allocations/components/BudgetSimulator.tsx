@@ -5,10 +5,12 @@ import {
   evenAllocation,
   totalAllocation,
 } from '@musrenbang/shared';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/Button';
+import { Button, buttonClass } from '@/components/ui/Button';
+import { Icon } from '@/components/ui/Icon';
 import { Card, HeroCard } from '@/components/ui/Card';
 import { buildRingSlices, DonutRing } from '@/components/ui/DonutRing';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -20,12 +22,14 @@ import { useCategoriesQuery } from '@/features/categories/queries';
 import { getCategoryInfo } from '@/features/categories/info';
 import { useAppConfigQuery } from '@/features/config/queries';
 import { useGapQuery } from '@/features/gap/queries';
+import { cn } from '@/lib/cn';
 import { formatRupiah } from '@/lib/format';
 import { allocateByWeights, formatSelisih } from '../lib';
 import { AnggaranDetailDialog } from './AnggaranDetailDialog';
+import { PetunjukSimulator } from './PetunjukSimulator';
 import { useSaveAllocationsMutation, useUserAllocationsQuery } from '../queries';
 
-export function BudgetSimulator() {
+export function BudgetSimulator({ slotAksi }: { slotAksi: HTMLElement | null }) {
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const categoriesQuery = useCategoriesQuery();
@@ -224,39 +228,57 @@ export function BudgetSimulator() {
   const siapKirim = sisa === 0 && total > 0;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap gap-2">
-        {bisaMulaiDariApbd && (
-          <Button type="button" variant="outline" size="sm" onClick={mulaiDariApbd}>
-            Mulai dari porsi APBD
-          </Button>
+    <div className="stagger space-y-6">
+      {slotAksi &&
+        createPortal(
+          <>
+            {bisaMulaiDariApbd && (
+              <Button type="button" variant="outline" size="sm" onClick={mulaiDariApbd}>
+                Mulai dari porsi APBD
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                animasiKe(
+                  Object.fromEntries(
+                    evenAllocation(categories, budget).map((item) => [item.kategori, item.jumlah]),
+                  ),
+                );
+              }}
+            >
+              Bagi rata
+            </Button>
+            <button
+              type="button"
+              disabled={total === 0}
+              onClick={() => {
+                animasiKe(Object.fromEntries(categories.map((kategori) => [kategori, 0])));
+                initializedRef.current = null;
+              }}
+              className={cn(buttonClass('outline', 'sm'), 'border-edge')}
+            >
+              <Icon name="sampah" size={16} />
+              Kosongkan
+            </button>
+          </>,
+          slotAksi,
         )}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            animasiKe(
-              Object.fromEntries(
-                evenAllocation(categories, budget).map((item) => [item.kategori, item.jumlah]),
-              ),
-            );
-          }}
-        >
-          Bagi rata
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            animasiKe(Object.fromEntries(categories.map((kategori) => [kategori, 0])));
-            initializedRef.current = null;
-          }}
-        >
-          Kosongkan
-        </Button>
-      </div>
+
+      <PetunjukSimulator
+        langkah={[
+          { ikon: 'pensil', teks: 'Geser slider di tiap program' },
+          {
+            ikon: 'bintang',
+            teks: `Bagikan ${formatRupiah(budget)} anggaran virtual, bukan uang nyata`,
+          },
+          { ikon: 'sasaran', teks: 'Sisa dana harus Rp0 sebelum dikirim' },
+        ]}
+        ruasTerisi={budget > 0 ? Math.min(10, Math.round((total / budget) * 10)) : 0}
+        keterangan={`${budget > 0 ? Math.min(100, Math.round((total / budget) * 100)) : 0}% anggaran terbagi`}
+      />
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         {/* Kartu kiri meregang mengikuti kolom kanan bila kolom kanan lebih tinggi; barisnya dibagi rata, jadi tidak ada ruang kosong di bawah. */}
@@ -264,19 +286,25 @@ export function BudgetSimulator() {
           <div
             role="group"
             aria-label="Pembagian anggaran per program"
-            className="stagger lg:flex lg:flex-1 lg:flex-col"
+            className="stagger grid auto-rows-fr gap-3.5 lg:flex-1"
           >
-            {categories.map((kategori) => {
+            {categories.map((kategori, urutan) => {
               const nilai = alokasi[kategori] ?? 0;
               const persen = budget > 0 ? Math.round((nilai / budget) * 100) : 0;
               return (
                 <div
                   key={kategori}
-                  className="grid grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 border-t border-rule py-3.5 first:border-t-0 first:pt-0 last:pb-0 lg:flex-1 lg:content-center min-[1400px]:grid-cols-[40px_minmax(0,1.1fr)_minmax(120px,1.6fr)_112px]"
+                  style={{ '--urutan': Math.min(urutan, 7) } as CSSProperties}
+                  className="grid grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 rounded-2xl border-[1.5px] border-edge bg-surface p-3.5 shadow-[0_3px_0_var(--edge)] lg:flex-1 lg:content-center min-[1400px]:grid-cols-[40px_minmax(0,1.1fr)_minmax(120px,1.6fr)_112px]"
                 >
                   <CategoryTile kategori={kategori} />
                   <label htmlFor={`slider-${kategori}`} className="min-w-0 font-semibold">
-                    {kategori}
+                    <span
+                      className="tanda-kategori"
+                      style={{ '--tanda': getCategoryInfo(kategori).warna.latar } as CSSProperties}
+                    >
+                      {kategori}
+                    </span>
                     <span className="block text-[13px] font-normal text-muted">
                       {getCategoryInfo(kategori).deskripsi}
                     </span>
