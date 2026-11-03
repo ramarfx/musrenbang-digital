@@ -47,12 +47,16 @@ data pribadi; filter teknis bukan jaminan penghapusan seluruh data pribadi.
   maksimum 10 percobaan dalam rolling 60 detik, 300 dalam rolling 24 jam dan
   300 dalam hari Pacific. Nilai konfigurasi lebih rendah tetap dihormati,
   sedangkan nilai lebih tinggi tidak menaikkan batas 300. Retry ikut dihitung.
-  Migration ini belum diizinkan atau diterapkan ke production.
+  Migration ini belum diizinkan atau diterapkan ke production. Fungsi
+  reservasi juga menghapus catatan percobaan yang lebih lama dari kedua
+  jendela yang dibutuhkan; penghapusan ini terbatas pada catatan kuota AI,
+  bukan usulan warga. Trigger antrean Admin dari migration 12 tetap aktif
+  setelah migration 16; worker dan scheduler tidak dibuat atau dijalankan.
 - Dua koneksi lokal dengan 20 percobaan menghasilkan tepat 10 reservasi.
   Assertion SQL juga memeriksa batas dan perubahan DST Pacific. Pengujian
   tambahan dan verifikasi staging tetap diperlukan.
 - Input memiliki batas ukuran, tetapi tidak ada pengukuran token provider yang
-  presisi; 250.000 input TPM belum dijamin oleh limiter aplikasi. Google
+  presisi; 250.000 input TPM belum dijamin oleh limiter aplikasi. Handler membatasi body hingga 12.000 byte dan riwayat maksimal enam pesan, tetapi ini bukan penghitung token. Google
   menerapkan kuota per project dan penggunaan layanan lain di luar aplikasi
   tidak dapat dikendalikan oleh limiter MusrenAI.
 
