@@ -18,6 +18,7 @@ const Auth = lazy(() => import('@/routes/Auth'));
 const Admin = lazy(() => import('@/routes/Admin'));
 const Metodologi = lazy(() => import('@/routes/Metodologi'));
 const UsulanSaya = lazy(() => import('@/routes/UsulanSaya'));
+const MusrenAI = lazy(() => import('@/routes/MusrenAI'));
 const Profil = lazy(() => import('@/routes/Profil'));
 const NotFound = lazy(() => import('@/routes/NotFound'));
 
@@ -50,6 +51,7 @@ export const router = createBrowserRouter([
             ),
           },
           { path: 'metodologi', element: page(<Metodologi />) },
+          { path: 'musrenai', element: page(<MusrenAI />) },
           {
             path: 'usulan/baru',
             element: page(
