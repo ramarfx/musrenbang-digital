@@ -47,8 +47,13 @@ export function MusrenAIChat() {
           Tanyakan cara menggunakan website atau ceritakan masalah pembangunan di lingkunganmu.
         </p>
         <p className="mt-2 text-sm">
-          Jangan sertakan nama lengkap, nomor telepon, NIK, alamat rinci, atau data pribadi lainnya.
-          Jawaban AI perlu diperiksa kembali.
+          Pesan dan riwayat singkat dikirim ke Google Gemini melalui layanan gratis. Google dapat
+          menggunakan konten untuk meningkatkan produknya. Jangan sertakan nama lengkap, nomor
+          telepon, NIK, alamat rinci, atau data pribadi lainnya.
+        </p>
+        <p className="mt-2 text-sm">
+          Jawaban AI dapat keliru dan bukan informasi resmi atau keputusan pemerintah. Periksa
+          informasi pada sumber resmi. Untuk pengaduan gunakan kanal resmi pemerintah setempat.
         </p>
       </header>
       <div
