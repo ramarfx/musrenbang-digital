@@ -260,6 +260,30 @@ async function run() {
     await denied('Warga tidak membaca snapshot', '/rest/v1/rpc/get_aspiration_summary', a, 'POST', {
       p_summary_id: summaryId,
     });
+    await denied(
+      'Anon tidak mengulang snapshot',
+      '/rest/v1/rpc/retry_aspiration_summary',
+      null,
+      'POST',
+      { p_summary_id: summaryId },
+    );
+    await denied(
+      'Warga tidak mengulang snapshot',
+      '/rest/v1/rpc/retry_aspiration_summary',
+      a,
+      'POST',
+      { p_summary_id: summaryId },
+    );
+    const retryPending = await request<boolean>(
+      '/rest/v1/rpc/retry_aspiration_summary',
+      admin,
+      'POST',
+      { p_summary_id: summaryId },
+    );
+    check(
+      'Admin tidak mengulang snapshot yang masih pending',
+      retryPending.status === 200 && retryPending.data === false,
+    );
   } finally {
     await db`DELETE FROM private.aspiration_summaries WHERE id=${summaryId}`;
   }
