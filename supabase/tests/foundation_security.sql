@@ -609,6 +609,21 @@ SELECT set_config('request.jwt.claim.sub', '33333333-3333-4333-8333-333333333333
 SELECT pg_temp.check_true(public.retry_aspiration_summary((SELECT summary_id FROM summary_claim)), 'Admin mengulang ringkasan gagal yang masih sesuai sumber');
 SELECT pg_temp.check_true((SELECT state='pending' FROM public.get_aspiration_summary((SELECT summary_id FROM summary_claim))), 'Retry admin mengembalikan status pending');
 RESET ROLE;
+INSERT INTO public.proposals(judul,deskripsi,kategori,estimasi_biaya,dibuat_pada)
+SELECT 'Fixture usulan pendidikan', 'Kondisi pendidikan perlu ditinjau untuk kebutuhan warga.', 'Pendidikan', 1000, '2025-01-10 00:00:00+00'::timestamptz FROM generate_series(1,101);
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', '33333333-3333-4333-8333-333333333333', true);
+CREATE TEMP TABLE summary_sample AS SELECT * FROM public.request_aspiration_summary('2025-01-01+00','2025-02-01+00');
+SELECT pg_temp.check_true((SELECT coverage='sample' FROM summary_sample), 'Lebih dari seratus sumber ditandai sampel');
+SELECT pg_temp.check_true((SELECT jsonb_array_length(sources)=100 AND (statistics->>'total')::integer=101 FROM public.get_aspiration_summary((SELECT summary_id FROM summary_sample))), 'Statistik total tetap lengkap walaupun sumber sampel');
+RESET ROLE;
+UPDATE private.aspiration_summaries SET state='failed' WHERE id<>(SELECT summary_id FROM summary_sample) AND state='pending';
+CREATE TEMP TABLE summary_failed_claim AS SELECT * FROM private.claim_aspiration_summary();
+SELECT pg_temp.check_true((SELECT private.finish_aspiration_summary(summary_id,token,NULL,true)='failed' FROM summary_failed_claim), 'Kegagalan provider menandai ringkasan gagal');
+SET LOCAL ROLE authenticated;
+SELECT pg_temp.check_true((SELECT (statistics->>'total')::integer=101 AND state='failed' FROM public.get_aspiration_summary((SELECT summary_id FROM summary_sample))), 'Statistik snapshot tetap tersedia ketika provider gagal');
+SELECT pg_temp.check_true((public.get_aspiration_statistics('2025-01-01+00','2025-02-01+00')->>'total')::integer=101, 'Statistik SQL tetap tersedia ketika provider gagal');
+RESET ROLE;
 SELECT jsonb_build_object('lulus', count(*), 'gagal', 0, 'pengujian', jsonb_agg(nama ORDER BY nomor)) AS hasil
 FROM security_results;
 ROLLBACK;
