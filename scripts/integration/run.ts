@@ -231,7 +231,7 @@ async function run() {
       stats.data.moderation_filter === 'Menunggu' &&
       Number(stats.data.total) >= 3,
   );
-  const snapshot = await request<{ summary_id: number; state: string }[]>(
+  const snapshot = await request<{ summary_id: number; state: string; sampling_method: string }[]>(
     '/rest/v1/rpc/request_aspiration_summary',
     admin,
     'POST',
@@ -239,13 +239,15 @@ async function run() {
   );
   check(
     'Admin meminta snapshot aspirasi melalui JWT',
-    snapshot.status === 200 && snapshot.data[0]?.state === 'pending',
+    snapshot.status === 200 &&
+      snapshot.data[0]?.state === 'pending' &&
+      snapshot.data[0]?.sampling_method === 'category_time_decile_round_robin_v1',
   );
   const summaryId = Number(snapshot.data[0]?.summary_id);
   if (!Number.isSafeInteger(summaryId) || summaryId < 1)
     throw new Error('Fixture snapshot tidak valid');
   try {
-    const readSummary = await request<{ state: string; stale: boolean }[]>(
+    const readSummary = await request<{ state: string; stale: boolean; sampling_method: string }[]>(
       '/rest/v1/rpc/get_aspiration_summary',
       admin,
       'POST',
@@ -255,7 +257,8 @@ async function run() {
       'Admin membaca snapshot tanpa stale',
       readSummary.status === 200 &&
         readSummary.data[0]?.state === 'pending' &&
-        readSummary.data[0]?.stale === false,
+        readSummary.data[0]?.stale === false &&
+        readSummary.data[0]?.sampling_method === 'category_time_decile_round_robin_v1',
     );
     await denied('Warga tidak membaca snapshot', '/rest/v1/rpc/get_aspiration_summary', a, 'POST', {
       p_summary_id: summaryId,

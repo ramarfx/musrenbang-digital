@@ -70,7 +70,7 @@ CREATE FUNCTION private.aspiration_source_data(p_from timestamptz,p_to timestamp
 RETURNS TABLE(fingerprint text, sources jsonb, total bigint)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
  WITH selected AS (
-  SELECT p.id,p.kategori,p.moderasi,private.proposal_ai_hash(p) AS content_hash,
+  SELECT p.id,p.kategori,p.moderasi,p.dibuat_pada,private.proposal_ai_hash(p) AS content_hash,
    r.state AS review_state, r.flags,
    EXISTS (SELECT 1 FROM private.proposal_ai_reviews h WHERE h.proposal_id=p.id) AS has_history
   FROM public.proposals p LEFT JOIN private.proposal_ai_reviews r
@@ -78,7 +78,13 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
   WHERE p.dibuat_pada>=p_from AND p.dibuat_pada<p_to
    AND (p_moderation='Semua' OR p.moderasi=p_moderation)
    AND (p_category IS NULL OR p.kategori=p_category)
- ), sample AS (SELECT id,kategori FROM selected ORDER BY id LIMIT 100)
+ ), time_buckets AS (
+  SELECT s.*,ntile(10) OVER (PARTITION BY s.kategori ORDER BY s.dibuat_pada,s.id) AS time_bucket FROM selected s
+ ), ranked AS (
+  SELECT t.*,row_number() OVER (PARTITION BY t.kategori,t.time_bucket ORDER BY t.dibuat_pada,t.id) AS bucket_rank FROM time_buckets t
+ ), sample AS (
+  SELECT id,kategori FROM ranked ORDER BY bucket_rank,kategori,time_bucket,id LIMIT 100
+ )
  SELECT pg_catalog.encode(pg_catalog.sha256(pg_catalog.convert_to(
   pg_catalog.jsonb_build_array(p_from,p_to,p_moderation,p_category,
    COALESCE((SELECT pg_catalog.jsonb_agg(pg_catalog.to_jsonb(s) ORDER BY s.id) FROM selected s),'[]'::jsonb))::text,'UTF8')),'hex'),
@@ -88,7 +94,7 @@ $$;
 REVOKE ALL ON FUNCTION private.aspiration_source_data(timestamptz,timestamptz,text,text) FROM PUBLIC, anon, authenticated, service_role;
 
 CREATE FUNCTION public.request_aspiration_summary(p_from timestamptz,p_to timestamptz,p_moderation text DEFAULT 'Menunggu',p_category text DEFAULT NULL)
-RETURNS TABLE(summary_id bigint,state text,coverage text)
+RETURNS TABLE(summary_id bigint,state text,coverage text,sampling_method text)
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 DECLARE v_stats jsonb; v_fingerprint text; v_sources jsonb; v_total bigint; v_id bigint;
 BEGIN
@@ -100,17 +106,17 @@ BEGIN
  VALUES(p_from,p_to,p_moderation,p_category,v_fingerprint,v_stats,v_sources,
   CASE WHEN v_total>100 THEN 'sample' ELSE 'complete' END)
  ON CONFLICT (fingerprint) DO UPDATE SET fingerprint=EXCLUDED.fingerprint RETURNING id INTO v_id;
- RETURN QUERY SELECT a.id,a.state,a.coverage FROM private.aspiration_summaries a WHERE a.id=v_id;
+ RETURN QUERY SELECT a.id,a.state,a.coverage,'category_time_decile_round_robin_v1'::text FROM private.aspiration_summaries a WHERE a.id=v_id;
 END $$;
 REVOKE ALL ON FUNCTION public.request_aspiration_summary(timestamptz,timestamptz,text,text) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.request_aspiration_summary(timestamptz,timestamptz,text,text) TO authenticated;
 
 CREATE FUNCTION public.get_aspiration_summary(p_summary_id bigint)
-RETURNS TABLE(summary_id bigint,state text,stale boolean,coverage text,statistics jsonb,sources jsonb,narrative jsonb)
+RETURNS TABLE(summary_id bigint,state text,stale boolean,coverage text,sampling_method text,statistics jsonb,sources jsonb,narrative jsonb)
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $$
 BEGIN
  IF NOT private.is_admin() THEN RAISE EXCEPTION 'Hanya admin' USING ERRCODE='42501'; END IF;
- RETURN QUERY SELECT a.id,a.state,(a.fingerprint<>s.fingerprint),a.coverage,a.statistics,a.sources,
+ RETURN QUERY SELECT a.id,a.state,(a.fingerprint<>s.fingerprint),a.coverage,'category_time_decile_round_robin_v1'::text,a.statistics,a.sources,
   CASE WHEN a.fingerprint<>s.fingerprint THEN NULL ELSE a.narrative END
  FROM private.aspiration_summaries a
  CROSS JOIN LATERAL private.aspiration_source_data(a.period_from,a.period_to,a.moderation,a.category) s

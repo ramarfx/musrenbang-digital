@@ -626,6 +626,21 @@ SET LOCAL ROLE authenticated;
 SELECT pg_temp.check_true((SELECT (statistics->>'total')::integer=101 AND state='failed' FROM public.get_aspiration_summary((SELECT summary_id FROM summary_sample))), 'Statistik snapshot tetap tersedia ketika provider gagal');
 SELECT pg_temp.check_true((public.get_aspiration_statistics('2025-01-01+00','2025-02-01+00')->>'total')::integer=101, 'Statistik SQL tetap tersedia ketika provider gagal');
 RESET ROLE;
+-- Deterministic stratification covers both categories and the time range.
+INSERT INTO public.proposals(judul,deskripsi,kategori,estimasi_biaya,dibuat_pada)
+SELECT 'Fixture sampel kategori','Usulan fixture untuk memeriksa distribusi sampel lintas waktu.',
+ CASE WHEN n<=60 THEN 'Pendidikan' ELSE 'Kesehatan' END,1000,
+ '2024-01-01 00:00:00+00'::timestamptz + (((n-1)%60) * interval '1 day')
+FROM generate_series(1,120) n;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','33333333-3333-4333-8333-333333333333',true);
+CREATE TEMP TABLE stratified_fixture AS SELECT * FROM public.request_aspiration_summary('2024-01-01+00','2024-04-01+00','Semua',NULL);
+SELECT pg_temp.check_true((SELECT coverage='sample' AND sampling_method='category_time_decile_round_robin_v1' FROM stratified_fixture), 'Sampel menjelaskan metode secara eksplisit');
+SELECT pg_temp.check_true((SELECT jsonb_array_length(sources)=100 AND (statistics->>'total')::integer=120 FROM public.get_aspiration_summary((SELECT summary_id FROM stratified_fixture))), 'Statistik sampel tetap menghitung seluruh data');
+SELECT pg_temp.check_true((SELECT count(*) FILTER (WHERE source->>'kategori'='Pendidikan')=50 AND count(*) FILTER (WHERE source->>'kategori'='Kesehatan')=50 FROM public.get_aspiration_summary((SELECT summary_id FROM stratified_fixture)) s CROSS JOIN LATERAL jsonb_array_elements(s.sources) source), 'Sampel mencakup kedua kategori seimbang untuk fixture setara');
+SELECT pg_temp.check_true((SELECT min(p.dibuat_pada)<'2024-01-05'::timestamptz AND max(p.dibuat_pada)>'2024-02-15'::timestamptz FROM public.get_aspiration_summary((SELECT summary_id FROM stratified_fixture)) s CROSS JOIN LATERAL jsonb_array_elements(s.sources) source JOIN public.proposals p ON p.id=(source->>'id')::bigint), 'Sampel menjangkau awal dan akhir periode');
+SELECT pg_temp.check_true((SELECT a.summary_id=b.summary_id FROM stratified_fixture a CROSS JOIN public.request_aspiration_summary('2024-01-01+00','2024-04-01+00','Semua',NULL) b), 'Sampling yang sama memakai cache deterministik');
+RESET ROLE;
 SELECT jsonb_build_object('lulus', count(*), 'gagal', 0, 'pengujian', jsonb_agg(nama ORDER BY nomor)) AS hasil
 FROM security_results;
 ROLLBACK;
