@@ -557,8 +557,28 @@ SELECT pg_temp.check_true(NOT public.reserve_musrenai_provider_attempt('warga'),
 RESET ROLE;
 SELECT pg_temp.check_true((SELECT count(*)=2 FROM private.musrenai_provider_attempts), 'Hanya percobaan yang diizinkan dicatat');
 SELECT pg_temp.check_true((SELECT count(*)=0 FROM private.musrenai_requests), 'Reservasi provider tidak memotong kuota pesan warga');
-UPDATE private.musrenai_provider_attempts SET attempted_at=(date_trunc('day',now() AT TIME ZONE 'Asia/Jakarta') AT TIME ZONE 'Asia/Jakarta') - interval '1 second';
-SELECT pg_temp.check_true(public.reserve_musrenai_provider_attempt('admin'), 'Kuota provider memakai batas pergantian hari WIB');
+UPDATE private.musrenai_provider_attempts SET attempted_at=clock_timestamp() - interval '25 hours';
+SELECT pg_temp.check_true(public.reserve_musrenai_provider_attempt('admin'), 'Percobaan di luar 24 jam dan hari Pacific tidak dihitung');
+DELETE FROM private.musrenai_provider_attempts;
+UPDATE private.musrenai_provider_settings SET daily_limit=300 WHERE singleton;
+INSERT INTO private.musrenai_provider_attempts(feature,attempted_at)
+SELECT CASE WHEN i % 2 = 0 THEN 'warga' ELSE 'admin' END, clock_timestamp() - interval '10 seconds'
+FROM generate_series(1,10) i;
+SELECT pg_temp.check_true(NOT public.reserve_musrenai_provider_attempt('warga'), 'Sepuluh percobaan bersama dalam 60 detik menolak percobaan ke-11');
+UPDATE private.musrenai_provider_attempts SET attempted_at=clock_timestamp() - interval '61 seconds';
+SELECT pg_temp.check_true(public.reserve_musrenai_provider_attempt('admin'), 'Percobaan di luar 60 detik tidak menghabiskan batas menit');
+DELETE FROM private.musrenai_provider_attempts;
+INSERT INTO private.musrenai_provider_attempts(feature,attempted_at)
+SELECT 'warga', clock_timestamp() - interval '2 minutes' FROM generate_series(1,300);
+UPDATE private.musrenai_provider_settings SET daily_limit=100000 WHERE singleton;
+SELECT pg_temp.check_true(NOT public.reserve_musrenai_provider_attempt('admin'), 'Batas 300 tidak dapat dinaikkan lewat konfigurasi');
+DELETE FROM private.musrenai_provider_attempts;
+SELECT pg_temp.check_true(
+  (date_trunc('day', '2026-03-08 12:00:00+00'::timestamptz AT TIME ZONE 'America/Los_Angeles') AT TIME ZONE 'America/Los_Angeles') = '2026-03-08 08:00:00+00'::timestamptz
+  AND (date_trunc('day', '2026-03-09 12:00:00+00'::timestamptz AT TIME ZONE 'America/Los_Angeles') AT TIME ZONE 'America/Los_Angeles') = '2026-03-09 07:00:00+00'::timestamptz
+  AND (date_trunc('day', '2026-11-01 12:00:00+00'::timestamptz AT TIME ZONE 'America/Los_Angeles') AT TIME ZONE 'America/Los_Angeles') = '2026-11-01 07:00:00+00'::timestamptz
+  AND (date_trunc('day', '2026-11-02 12:00:00+00'::timestamptz AT TIME ZONE 'America/Los_Angeles') AT TIME ZONE 'America/Los_Angeles') = '2026-11-02 08:00:00+00'::timestamptz,
+  'Batas hari Pacific mengikuti perubahan DST musim semi dan gugur');
 -- Admin-only aspiration statistics use database counts and validated filters.
 SET LOCAL ROLE anon;
 SELECT pg_temp.expect_error('SELECT public.get_aspiration_statistics()', '42501', 'Anon tidak membaca statistik aspirasi');
