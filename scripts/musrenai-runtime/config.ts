@@ -18,7 +18,8 @@ export function parseConfig(env: Record<string, string | undefined>): RuntimeCon
   if (env.MUSRENAI_WORKER_ENABLED !== 'true') return disabled;
   if (env.MUSRENAI_WORKER_MODE !== 'mock') throw new Error('worker configuration invalid');
   const ref = env.MUSRENAI_WORKER_PROJECT_REF ?? '';
-  if (!/^[a-z]{20}$/.test(ref) || ref === blockedProject) throw new Error('worker target denied');
+  if (!/^[a-z0-9]{20}$/.test(ref) || ref === blockedProject)
+    throw new Error('worker target denied');
   let url: URL;
   try {
     url = new URL(env.MUSRENAI_WORKER_DATABASE_URL ?? '');
@@ -28,6 +29,7 @@ export function parseConfig(env: Record<string, string | undefined>): RuntimeCon
   if (
     !['postgres:', 'postgresql:'].includes(url.protocol) ||
     url.hostname !== `db.${ref}.supabase.co` ||
+    (url.port !== '' && url.port !== '5432') ||
     decodeURIComponent(url.username) !== 'musrenai_worker_login' ||
     !url.password ||
     url.pathname !== '/postgres' ||

@@ -26,6 +26,10 @@ describe('runtime guard', () => {
         ...valid,
         MUSRENAI_WORKER_DATABASE_URL: `postgres://postgres:fake@db.${ref}.supabase.co/postgres`,
       },
+      {
+        ...valid,
+        MUSRENAI_WORKER_DATABASE_URL: `postgres://musrenai_worker_login:fake@db.${ref}.supabase.co:9999/postgres`,
+      },
       { ...valid, MUSRENAI_WORKER_MODE: 'gemini' },
       { ...valid, MUSRENAI_WORKER_DATABASE_URL: '' },
       { ...valid, MUSRENAI_RETENTION_ENABLED: 'true', MUSRENAI_RETENTION_DAYS: '1' },
