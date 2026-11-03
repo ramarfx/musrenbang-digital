@@ -71,4 +71,18 @@ describe('runtime guard', () => {
     ).rejects.toThrow();
     expect(next).toBe(0);
   });
+  test('retensi dan logging butuh konfigurasi eksplisit', () => {
+    const defaults = parseConfig(valid);
+    expect(defaults.retentionDays).toBeNull();
+    expect(defaults.basicLog).toBe(false);
+    const enabled = parseConfig({
+      ...valid,
+      MUSRENAI_RETENTION_ENABLED: 'true',
+      MUSRENAI_RETENTION_DAYS: '90',
+      MUSRENAI_WORKER_LOG_LEVEL: 'basic',
+    });
+    expect(enabled.retentionDays).toBe(90);
+    expect(enabled.basicLog).toBe(true);
+    expect(() => parseConfig({ ...valid, MUSRENAI_WORKER_LOG_LEVEL: 'verbose' })).toThrow();
+  });
 });
