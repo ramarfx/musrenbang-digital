@@ -1,6 +1,6 @@
 # SYNTHETIC LOCAL DRILL ONLY. Uses exact local Docker container and fresh databases.
 # This is not a production backup or a managed Supabase restore procedure.
-# It intentionally omits ownership and grants; those require separate validation.
+# It omits ownership and checks representative application grants only.
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $false
 $root = (Get-Location).Path
@@ -40,14 +40,28 @@ INSERT INTO public.proposals(judul,deskripsi,kategori,pengusul_id,estimasi_biaya
   AssertExit 'Dump data sintetis'
   docker exec $instance psql -U supabase_admin -d $dest -q -v ON_ERROR_STOP=1 -c 'DROP SCHEMA public;'
   AssertExit 'Menyiapkan target kosong'
-  docker exec $instance pg_restore -U supabase_admin -d $dest --no-owner --no-acl --exit-on-error "$base-schema.dump"
+  docker exec $instance pg_restore -U supabase_admin -d $dest --no-owner --exit-on-error "$base-schema.dump"
   AssertExit 'Restore schema sintetis'
   docker exec $instance pg_restore -U supabase_admin -d $dest --no-owner --no-acl --disable-triggers --exit-on-error "$base-data.dump"
   AssertExit 'Restore data sintetis'
   $check = docker exec $instance psql -U supabase_admin -d $dest -Atc "select (select count(*) from auth.users where email='backup-fixture@example.invalid'),(select count(*) from public.profiles where id='c1000000-0000-4000-8000-000000000001'),(select count(*) from public.proposals where pengusul_id='c1000000-0000-4000-8000-000000000001')"
   AssertExit 'Verifikasi hasil restore'
   if($check.Trim() -ne '1|1|1') { throw 'Hitungan fixture hasil restore tidak cocok' }
-  Write-Output 'SYNTHETIC_AUTH_APPLICATION_RESTORE_OK: 1 user, 1 profile, 1 proposal'
+  $securityQuery = @"
+SELECT
+ (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind='r' AND c.relrowsecurity),
+ (SELECT count(*) FROM pg_policies WHERE schemaname='public'),
+ (SELECT count(*) FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('public','auth') AND NOT t.tgisinternal AND t.tgenabled <> 'D'),
+ has_table_privilege('anon','public.proposals','SELECT'),
+ has_table_privilege('authenticated','public.allocations','INSERT'),
+ has_function_privilege('authenticated','public.save_allocations(jsonb)','EXECUTE');
+"@
+  $sourceSecurity = $securityQuery | docker exec -i $instance psql -X -qAt -v ON_ERROR_STOP=1 -U supabase_admin -d $source
+  AssertExit 'Keamanan fixture sumber'
+  $destSecurity = $securityQuery | docker exec -i $instance psql -X -qAt -v ON_ERROR_STOP=1 -U supabase_admin -d $dest
+  AssertExit 'Keamanan fixture hasil restore'
+  if($sourceSecurity.Trim() -ne $destSecurity.Trim()) { throw 'RLS, policy, trigger atau grants fixture berbeda' }
+  Write-Output 'SYNTHETIC_AUTH_APPLICATION_RESTORE_OK: 1 user, 1 profile, 1 proposal; representative RLS, policy, trigger and grants match'
 } finally {
   $cleanupFailed = $false
   foreach($db in $created) {
