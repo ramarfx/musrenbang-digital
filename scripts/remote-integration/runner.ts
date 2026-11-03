@@ -1,3 +1,4 @@
+import { testPriorityRankings } from './priority-scenarios';
 import { SQL } from 'bun';
 import { mkdir, readFile } from 'node:fs/promises';
 import { createInterface } from 'node:readline/promises';
@@ -212,9 +213,9 @@ async function readOnlyBaseline(options: { requireDatabase: boolean; enforceHist
   }
   try {
     assertExpectedMigrationHistory(versions, WRITE_TEST_MIGRATIONS);
-    check('History remote cocok dengan sembilan migration yang diuji', true);
+    check('History remote cocok dengan sepuluh migration yang diuji', true);
   } catch (error) {
-    check('History remote cocok dengan sembilan migration yang diuji', false);
+    check('History remote cocok dengan sepuluh migration yang diuji', false);
     throw error;
   }
   preflightBaseline = await snapshot();
@@ -644,6 +645,13 @@ async function testApi(a: Actor, b: Actor, admin: Actor) {
   check(
     'Warga B tidak melihat alokasi warga A',
     hiddenAlloc.status === 200 && hiddenAlloc.data.length === 0,
+  );
+  await testPriorityRankings(
+    (path, actor, method, body) => api(path, actor?.token, method, body),
+    check,
+    { id: a.id, token: a.access },
+    { id: b.id, token: b.access },
+    { id: admin.id, token: admin.access },
   );
   const gap = await api<
     {

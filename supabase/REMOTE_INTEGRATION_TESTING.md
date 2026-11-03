@@ -1,8 +1,8 @@
 # Remote Auth dan API integration testing
 
-Runner membedakan fondasi historis enam migration dan target tulis sembilan migration.
-History remote yang diperiksa pada 2 November 2026 berisi sembilan migration.
-Mode tulis menolak history lain, termasuk tujuh atau delapan migration. Status remote terakhir
+Runner membedakan fondasi historis enam migration dan target tulis sepuluh migration.
+History remote yang diperiksa pada 2 November 2026 berisi sembilan migration; migration kesepuluh dilaporkan sudah diterapkan dan harus diverifikasi ulang secara read-only.
+Mode tulis menolak history lain, termasuk tujuh, delapan, atau sembilan migration. Status remote terakhir
 harus diverifikasi ulang sebelum tindakan. Tidak ada izin pengujian tulis dalam catatan ini.
 
 Runner remote terpisah dari `scripts/test-integration.ps1` dan
@@ -37,10 +37,10 @@ Management API tidak tersedia. `REMOTE_DATABASE_URL` juga belum disediakan, sehi
 preflight itu tidak menghasilkan fingerprint database lengkap. Jangan menafsirkan
 status provider aktif sebagai bukti SMTP mengirim ke mailbox uji.
 
-Mode tulis runner mensyaratkan sembilan migration termasuk
+Mode tulis runner mensyaratkan sepuluh migration termasuk
 `20261027065525_mvp_public_stats_status_audit`, `20261028135103_auth_profile_metadata`,
-dan `20261102122158_allow_owners_delete_pending_or_rejected_proposals`.
-Remote perlu diperiksa ulang sebelum eksekusi; history selain sembilan versi yang tepat
+`20261102122158_allow_owners_delete_pending_or_rejected_proposals`, dan `20261102141207_priority_rankings`.
+Remote perlu diperiksa ulang sebelum eksekusi; history selain sepuluh versi yang tepat
 akan menghentikan mode tulis. Jangan menerapkan migration hanya
 untuk melewati gate ini; migration memerlukan review dan persetujuan deployment
 terpisah terlebih dahulu.
@@ -215,3 +215,5 @@ mock sebagai bukti E2E lokal.
 Mode remote preflight hanya boleh dijalankan setelah rangkaian lokal lulus. Ia
 tidak membuat akun atau fixture. Pengujian tulis tetap memerlukan persetujuan
 terpisah dan prasyarat email manual.
+
+Skenario HTTP kedua simulator memeriksa RPC ranking menggunakan identitas Auth A/B dan admin. Snapshot kini mencakup priority_rankings agar cleanup fixture terverifikasi. Karena agregat admin memakai data lintas pengguna, perubahan bersamaan dari pengguna lain dapat menyebabkan assertion atau perbandingan baseline gagal; jangan hapus data di luar fixture untuk memperbaikinya.
