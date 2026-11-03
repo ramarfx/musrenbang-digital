@@ -43,18 +43,18 @@ data pribadi; filter teknis bukan jaminan penghapusan seluruh data pribadi.
 - Target aplikasi: maksimum 10 percobaan provider dalam 60 detik dan 300 per
   hari secara global, termasuk retry Warga dan Admin. Pembatas pesan warga
   terpisah dari pembatas percobaan provider.
-- Implementasi saat ini belum memenuhi target tersebut. Reservasi bersama
-  memakai penguncian database dan mencatat setiap retry, tetapi hanya membatasi
-  jumlah harian berdasarkan nilai default 300 yang masih dapat diubah di atas 300. Belum ada pemeriksaan global per 60 detik atau penghitung input TPM.
-- Hari pada limiter aplikasi dimulai pukul 00.00 WIB, sedangkan kuota RPD
-  Google direset pukul 00.00 waktu Pacific. Karena batas hari berbeda, 300 per
-  hari WIB tidak menjamin konsumsi di bawah 500 dalam hari provider. Layanan
-  atau key lain dalam proyek Google yang sama juga berbagi kuota provider.
-- Sebelum aktivasi, dibutuhkan pembatas bersama yang atomik lintas instance,
-  mencakup semua pemanggil dan retry, dengan batas per menit dan per hari yang
-  sesuai. Sediakan uji concurrency, batas waktu dan pergantian hari. Perubahan
-  yang memerlukan migration atau konfigurasi remote belum diizinkan dan belum
-  dilakukan. Jangan gunakan limiter memori per instance sebagai jaminan global.
+- Migration 16 lokal memperbarui reservasi bersama dengan penguncian atomik,
+  maksimum 10 percobaan dalam rolling 60 detik, 300 dalam rolling 24 jam dan
+  300 dalam hari Pacific. Nilai konfigurasi lebih rendah tetap dihormati,
+  sedangkan nilai lebih tinggi tidak menaikkan batas 300. Retry ikut dihitung.
+  Migration ini belum diizinkan atau diterapkan ke production.
+- Dua koneksi lokal dengan 20 percobaan menghasilkan tepat 10 reservasi.
+  Assertion SQL juga memeriksa batas dan perubahan DST Pacific. Pengujian
+  tambahan dan verifikasi staging tetap diperlukan.
+- Input memiliki batas ukuran, tetapi tidak ada pengukuran token provider yang
+  presisi; 250.000 input TPM belum dijamin oleh limiter aplikasi. Google
+  menerapkan kuota per project dan penggunaan layanan lain di luar aplikasi
+  tidak dapat dikendalikan oleh limiter MusrenAI.
 
 ## Urutan yang memerlukan persetujuan terpisah
 
