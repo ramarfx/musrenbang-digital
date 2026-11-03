@@ -529,6 +529,8 @@ SELECT pg_temp.expect_error('SELECT private.finish_proposal_ai((SELECT review_id
 UPDATE public.proposals SET deskripsi='Air menggenang karena saluran tersumbat ketika hujan.' WHERE id=98000002;
 SELECT pg_temp.check_true((SELECT private.finish_proposal_ai(review_id, token, '[]'::jsonb, 'Tidak ada indikasi', NULL, false)='stale' FROM ai_claim), 'Hasil versi lama ditandai stale');
 SELECT pg_temp.check_true((SELECT moderasi='Menunggu' FROM public.proposals WHERE id=98000002), 'Pemrosesan stale tidak mengubah moderasi');
+UPDATE public.proposals SET deskripsi='Tolong perbaiki saluran air di sekitar lingkungan kami.' WHERE id=98000002;
+SELECT pg_temp.check_true((SELECT r.state='pending' AND count(j.review_id)=1 FROM private.proposal_ai_reviews r JOIN public.proposals p ON p.id=r.proposal_id LEFT JOIN private.proposal_ai_jobs j ON j.review_id=r.id WHERE p.id=98000002 AND r.content_hash=private.proposal_ai_hash(p) GROUP BY r.state), 'Versi sebelumnya yang stale diantrikan ulang saat isi dikembalikan');
 -- Provider attempts are shared across features and remain separate from message quota.
 UPDATE private.musrenai_provider_settings SET daily_limit=2 WHERE singleton;
 SELECT pg_temp.check_true(NOT has_function_privilege('anon','public.reserve_musrenai_provider_attempt(text)','EXECUTE') AND NOT has_function_privilege('authenticated','public.reserve_musrenai_provider_attempt(text)','EXECUTE') AND has_function_privilege('service_role','public.reserve_musrenai_provider_attempt(text)','EXECUTE'), 'Reservasi provider hanya service role');

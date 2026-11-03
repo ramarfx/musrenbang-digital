@@ -42,7 +42,10 @@ BEGIN
  SELECT private.proposal_ai_hash(p) INTO v_hash FROM public.proposals p WHERE p.id=p_id;
  IF v_hash IS NULL THEN RETURN; END IF;
  INSERT INTO private.proposal_ai_reviews(proposal_id, content_hash) VALUES (p_id,v_hash)
- ON CONFLICT (proposal_id,content_hash,rules_version) DO NOTHING RETURNING id INTO v_id;
+ ON CONFLICT (proposal_id,content_hash,rules_version) DO UPDATE
+ SET state='pending',updated_at=now()
+ WHERE private.proposal_ai_reviews.state='stale'
+ RETURNING id INTO v_id;
  IF v_id IS NOT NULL THEN
   INSERT INTO private.proposal_ai_jobs(review_id) VALUES(v_id);
   INSERT INTO private.proposal_ai_review_events(review_id,event) VALUES(v_id,'queued');
