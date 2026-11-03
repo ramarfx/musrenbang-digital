@@ -184,3 +184,19 @@ BEGIN
  RETURN 'completed';
 END $$;
 REVOKE ALL ON FUNCTION private.finish_aspiration_summary(bigint,uuid,jsonb,boolean) FROM PUBLIC,anon,authenticated,service_role;
+
+-- Admin dapat meminta retry secara eksplisit; kuota provider tetap berlaku untuk setiap percobaan.
+CREATE FUNCTION public.retry_aspiration_summary(p_summary_id bigint) RETURNS boolean
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+DECLARE v_row private.aspiration_summaries%ROWTYPE; v_hash text;
+BEGIN
+ IF NOT private.is_admin() THEN RAISE EXCEPTION 'Hanya admin' USING ERRCODE='42501'; END IF;
+ SELECT * INTO v_row FROM private.aspiration_summaries WHERE id=p_summary_id FOR UPDATE;
+ IF NOT FOUND OR v_row.state<>'failed' THEN RETURN false; END IF;
+ SELECT s.fingerprint INTO v_hash FROM private.aspiration_source_data(v_row.period_from,v_row.period_to,v_row.moderation,v_row.category) s;
+ IF v_hash IS DISTINCT FROM v_row.fingerprint THEN RETURN false; END IF;
+ UPDATE private.aspiration_summaries SET state='pending',attempts=0,narrative=NULL,lease_token=NULL,lease_until=NULL WHERE id=p_summary_id;
+ RETURN true;
+END $$;
+REVOKE ALL ON FUNCTION public.retry_aspiration_summary(bigint) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.retry_aspiration_summary(bigint) TO authenticated;

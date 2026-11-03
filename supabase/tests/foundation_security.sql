@@ -601,6 +601,14 @@ SELECT pg_temp.check_true((SELECT private.finish_aspiration_summary(summary_id,t
 SET LOCAL ROLE authenticated;
 SELECT pg_temp.check_true((SELECT state='completed' AND NOT stale AND narrative IS NOT NULL FROM public.get_aspiration_summary((SELECT summary_id FROM summary_claim))), 'Admin membaca narasi tervalidasi');
 RESET ROLE;
+UPDATE private.aspiration_summaries SET state='failed' WHERE id=(SELECT summary_id FROM summary_claim);
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
+SELECT pg_temp.expect_error('SELECT public.retry_aspiration_summary((SELECT summary_id FROM summary_claim))', '42501', 'Warga tidak dapat mengulang ringkasan');
+SELECT set_config('request.jwt.claim.sub', '33333333-3333-4333-8333-333333333333', true);
+SELECT pg_temp.check_true(public.retry_aspiration_summary((SELECT summary_id FROM summary_claim)), 'Admin mengulang ringkasan gagal yang masih sesuai sumber');
+SELECT pg_temp.check_true((SELECT state='pending' FROM public.get_aspiration_summary((SELECT summary_id FROM summary_claim))), 'Retry admin mengembalikan status pending');
+RESET ROLE;
 SELECT jsonb_build_object('lulus', count(*), 'gagal', 0, 'pengujian', jsonb_agg(nama ORDER BY nomor)) AS hasil
 FROM security_results;
 ROLLBACK;
