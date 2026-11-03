@@ -7,6 +7,7 @@ export const applicationTableOrder: Record<string, string> = {
   votes: 'id',
   comments: 'id',
   allocations: 'id',
+  priority_rankings: 'user_id, kategori',
   config: 'kunci',
 };
 

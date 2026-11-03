@@ -1,3 +1,4 @@
+import { testPriorityRankings } from '../remote-integration/priority-scenarios';
 import { createClient } from '@supabase/supabase-js';
 import { concurrency } from './concurrency';
 import type { FixtureManifest } from '../remote-integration/safety';
@@ -526,6 +527,13 @@ async function run() {
         p_rows: [{ kategori: 'Pendidikan', jumlah: 1000000 }],
       })
     ).status === 204,
+  );
+  await testPriorityRankings(
+    (path, actor, method, body) => request(path, actor as Actor | null, method, body),
+    check,
+    a,
+    b,
+    admin,
   );
   const gapAnon = await rows('v_gap', null);
   const gapA = await rows('v_gap', a);
