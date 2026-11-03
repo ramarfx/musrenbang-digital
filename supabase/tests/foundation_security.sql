@@ -531,6 +531,20 @@ SELECT pg_temp.check_true((SELECT private.finish_proposal_ai(review_id, token, '
 SELECT pg_temp.check_true((SELECT moderasi='Menunggu' FROM public.proposals WHERE id=98000002), 'Pemrosesan stale tidak mengubah moderasi');
 UPDATE public.proposals SET deskripsi='Tolong perbaiki saluran air di sekitar lingkungan kami.' WHERE id=98000002;
 SELECT pg_temp.check_true((SELECT r.state='pending' AND count(j.review_id)=1 FROM private.proposal_ai_reviews r JOIN public.proposals p ON p.id=r.proposal_id LEFT JOIN private.proposal_ai_jobs j ON j.review_id=r.id WHERE p.id=98000002 AND r.content_hash=private.proposal_ai_hash(p) GROUP BY r.state), 'Versi sebelumnya yang stale diantrikan ulang saat isi dikembalikan');
+-- Recovery of an expired lease and bounded retries.
+INSERT INTO public.proposals(id,judul,deskripsi,kategori,estimasi_biaya,pengusul_id)
+OVERRIDING SYSTEM VALUE VALUES (98000003,'Jalan kecil berlubang','Jalan berlubang perlu diperbaiki agar aman dilalui.','Pendidikan',1000,'11111111-1111-4111-8111-111111111111');
+UPDATE private.proposal_ai_jobs SET available_at=now()+interval '1 day' WHERE review_id NOT IN (SELECT id FROM private.proposal_ai_reviews WHERE proposal_id=98000003);
+CREATE TEMP TABLE ai_recovery_first AS SELECT * FROM private.claim_proposal_ai();
+UPDATE private.proposal_ai_jobs SET lease_until=now()-interval '1 second' WHERE review_id=(SELECT review_id FROM ai_recovery_first);
+CREATE TEMP TABLE ai_recovery_second AS SELECT * FROM private.claim_proposal_ai();
+SELECT pg_temp.check_true((SELECT a.review_id=b.review_id AND a.token<>b.token FROM ai_recovery_first a CROSS JOIN ai_recovery_second b), 'Lease expired dipulihkan dengan token baru');
+SELECT pg_temp.expect_error('SELECT private.finish_proposal_ai(review_id,token,''[]'',''tinjau'',NULL,false) FROM ai_recovery_first', 'P0001', 'Token lease lama tidak berlaku');
+SELECT pg_temp.check_true((SELECT private.finish_proposal_ai(review_id,token,'[]',NULL,NULL,true)='retry' FROM ai_recovery_second), 'Kegagalan worker menjadwalkan retry terbatas');
+UPDATE private.proposal_ai_jobs SET available_at=now() WHERE review_id=(SELECT review_id FROM ai_recovery_second);
+CREATE TEMP TABLE ai_recovery_third AS SELECT * FROM private.claim_proposal_ai();
+SELECT pg_temp.check_true((SELECT private.finish_proposal_ai(review_id,token,'[]',NULL,NULL,true)='failed' FROM ai_recovery_third), 'Kegagalan ketiga menjadi failed tanpa retry tanpa batas');
+SELECT pg_temp.check_true((SELECT r.state='failed' AND j.review_id IS NULL FROM private.proposal_ai_reviews r LEFT JOIN private.proposal_ai_jobs j ON j.review_id=r.id WHERE r.id=(SELECT review_id FROM ai_recovery_third)), 'Antrean gagal dibersihkan setelah retry maksimal');
 -- Provider attempts are shared across features and remain separate from message quota.
 UPDATE private.musrenai_provider_settings SET daily_limit=2 WHERE singleton;
 SELECT pg_temp.check_true(NOT has_function_privilege('anon','public.reserve_musrenai_provider_attempt(text)','EXECUTE') AND NOT has_function_privilege('authenticated','public.reserve_musrenai_provider_attempt(text)','EXECUTE') AND has_function_privilege('service_role','public.reserve_musrenai_provider_attempt(text)','EXECUTE'), 'Reservasi provider hanya service role');
