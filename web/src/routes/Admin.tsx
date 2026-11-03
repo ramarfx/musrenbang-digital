@@ -8,7 +8,8 @@ import { PageLoader } from '@/components/ui/PageLoader';
 import { Select } from '@/components/ui/Select';
 import { AdminProposalTable } from '@/features/admin/components/AdminProposalTable';
 import { CatatanDialog } from '@/features/admin/components/CatatanDialog';
-import { ModerationQueue } from '@/features/admin/components/ModerationQueue';
+import { AntreanTinjau } from '@/features/admin/components/AntreanTinjau';
+import { RincianUsulan } from '@/features/admin/components/RincianUsulan';
 import {
   useAdminStatsQuery,
   useModerateProposalMutation,
@@ -16,17 +17,14 @@ import {
 } from '@/features/admin/queries';
 import { StatusBadge } from '@/features/proposals/components/StatusBadge';
 import { useProposalsQuery } from '@/features/proposals/queries';
-import { cn } from '@/lib/cn';
 import { formatAngka } from '@/lib/format';
-
-type Tab = 'moderasi' | 'status';
 
 function Angka({ label, nilai }: { label: string; nilai: number }) {
   return (
-    <Card>
-      <p className="text-sm text-muted">{label}</p>
-      <p className="text-2xl font-bold tabular-nums">{formatAngka(nilai)}</p>
-    </Card>
+    <div className="min-w-0 flex-1 basis-32 px-4 py-3 first:pl-0 last:pr-0 sm:border-l sm:border-rule sm:first:border-l-0">
+      <p className="truncate text-[13px] text-muted">{label}</p>
+      <p className="text-xl font-bold tabular-nums">{formatAngka(nilai)}</p>
+    </div>
   );
 }
 
@@ -37,7 +35,7 @@ export default function Admin() {
   const moderasiMutation = useModerateProposalMutation();
   const proposals = proposalsQuery.data ?? [];
 
-  const [tab, setTab] = useState<Tab>('moderasi');
+  const [terpilihId, setTerpilihId] = useState<number | null>(null);
   const [ubahStatus, setUbahStatus] = useState<Proposal | null>(null);
   const [statusBaru, setStatusBaru] = useState<ProposalStatus>('Diverifikasi');
   const [tolak, setTolak] = useState<Proposal | null>(null);
@@ -110,65 +108,37 @@ export default function Admin() {
         description="Setujui atau tolak usulan baru, lalu perbarui status kemajuannya. Setiap perubahan status wajib memakai catatan dan tercatat di riwayat."
       />
 
-      <section className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Ringkasan">
-        {stats ? (
-          <>
-            <Angka label="Pengguna terdaftar" nilai={stats.total_pengguna} />
-            <Angka label="Usulan" nilai={stats.total_usulan} />
-            <Angka label="Upvote" nilai={stats.total_suara} />
-            <Angka label="Warga yang mengurutkan" nilai={stats.jumlah_partisipan_alokasi} />
-          </>
-        ) : (
-          <>
-            <Angka label="Usulan terbaca" nilai={proposals.length} />
-            <Angka label="Menunggu persetujuan" nilai={menungguModerasi} />
-          </>
-        )}
-      </section>
-      {!stats && !statsQuery.isPending && (
-        <p className="text-[13px] text-muted">
-          Statistik lengkap (pengguna, upvote, peserta simulator) belum tersedia di server, jadi
-          angka di atas dihitung dari daftar usulan yang terbaca.
+      <Card as="section" aria-label="Ringkasan" className="anim-page">
+        <div className="flex flex-wrap">
+          {stats ? (
+            <>
+              <Angka label="Pengguna terdaftar" nilai={stats.total_pengguna} />
+              <Angka label="Usulan" nilai={stats.total_usulan} />
+              <Angka label="Upvote" nilai={stats.total_suara} />
+              <Angka label="Warga yang mengurutkan" nilai={stats.jumlah_partisipan_alokasi} />
+            </>
+          ) : (
+            <>
+              <Angka label="Usulan terbaca" nilai={proposals.length} />
+              <Angka label="Menunggu persetujuan" nilai={menungguModerasi} />
+            </>
+          )}
+        </div>
+        <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-rule pt-3 text-[13px] text-muted">
+          <span>Status kemajuan:</span>
+          {PROPOSAL_STATUSES.map((status) => (
+            <span key={status}>
+              {status} <b className="text-ink tabular-nums">{formatAngka(hitungStatus(status))}</b>
+            </span>
+          ))}
         </p>
-      )}
-
-      <section
-        className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-5"
-        aria-label="Usulan per status kemajuan"
-      >
-        {PROPOSAL_STATUSES.map((status) => (
-          <Card key={status}>
-            <p className="text-sm text-muted">{status}</p>
-            <p className="text-xl font-bold tabular-nums">{formatAngka(hitungStatus(status))}</p>
-          </Card>
-        ))}
-      </section>
-
-      <div
-        role="group"
-        aria-label="Bagian admin"
-        className="inline-flex rounded-xl border border-border bg-surface p-0.5"
-      >
-        {(
-          [
-            ['moderasi', `Moderasi (${menungguModerasi} menunggu)`],
-            ['status', 'Status kemajuan'],
-          ] as const
-        ).map(([nilai, label]) => (
-          <button
-            key={nilai}
-            type="button"
-            aria-pressed={tab === nilai}
-            onClick={() => setTab(nilai)}
-            className={cn(
-              'h-9 rounded-[10px] px-3.5 text-[13px] font-semibold transition-[scale,background-color,color] duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga',
-              tab === nilai ? 'bg-ink text-on-ink' : 'text-muted hover:bg-active hover:text-ink',
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+        {!stats && !statsQuery.isPending && (
+          <p className="mt-2 text-[13px] text-muted">
+            Statistik lengkap (pengguna, upvote, peserta simulator) belum tersedia di server, jadi
+            angka di atas dihitung dari daftar usulan yang terbaca.
+          </p>
+        )}
+      </Card>
 
       {proposalsQuery.isPending && <PageLoader label="Memuat usulan..." />}
 
@@ -187,17 +157,32 @@ export default function Admin() {
         </Card>
       )}
 
-      {proposals.length > 0 && tab === 'moderasi' && (
-        <ModerationQueue
-          proposals={proposals}
-          sedangDiproses={sedangDiproses}
-          onSetujui={setujui}
-          onTolak={bukaTolak}
-        />
-      )}
+      {proposals.length > 0 && (
+        <>
+          <div className="stagger grid items-stretch gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+            <AntreanTinjau
+              proposals={proposals}
+              terpilihId={terpilihId}
+              onPilih={setTerpilihId}
+              sedangDiproses={sedangDiproses}
+              onSetujui={setujui}
+            />
+            <RincianUsulan
+              proposal={proposals.find((proposal) => proposal.id === terpilihId) ?? null}
+              sedangDiproses={sedangDiproses}
+              onSetujui={setujui}
+              onTolak={bukaTolak}
+              onUbahStatus={bukaUbahStatus}
+            />
+          </div>
 
-      {proposals.length > 0 && tab === 'status' && (
-        <AdminProposalTable proposals={proposals} onUbahStatus={bukaUbahStatus} />
+          <section aria-labelledby="judul-semua-usulan" className="space-y-3">
+            <h2 id="judul-semua-usulan" className="text-lg font-bold">
+              Semua usulan
+            </h2>
+            <AdminProposalTable proposals={proposals} onUbahStatus={bukaUbahStatus} />
+          </section>
+        </>
       )}
 
       <CatatanDialog
