@@ -573,6 +573,13 @@ SELECT 'warga', clock_timestamp() - interval '2 minutes' FROM generate_series(1,
 UPDATE private.musrenai_provider_settings SET daily_limit=100000 WHERE singleton;
 SELECT pg_temp.check_true(NOT public.reserve_musrenai_provider_attempt('admin'), 'Batas 300 tidak dapat dinaikkan lewat konfigurasi');
 DELETE FROM private.musrenai_provider_attempts;
+INSERT INTO private.musrenai_provider_attempts(feature,attempted_at)
+SELECT 'admin', clock_timestamp() - interval '23 hours' FROM generate_series(1,300);
+SELECT pg_temp.check_true(NOT public.reserve_musrenai_provider_attempt('warga'), 'Rolling 24 jam tetap menolak 300 percobaan lama');
+DELETE FROM private.musrenai_provider_attempts;
+DELETE FROM private.musrenai_provider_settings WHERE singleton;
+SELECT pg_temp.expect_error('SELECT public.reserve_musrenai_provider_attempt(''warga'')', '55000', 'Konfigurasi kuota hilang gagal tertutup');
+INSERT INTO private.musrenai_provider_settings(singleton,daily_limit) VALUES (true,300);
 SELECT pg_temp.check_true(
   (date_trunc('day', '2026-03-08 12:00:00+00'::timestamptz AT TIME ZONE 'America/Los_Angeles') AT TIME ZONE 'America/Los_Angeles') = '2026-03-08 08:00:00+00'::timestamptz
   AND (date_trunc('day', '2026-03-09 12:00:00+00'::timestamptz AT TIME ZONE 'America/Los_Angeles') AT TIME ZONE 'America/Los_Angeles') = '2026-03-09 07:00:00+00'::timestamptz
