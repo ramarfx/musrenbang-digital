@@ -654,6 +654,12 @@ SELECT pg_temp.expect_error('SELECT * FROM public.proposals', '42501', 'Worker t
 SELECT pg_temp.expect_error('UPDATE public.proposals SET moderasi=''Disetujui''', '42501', 'Worker tidak mengubah moderasi langsung');
 SELECT pg_temp.expect_error('SELECT public.moderate_proposal(1,''Disetujui'')', '42501', 'Worker tidak memanggil RPC moderasi admin');
 RESET ROLE;
+INSERT INTO private.aspiration_summaries(period_from,period_to,moderation,fingerprint,statistics,sources,coverage,state,created_at)
+VALUES (now()-interval '3 days',now()-interval '2 days','Menunggu','retention-fixture-old','{}','[]','complete','completed',now()-interval '60 days'),
+ (now()-interval '3 days',now()-interval '2 days','Menunggu','retention-fixture-pending','{}','[]','complete','pending',now()-interval '60 days'),
+ (now()-interval '3 days',now()-interval '2 days','Menunggu','retention-fixture-recent','{}','[]','complete','failed',now()-interval '2 days');
+SELECT pg_temp.check_true(private.prune_aspiration_summaries(now()-interval '30 days',100)=1, 'Retensi hanya membersihkan cache selesai yang melewati batas');
+SELECT pg_temp.check_true((SELECT count(*)=2 FROM private.aspiration_summaries WHERE fingerprint IN ('retention-fixture-pending','retention-fixture-recent')), 'Retensi mempertahankan job pending dan cache baru');
 SELECT jsonb_build_object('lulus', count(*), 'gagal', 0, 'pengujian', jsonb_agg(nama ORDER BY nomor)) AS hasil
 FROM security_results;
 ROLLBACK;
