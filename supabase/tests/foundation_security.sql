@@ -213,7 +213,7 @@ SELECT pg_temp.check_true(private.proposal_vote_count(91000001)=0, 'Helper vote 
 SELECT pg_temp.check_true(NOT (SELECT prosecdef FROM pg_proc WHERE oid='public.is_admin()'::regprocedure), 'RPC public.is_admin berjalan sebagai invoker');
 SELECT pg_temp.check_true((SELECT prosecdef FROM pg_proc WHERE oid='private.is_admin()'::regprocedure), 'Pemeriksaan peran terbatas pada helper private');
 SELECT pg_temp.check_true(NOT has_schema_privilege('anon','private','CREATE') AND NOT has_schema_privilege('authenticated','private','CREATE'), 'Role aplikasi tidak dapat membuat objek dalam schema private');
-SELECT pg_temp.check_true((SELECT count(*)=20 AND bool_and((prosecdef OR oid='private.proposal_ai_hash(public.proposals)'::regprocedure) AND proconfig @> ARRAY['search_path=""'] AND pg_get_userbyid(proowner) NOT IN ('anon','authenticated')) FROM pg_proc WHERE pronamespace='private'::regnamespace), 'Seluruh helper private memiliki owner tepercaya dan search_path kosong');
+SELECT pg_temp.check_true((SELECT count(*)=21 AND bool_and((prosecdef OR oid='private.proposal_ai_hash(public.proposals)'::regprocedure) AND proconfig @> ARRAY['search_path=""'] AND pg_get_userbyid(proowner) NOT IN ('anon','authenticated')) FROM pg_proc WHERE pronamespace='private'::regnamespace), 'Seluruh helper private memiliki owner tepercaya dan search_path kosong');
 SELECT pg_temp.check_true(NOT EXISTS (SELECT 1 FROM pg_proc p CROSS JOIN LATERAL aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) a WHERE p.pronamespace='private'::regnamespace AND a.grantee=0 AND a.privilege_type='EXECUTE'), 'Tidak ada EXECUTE helper private melalui grant PUBLIC');
 SELECT pg_temp.check_true(has_function_privilege('anon','public.is_admin()','EXECUTE'), 'Anon tetap dapat memanggil pemeriksaan peran yang aman');
 SELECT pg_temp.check_true((SELECT bool_and(prosecdef AND proconfig @> ARRAY['search_path=""']) FROM pg_proc WHERE oid IN ('private.change_proposal_status_with_note(bigint,text,text)'::regprocedure, 'public.moderate_proposal(bigint,text,text)'::regprocedure, 'public.save_allocations(jsonb)'::regprocedure)), 'Worker berhak istimewa memakai search_path kosong');
@@ -573,6 +573,22 @@ SELECT pg_temp.check_true(public.get_aspiration_statistics()->>'moderation_filte
 SELECT pg_temp.expect_error('SELECT public.get_aspiration_statistics(now(),now(),''Menunggu'',NULL)', '22023', 'Periode kosong ditolak');
 SELECT pg_temp.expect_error('SELECT public.get_aspiration_statistics(now()-interval ''1 day'',now(),''Ditolak'',NULL)', '22023', 'Filter moderasi asing ditolak');
 SELECT pg_temp.expect_error('SELECT public.get_aspiration_statistics(now()-interval ''1 day'',now(),''Menunggu'',''tidak ada'')', '22023', 'Kategori asing ditolak');
+RESET ROLE;
+SET LOCAL ROLE anon;
+SELECT pg_temp.expect_error('SELECT * FROM public.request_aspiration_summary(now()-interval ''1 day'',now()+interval ''1 day'')', '42501', 'Anon tidak meminta snapshot');
+RESET ROLE;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
+SELECT pg_temp.expect_error('SELECT * FROM public.get_aspiration_summary(1)', '42501', 'Warga tidak membaca snapshot');
+SELECT set_config('request.jwt.claim.sub', '33333333-3333-4333-8333-333333333333', true);
+CREATE TEMP TABLE summary_fixture AS SELECT * FROM public.request_aspiration_summary(now()-interval '1 day',now()+interval '1 day');
+SELECT pg_temp.check_true((SELECT state='pending' AND coverage='complete' FROM summary_fixture), 'Admin meminta snapshot');
+SELECT pg_temp.check_true((SELECT a.summary_id=b.summary_id FROM summary_fixture a CROSS JOIN public.request_aspiration_summary(now()-interval '1 day',now()+interval '1 day') b), 'Snapshot identik memakai cache');
+SELECT pg_temp.check_true((SELECT NOT stale AND state='pending' FROM public.get_aspiration_summary((SELECT summary_id FROM summary_fixture))), 'Snapshot awal belum stale');
+RESET ROLE;
+UPDATE public.proposals SET deskripsi='Perubahan konten untuk pengujian penanda snapshot stale.' WHERE id=98000003;
+SET LOCAL ROLE authenticated;
+SELECT pg_temp.check_true((SELECT stale AND narrative IS NULL FROM public.get_aspiration_summary((SELECT summary_id FROM summary_fixture))), 'Perubahan sumber membuat snapshot stale');
 RESET ROLE;
 SELECT jsonb_build_object('lulus', count(*), 'gagal', 0, 'pengujian', jsonb_agg(nama ORDER BY nomor)) AS hasil
 FROM security_results;
