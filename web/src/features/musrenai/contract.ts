@@ -29,3 +29,22 @@ export type ChatResponse = z.infer<typeof responseSchema>;
 export function parseChatResponse(data: unknown): ChatResponse {
   return responseSchema.parse(data);
 }
+
+export function chatErrorMessage(status: number): string {
+  switch (status) {
+    case 400:
+      return 'Pesan tidak valid atau mengandung data pribadi.';
+    case 401:
+      return 'Sesi telah berakhir. Silakan masuk kembali.';
+    case 403:
+      return 'Akses MusrenAI ditolak. Silakan buka dari website resmi.';
+    case 429:
+      return 'Batas permintaan tercapai. Silakan coba lagi nanti.';
+    case 504:
+      return 'Jawaban terlalu lama. Silakan coba lagi.';
+    case 503:
+      return 'MusrenAI sementara tidak tersedia. Silakan coba lagi nanti.';
+    default:
+      return 'MusrenAI belum tersedia. Silakan coba lagi nanti.';
+  }
+}
