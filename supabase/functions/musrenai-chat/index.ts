@@ -20,6 +20,21 @@ Deno.serve(
     origin,
     faqApproved: approved,
     provider,
+    reserveProvider: async () => {
+      if (!url || !serviceKey) throw new Error('provider quota unavailable');
+      const response = await fetch(`${url}/rest/v1/rpc/reserve_musrenai_provider_attempt`, {
+        method: 'POST',
+        headers: {
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ p_feature: 'warga' }),
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!response.ok) throw new Error('provider quota unavailable');
+      return (await response.json()) === true;
+    },
     authenticate: async (token) => {
       if (!url || !publicKey) throw new Error('auth unavailable');
       const response = await fetch(`${url}/auth/v1/user`, {

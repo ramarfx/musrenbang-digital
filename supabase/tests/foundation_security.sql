@@ -3,8 +3,8 @@
 BEGIN;
 SET LOCAL statement_timeout = '30s';
 CREATE TEMP TABLE security_results (nomor integer GENERATED ALWAYS AS IDENTITY, nama text, lulus boolean);
-GRANT SELECT, INSERT ON security_results TO anon, authenticated;
-GRANT USAGE ON SEQUENCE security_results_nomor_seq TO anon, authenticated;
+GRANT SELECT, INSERT ON security_results TO anon, authenticated, service_role;
+GRANT USAGE ON SEQUENCE security_results_nomor_seq TO anon, authenticated, service_role;
 
 CREATE FUNCTION pg_temp.check_true(p_ok boolean, p_nama text)
 RETURNS void LANGUAGE plpgsql SECURITY INVOKER AS $$
@@ -529,6 +529,20 @@ SELECT pg_temp.expect_error('SELECT private.finish_proposal_ai((SELECT review_id
 UPDATE public.proposals SET deskripsi='Air menggenang karena saluran tersumbat ketika hujan.' WHERE id=98000002;
 SELECT pg_temp.check_true((SELECT private.finish_proposal_ai(review_id, token, '[]'::jsonb, 'Tidak ada indikasi', NULL, false)='stale' FROM ai_claim), 'Hasil versi lama ditandai stale');
 SELECT pg_temp.check_true((SELECT moderasi='Menunggu' FROM public.proposals WHERE id=98000002), 'Pemrosesan stale tidak mengubah moderasi');
+-- Provider attempts are shared across features and remain separate from message quota.
+UPDATE private.musrenai_provider_settings SET daily_limit=2 WHERE singleton;
+SELECT pg_temp.check_true(NOT has_function_privilege('anon','public.reserve_musrenai_provider_attempt(text)','EXECUTE') AND NOT has_function_privilege('authenticated','public.reserve_musrenai_provider_attempt(text)','EXECUTE') AND has_function_privilege('service_role','public.reserve_musrenai_provider_attempt(text)','EXECUTE'), 'Reservasi provider hanya service role');
+SELECT pg_temp.check_true(NOT has_table_privilege('service_role','private.musrenai_provider_attempts','SELECT'), 'Service role tidak membaca tabel kuota secara langsung');
+SET LOCAL ROLE service_role;
+SELECT pg_temp.expect_error('SELECT public.reserve_musrenai_provider_attempt(''other'')', '22023', 'Fitur provider tidak dikenal ditolak');
+SELECT pg_temp.check_true(public.reserve_musrenai_provider_attempt('warga'), 'Provider menerima reservasi warga');
+SELECT pg_temp.check_true(public.reserve_musrenai_provider_attempt('admin'), 'Provider menerima reservasi admin');
+SELECT pg_temp.check_true(NOT public.reserve_musrenai_provider_attempt('warga'), 'Batas provider bersama menolak percobaan berikutnya');
+RESET ROLE;
+SELECT pg_temp.check_true((SELECT count(*)=2 FROM private.musrenai_provider_attempts), 'Hanya percobaan yang diizinkan dicatat');
+SELECT pg_temp.check_true((SELECT count(*)=0 FROM private.musrenai_requests), 'Reservasi provider tidak memotong kuota pesan warga');
+UPDATE private.musrenai_provider_attempts SET attempted_at=(date_trunc('day',now() AT TIME ZONE 'Asia/Jakarta') AT TIME ZONE 'Asia/Jakarta') - interval '1 second';
+SELECT pg_temp.check_true(public.reserve_musrenai_provider_attempt('admin'), 'Kuota provider memakai batas pergantian hari WIB');
 SELECT jsonb_build_object('lulus', count(*), 'gagal', 0, 'pengujian', jsonb_agg(nama ORDER BY nomor)) AS hasil
 FROM security_results;
 ROLLBACK;

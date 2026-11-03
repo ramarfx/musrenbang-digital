@@ -1,4 +1,5 @@
 import { SQL } from 'bun';
+import { createGuardedGateway } from './gateway';
 import { runOnce, type Job, type Queue, type Result } from './worker';
 
 export function validateLocalDatabaseUrl(value: string): string {
@@ -19,8 +20,12 @@ export function validateLocalDatabaseUrl(value: string): string {
   return value;
 }
 
-export function createLocalQueue(sql: SQL): Queue {
+export function createLocalQueue(sql: SQL): Queue & { reserveProvider(): Promise<boolean> } {
   return {
+    async reserveProvider() {
+      const rows = await sql`SELECT public.reserve_musrenai_provider_attempt('admin') AS allowed`;
+      return rows[0]?.allowed === true;
+    },
     async claim() {
       const rows = await sql`SELECT * FROM private.claim_proposal_ai()`;
       if (!rows.length) return null;
@@ -50,7 +55,19 @@ if (import.meta.main) {
   try {
     const url = validateLocalDatabaseUrl(process.env.MUSRENAI_LOCAL_DATABASE_URL ?? '');
     sql = new SQL(url);
-    const processed = await runOnce(createLocalQueue(sql));
+    const queue = createLocalQueue(sql);
+    const mockProvider =
+      process.env.MUSRENAI_LOCAL_USE_MOCK_PROVIDER === 'true'
+        ? createGuardedGateway({
+            reserveAttempt: () => queue.reserveProvider(),
+            invokeMock: async () => ({
+              flags: ['needs_review'],
+              reason: 'Hasil mock memerlukan tinjauan admin.',
+              model: 'mock',
+            }),
+          })
+        : undefined;
+    const processed = await runOnce(queue, mockProvider);
     console.log(processed ? 'Satu pekerjaan diproses.' : 'Antrean kosong.');
   } catch {
     console.error('Worker lokal gagal. Periksa konfigurasi dan status database lokal.');

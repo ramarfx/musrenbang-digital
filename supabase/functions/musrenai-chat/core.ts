@@ -5,6 +5,7 @@ type Dependencies = {
   authenticate: (token: string) => Promise<string | null>;
   consume: (userId: string) => Promise<string>;
   provider: Provider;
+  reserveProvider: () => Promise<boolean>;
   faqApproved: boolean;
   origin: string;
   timeoutMs?: number;
@@ -156,6 +157,18 @@ export function createHandler(deps: Dependencies) {
         },
         { headers: cors },
       );
+    try {
+      if (!(await deps.reserveProvider()))
+        return error(
+          429,
+          'PROVIDER_LIMITED',
+          'MusrenAI sementara mencapai batas layanan.',
+          id,
+          cors,
+        );
+    } catch {
+      return error(503, 'AI_UNAVAILABLE', 'MusrenAI sementara tidak tersedia.', id, cors);
+    }
     const abort = new AbortController();
     const timer = setTimeout(() => abort.abort(), deps.timeoutMs ?? 15000);
     try {

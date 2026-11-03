@@ -4,6 +4,7 @@ const make = (overrides: Record<string, unknown> = {}) =>
   createHandler({
     authenticate: async (token) => (token === 'valid' ? 'warga' : null),
     consume: async () => 'ok',
+    reserveProvider: async () => true,
     faqApproved: true,
     origin: 'https://example.test',
     provider: async () => ({
@@ -182,4 +183,35 @@ test('adapter Gemini menggunakan key di header dan mengirim data sintetis saja',
   expect(observedUrl).not.toContain('synthetic-key');
   expect(new Headers(observedHeaders).get('x-goog-api-key')).toBe('synthetic-key');
   expect((result as { route_ids: string[] }).route_ids).toEqual(['usulan']);
+});
+
+test('kuota provider terpisah dan gagal tertutup tanpa memanggil provider', async () => {
+  let providerCalls = 0;
+  let messageCalls = 0;
+  const handler = make({
+    consume: async () => {
+      messageCalls++;
+      return 'ok';
+    },
+    reserveProvider: async () => false,
+    provider: async () => {
+      providerCalls++;
+      return {};
+    },
+  });
+  expect((await call(handler, { message: 'halo' })).status).toBe(429);
+  expect(messageCalls).toBe(1);
+  expect(providerCalls).toBe(0);
+  expect(
+    (
+      await call(
+        make({
+          reserveProvider: async () => {
+            throw new Error('secret');
+          },
+        }),
+        { message: 'halo' },
+      )
+    ).status,
+  ).toBe(503);
 });
