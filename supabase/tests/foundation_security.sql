@@ -3,8 +3,8 @@
 BEGIN;
 SET LOCAL statement_timeout = '30s';
 CREATE TEMP TABLE security_results (nomor integer GENERATED ALWAYS AS IDENTITY, nama text, lulus boolean);
-GRANT SELECT, INSERT ON security_results TO anon, authenticated, service_role;
-GRANT USAGE ON SEQUENCE security_results_nomor_seq TO anon, authenticated, service_role;
+GRANT SELECT, INSERT ON security_results TO anon, authenticated, service_role, musrenai_worker_runtime;
+GRANT USAGE ON SEQUENCE security_results_nomor_seq TO anon, authenticated, service_role, musrenai_worker_runtime;
 
 CREATE FUNCTION pg_temp.check_true(p_ok boolean, p_nama text)
 RETURNS void LANGUAGE plpgsql SECURITY INVOKER AS $$
@@ -213,7 +213,7 @@ SELECT pg_temp.check_true(private.proposal_vote_count(91000001)=0, 'Helper vote 
 SELECT pg_temp.check_true(NOT (SELECT prosecdef FROM pg_proc WHERE oid='public.is_admin()'::regprocedure), 'RPC public.is_admin berjalan sebagai invoker');
 SELECT pg_temp.check_true((SELECT prosecdef FROM pg_proc WHERE oid='private.is_admin()'::regprocedure), 'Pemeriksaan peran terbatas pada helper private');
 SELECT pg_temp.check_true(NOT has_schema_privilege('anon','private','CREATE') AND NOT has_schema_privilege('authenticated','private','CREATE'), 'Role aplikasi tidak dapat membuat objek dalam schema private');
-SELECT pg_temp.check_true((SELECT count(*)=23 AND bool_and((prosecdef OR oid='private.proposal_ai_hash(public.proposals)'::regprocedure) AND proconfig @> ARRAY['search_path=""'] AND pg_get_userbyid(proowner) NOT IN ('anon','authenticated')) FROM pg_proc WHERE pronamespace='private'::regnamespace), 'Seluruh helper private memiliki owner tepercaya dan search_path kosong');
+SELECT pg_temp.check_true((SELECT count(*)=24 AND bool_and((prosecdef OR oid='private.proposal_ai_hash(public.proposals)'::regprocedure) AND proconfig @> ARRAY['search_path=""'] AND pg_get_userbyid(proowner) NOT IN ('anon','authenticated')) FROM pg_proc WHERE pronamespace='private'::regnamespace), 'Seluruh helper private memiliki owner tepercaya dan search_path kosong');
 SELECT pg_temp.check_true(NOT EXISTS (SELECT 1 FROM pg_proc p CROSS JOIN LATERAL aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) a WHERE p.pronamespace='private'::regnamespace AND a.grantee=0 AND a.privilege_type='EXECUTE'), 'Tidak ada EXECUTE helper private melalui grant PUBLIC');
 SELECT pg_temp.check_true(has_function_privilege('anon','public.is_admin()','EXECUTE'), 'Anon tetap dapat memanggil pemeriksaan peran yang aman');
 SELECT pg_temp.check_true((SELECT bool_and(prosecdef AND proconfig @> ARRAY['search_path=""']) FROM pg_proc WHERE oid IN ('private.change_proposal_status_with_note(bigint,text,text)'::regprocedure, 'public.moderate_proposal(bigint,text,text)'::regprocedure, 'public.save_allocations(jsonb)'::regprocedure)), 'Worker berhak istimewa memakai search_path kosong');
@@ -641,6 +641,25 @@ SELECT pg_temp.check_true((SELECT count(*) FILTER (WHERE source->>'kategori'='Pe
 SELECT pg_temp.check_true((SELECT min(p.dibuat_pada)<'2024-01-05'::timestamptz AND max(p.dibuat_pada)>'2024-02-15'::timestamptz FROM public.get_aspiration_summary((SELECT summary_id FROM stratified_fixture)) s CROSS JOIN LATERAL jsonb_array_elements(s.sources) source JOIN public.proposals p ON p.id=(source->>'id')::bigint), 'Sampel menjangkau awal dan akhir periode');
 SELECT pg_temp.check_true((SELECT a.summary_id=b.summary_id FROM stratified_fixture a CROSS JOIN public.request_aspiration_summary('2024-01-01+00','2024-04-01+00','Semua',NULL) b), 'Sampling yang sama memakai cache deterministik');
 RESET ROLE;
+-- Worker role can execute scoped operations but cannot read or modify tables.
+SELECT pg_temp.check_true((SELECT NOT rolcanlogin AND NOT rolsuper AND NOT rolbypassrls AND NOT rolinherit FROM pg_roles WHERE rolname='musrenai_worker_runtime'), 'Role worker nonlogin dan tidak bypass RLS');
+SELECT pg_temp.check_true(has_function_privilege('musrenai_worker_runtime','private.claim_proposal_ai()','EXECUTE') AND has_function_privilege('musrenai_worker_runtime','private.claim_aspiration_summary()','EXECUTE'), 'Role worker memiliki akses claim terbatas');
+SELECT pg_temp.check_true(NOT has_table_privilege('musrenai_worker_runtime','public.proposals','SELECT') AND NOT has_table_privilege('musrenai_worker_runtime','public.proposals','UPDATE') AND NOT has_table_privilege('musrenai_worker_runtime','private.aspiration_summaries','SELECT'), 'Role worker tidak dapat membaca atau mengubah tabel langsung');
+SELECT pg_temp.check_true(NOT has_function_privilege('anon','private.prune_aspiration_summaries(timestamptz,integer)','EXECUTE') AND NOT has_function_privilege('authenticated','private.prune_aspiration_summaries(timestamptz,integer)','EXECUTE'), 'Retensi tidak dapat dijalankan role API');
+SELECT pg_temp.expect_error('SELECT private.prune_aspiration_summaries(now(),100)', '22023', 'Retensi menolak cutoff kurang dari tiga puluh hari');
+GRANT musrenai_worker_runtime TO postgres WITH SET TRUE;
+SET LOCAL ROLE musrenai_worker_runtime;
+SELECT pg_temp.check_true(current_user='musrenai_worker_runtime', 'Konteks role worker aktif');
+SELECT pg_temp.expect_error('SELECT * FROM public.proposals', '42501', 'Worker tidak membaca tabel usulan langsung');
+SELECT pg_temp.expect_error('UPDATE public.proposals SET moderasi=''Disetujui''', '42501', 'Worker tidak mengubah moderasi langsung');
+SELECT pg_temp.expect_error('SELECT public.moderate_proposal(1,''Disetujui'')', '42501', 'Worker tidak memanggil RPC moderasi admin');
+RESET ROLE;
+INSERT INTO private.aspiration_summaries(period_from,period_to,moderation,fingerprint,statistics,sources,coverage,state,created_at)
+VALUES (now()-interval '3 days',now()-interval '2 days','Menunggu','retention-fixture-old','{}','[]','complete','completed',now()-interval '60 days'),
+ (now()-interval '3 days',now()-interval '2 days','Menunggu','retention-fixture-pending','{}','[]','complete','pending',now()-interval '60 days'),
+ (now()-interval '3 days',now()-interval '2 days','Menunggu','retention-fixture-recent','{}','[]','complete','failed',now()-interval '2 days');
+SELECT pg_temp.check_true(private.prune_aspiration_summaries(now()-interval '30 days',100)=1, 'Retensi hanya membersihkan cache selesai yang melewati batas');
+SELECT pg_temp.check_true((SELECT count(*)=2 FROM private.aspiration_summaries WHERE fingerprint IN ('retention-fixture-pending','retention-fixture-recent')), 'Retensi mempertahankan job pending dan cache baru');
 SELECT jsonb_build_object('lulus', count(*), 'gagal', 0, 'pengujian', jsonb_agg(nama ORDER BY nomor)) AS hasil
 FROM security_results;
 ROLLBACK;

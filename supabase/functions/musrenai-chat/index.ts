@@ -1,5 +1,6 @@
 import { createHandler } from './core.ts';
 import { geminiProvider } from './provider.ts';
+import { withBoundedRetries } from './retry.ts';
 
 const url = Deno.env.get('SUPABASE_URL') ?? '';
 const publicKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
@@ -8,33 +9,34 @@ const key = Deno.env.get('GEMINI_API_KEY') ?? '';
 const model = Deno.env.get('GEMINI_MODEL') ?? '';
 const origin = Deno.env.get('MUSRENAI_ALLOWED_ORIGIN') ?? '';
 const approved = Deno.env.get('MUSRENAI_FAQ_APPROVED') === 'true';
+const enabled = Deno.env.get('MUSRENAI_GEMINI_ENABLED') === 'true';
+const reserve = async () => {
+  if (!url || !serviceKey) throw new Error('provider quota unavailable');
+  const response = await fetch(`${url}/rest/v1/rpc/reserve_musrenai_provider_attempt`, {
+    method: 'POST',
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ p_feature: 'warga' }),
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!response.ok) throw new Error('provider quota unavailable');
+  return (await response.json()) === true;
+};
 const provider =
-  key && model
-    ? geminiProvider(key, model)
+  enabled && key && model
+    ? withBoundedRetries(geminiProvider(key, model), reserve)
     : async () => {
         throw new Error('not configured');
       };
-
 Deno.serve(
   createHandler({
     origin,
-    faqApproved: approved,
+    faqApproved: approved && enabled && !!key && !!model,
     provider,
-    reserveProvider: async () => {
-      if (!url || !serviceKey) throw new Error('provider quota unavailable');
-      const response = await fetch(`${url}/rest/v1/rpc/reserve_musrenai_provider_attempt`, {
-        method: 'POST',
-        headers: {
-          apikey: serviceKey,
-          Authorization: `Bearer ${serviceKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ p_feature: 'warga' }),
-        signal: AbortSignal.timeout(5000),
-      });
-      if (!response.ok) throw new Error('provider quota unavailable');
-      return (await response.json()) === true;
-    },
+    reserveProvider: reserve,
     authenticate: async (token) => {
       if (!url || !publicKey) throw new Error('auth unavailable');
       const response = await fetch(`${url}/auth/v1/user`, {

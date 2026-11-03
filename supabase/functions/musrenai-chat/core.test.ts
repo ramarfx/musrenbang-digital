@@ -215,3 +215,38 @@ test('kuota provider terpisah dan gagal tertutup tanpa memanggil provider', asyn
     ).status,
   ).toBe(503);
 });
+
+test('retry provider tidak mengulang kuota pesan warga', async () => {
+  const { withBoundedRetries, ProviderTemporaryError } = await import('./retry');
+  let messages = 0,
+    reservations = 0,
+    calls = 0;
+  const reserve = async () => {
+    reservations++;
+    return true;
+  };
+  const provider = withBoundedRetries(
+    async () => {
+      calls++;
+      if (calls === 1) throw new ProviderTemporaryError('fixture');
+      return { answer: 'Halo', route_ids: [], disclaimer: null };
+    },
+    reserve,
+    { wait: async () => {} },
+  );
+  const result = await call(
+    make({
+      consume: async () => {
+        messages++;
+        return 'ok';
+      },
+      reserveProvider: reserve,
+      provider,
+    }),
+    { message: 'Halo' },
+  );
+  expect(result.status).toBe(200);
+  expect(messages).toBe(1);
+  expect(reservations).toBe(2);
+  expect(calls).toBe(2);
+});

@@ -1,4 +1,5 @@
 import { prompt } from './knowledge.ts';
+import { ProviderTemporaryError } from './retry.ts';
 export type ChatInput = {
   message: string;
   history: { role: 'user' | 'assistant'; content: string }[];
@@ -28,6 +29,8 @@ export function geminiProvider(
         }),
       },
     );
+    if ([500, 502, 503, 504].includes(response.status))
+      throw new ProviderTemporaryError('provider unavailable');
     if (!response.ok) throw new Error('provider unavailable');
     const result = (await response.json()) as {
       candidates?: { content?: { parts?: { text?: string }[] } }[];
