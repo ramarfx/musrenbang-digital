@@ -1,6 +1,7 @@
 import { useNavigate, Link, useLocation, useMatch } from 'react-router-dom';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
+import { PemuatLayar } from '@/components/brand/PemuatLayar';
+import { toastGagalMasuk, toastSudahKeluar } from '@/components/ui/ToastMasuk';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { useAuth } from '@/features/auth';
 import { useAppConfigQuery } from '@/features/config/queries';
@@ -252,10 +253,10 @@ export function UserRow({ dark }: { dark: boolean }) {
     setIsSigningOut(true);
     try {
       await signOut();
-      toast.success('Kamu sudah keluar.');
+      toastSudahKeluar(name.trim().split(/\s+/)[0] ?? name);
       navigate('/');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Gagal keluar.');
+      toastGagalMasuk(error instanceof Error ? error.message : undefined, 'Gagal keluar');
     } finally {
       setIsSigningOut(false);
     }
@@ -273,6 +274,7 @@ export function UserRow({ dark }: { dark: boolean }) {
         dark ? 'bg-black/15' : 'border border-border bg-surface',
       )}
     >
+      {isSigningOut && <PemuatLayar label="Keluar dari akun" />}
       {user ? (
         <Link
           to="/profil"
