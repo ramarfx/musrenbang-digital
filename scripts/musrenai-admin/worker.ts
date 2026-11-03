@@ -45,19 +45,21 @@ export function rules(job: Job): Result | null {
 export async function runOnce(queue: Queue, provider?: Provider): Promise<boolean> {
   const job = await queue.claim();
   if (!job) return false;
+  let result: Result | null;
   try {
-    const result =
+    result =
       rules(job) ??
       (provider
         ? validateResult(await provider(job))
         : {
-            flags: ['needs_review'] as Flag[],
+            flags: ['needs_review'],
             reason: 'Pemeriksaan otomatis tidak cukup untuk menyimpulkan; perlu tinjauan admin.',
             model: null,
           });
-    await queue.finish(job, result);
   } catch {
-    await queue.finish(job, null);
+    result = null;
   }
+  // A failed or uncertain database acknowledgement must never be retried as a new outcome.
+  await queue.finish(job, result);
   return true;
 }

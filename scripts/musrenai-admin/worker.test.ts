@@ -40,4 +40,17 @@ describe('worker auto-flag', () => {
     );
     expect(failed).toBe(true);
   });
+  test('kegagalan database tidak ditulis ulang sebagai kegagalan provider', async () => {
+    let attempts = 0;
+    await expect(
+      runOnce({
+        claim: async () => job,
+        finish: async () => {
+          attempts++;
+          throw new Error('database unavailable');
+        },
+      }),
+    ).rejects.toThrow('database unavailable');
+    expect(attempts).toBe(1);
+  });
 });
