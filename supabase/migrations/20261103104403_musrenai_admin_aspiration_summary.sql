@@ -55,8 +55,10 @@ CREATE TABLE private.aspiration_summaries (
  statistics jsonb NOT NULL,
  sources jsonb NOT NULL CHECK (jsonb_typeof(sources)='array'),
  coverage text NOT NULL CHECK (coverage IN ('complete','sample')),
- state text NOT NULL DEFAULT 'pending' CHECK (state IN ('pending','completed','failed')),
+ state text NOT NULL DEFAULT 'pending' CHECK (state IN ('pending','processing','completed','failed')),
  narrative jsonb,
+ lease_token uuid, lease_until timestamptz, attempts integer NOT NULL DEFAULT 0 CHECK (attempts BETWEEN 0 AND 3),
+ CHECK ((lease_token IS NULL) = (lease_until IS NULL)),
  created_at timestamptz NOT NULL DEFAULT now(),
  UNIQUE (fingerprint)
 );
@@ -116,3 +118,69 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION public.get_aspiration_summary(bigint) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.get_aspiration_summary(bigint) TO authenticated;
+
+-- Trusted local worker only. Every claim is fenced with a short-lived lease token.
+CREATE FUNCTION private.claim_aspiration_summary()
+RETURNS TABLE(summary_id bigint, token uuid, sources jsonb, coverage text)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+DECLARE v_id bigint; v_token uuid;
+BEGIN
+ UPDATE private.aspiration_summaries a SET state='failed',lease_token=NULL,lease_until=NULL
+ WHERE a.state='processing' AND a.lease_until<now() AND a.attempts>=3;
+ SELECT a.id INTO v_id FROM private.aspiration_summaries a
+ WHERE (a.state='pending' OR (a.state='processing' AND a.lease_until<now())) AND a.attempts<3
+ ORDER BY a.id FOR UPDATE SKIP LOCKED LIMIT 1;
+ IF v_id IS NULL THEN RETURN; END IF;
+ v_token := pg_catalog.gen_random_uuid();
+ UPDATE private.aspiration_summaries a SET state='processing',lease_token=v_token,
+  lease_until=now()+interval '2 minutes',attempts=attempts+1 WHERE a.id=v_id;
+ RETURN QUERY SELECT a.id,v_token,a.sources,a.coverage FROM private.aspiration_summaries a WHERE a.id=v_id;
+END $$;
+REVOKE ALL ON FUNCTION private.claim_aspiration_summary() FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE FUNCTION private.finish_aspiration_summary(p_id bigint,p_token uuid,p_narrative jsonb,p_failed boolean DEFAULT false)
+RETURNS text LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+DECLARE v_row private.aspiration_summaries%ROWTYPE; v_hash text; v_theme jsonb;
+BEGIN
+ SELECT * INTO v_row FROM private.aspiration_summaries WHERE id=p_id FOR UPDATE;
+ IF NOT FOUND OR p_token IS NULL OR v_row.lease_token IS DISTINCT FROM p_token OR v_row.lease_until<=now() THEN
+  RAISE EXCEPTION 'Lease tidak valid' USING ERRCODE='42501';
+ END IF;
+ SELECT s.fingerprint INTO v_hash FROM private.aspiration_source_data(v_row.period_from,v_row.period_to,v_row.moderation,v_row.category) s;
+ IF v_hash IS DISTINCT FROM v_row.fingerprint THEN
+  UPDATE private.aspiration_summaries SET state='failed',lease_token=NULL,lease_until=NULL WHERE id=p_id;
+  RETURN 'stale';
+ END IF;
+ IF p_failed THEN
+  UPDATE private.aspiration_summaries SET state='failed',lease_token=NULL,lease_until=NULL WHERE id=p_id;
+  RETURN 'failed';
+ END IF;
+ IF p_narrative IS NULL OR jsonb_typeof(p_narrative)<>'object' THEN RAISE EXCEPTION 'Narasi tidak valid' USING ERRCODE='22023'; END IF;
+ IF EXISTS (SELECT 1 FROM jsonb_object_keys(p_narrative) k WHERE k NOT IN ('themes','limitations'))
+ OR jsonb_typeof(p_narrative->'themes') IS DISTINCT FROM 'array'
+ OR jsonb_typeof(p_narrative->'limitations') IS DISTINCT FROM 'string'
+ OR length(p_narrative->>'limitations')>500 OR (p_narrative->>'limitations') ~ '[0-9]'
+ OR jsonb_array_length(p_narrative->'themes')>10 THEN
+  RAISE EXCEPTION 'Narasi tidak valid' USING ERRCODE='22023';
+ END IF;
+ FOR v_theme IN SELECT * FROM jsonb_array_elements(p_narrative->'themes') LOOP
+  IF jsonb_typeof(v_theme)<>'object' THEN RAISE EXCEPTION 'Tema tidak valid' USING ERRCODE='22023'; END IF;
+  IF EXISTS (SELECT 1 FROM jsonb_object_keys(v_theme) k WHERE k NOT IN ('topic','explanation','source_ids'))
+   OR jsonb_typeof(v_theme->'topic') IS DISTINCT FROM 'string'
+   OR jsonb_typeof(v_theme->'explanation') IS DISTINCT FROM 'string'
+   OR length(btrim(v_theme->>'topic')) NOT BETWEEN 1 AND 120
+   OR length(btrim(v_theme->>'explanation')) NOT BETWEEN 1 AND 500
+   OR (v_theme->>'topic') ~ '[0-9]' OR (v_theme->>'explanation') ~ '[0-9]'
+   OR jsonb_typeof(v_theme->'source_ids') IS DISTINCT FROM 'array' THEN
+   RAISE EXCEPTION 'Tema tidak valid' USING ERRCODE='22023';
+  END IF;
+  IF jsonb_array_length(v_theme->'source_ids') NOT BETWEEN 1 AND 100 OR EXISTS (
+   SELECT 1 FROM jsonb_array_elements(v_theme->'source_ids') x
+   WHERE jsonb_typeof(x)<>'number' OR NOT EXISTS (SELECT 1 FROM jsonb_array_elements(v_row.sources) s WHERE s->'id'=x)
+  ) THEN RAISE EXCEPTION 'Referensi tidak valid' USING ERRCODE='22023'; END IF;
+ END LOOP;
+ IF jsonb_array_length(v_row.sources)=0 AND jsonb_array_length(p_narrative->'themes')>0 THEN RAISE EXCEPTION 'Sumber kosong' USING ERRCODE='22023'; END IF;
+ UPDATE private.aspiration_summaries SET state='completed',narrative=p_narrative,lease_token=NULL,lease_until=NULL WHERE id=p_id;
+ RETURN 'completed';
+END $$;
+REVOKE ALL ON FUNCTION private.finish_aspiration_summary(bigint,uuid,jsonb,boolean) FROM PUBLIC,anon,authenticated,service_role;
