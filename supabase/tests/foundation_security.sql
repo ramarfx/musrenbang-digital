@@ -213,7 +213,7 @@ SELECT pg_temp.check_true(private.proposal_vote_count(91000001)=0, 'Helper vote 
 SELECT pg_temp.check_true(NOT (SELECT prosecdef FROM pg_proc WHERE oid='public.is_admin()'::regprocedure), 'RPC public.is_admin berjalan sebagai invoker');
 SELECT pg_temp.check_true((SELECT prosecdef FROM pg_proc WHERE oid='private.is_admin()'::regprocedure), 'Pemeriksaan peran terbatas pada helper private');
 SELECT pg_temp.check_true(NOT has_schema_privilege('anon','private','CREATE') AND NOT has_schema_privilege('authenticated','private','CREATE'), 'Role aplikasi tidak dapat membuat objek dalam schema private');
-SELECT pg_temp.check_true((SELECT count(*)=20 AND bool_and((prosecdef OR oid='private.proposal_ai_hash(public.proposals)'::regprocedure) AND proconfig @> ARRAY['search_path=""'] AND pg_get_userbyid(proowner) NOT IN ('anon','authenticated')) FROM pg_proc WHERE pronamespace='private'::regnamespace), 'Seluruh helper private memiliki owner tepercaya dan search_path kosong');
+SELECT pg_temp.check_true((SELECT count(*)=23 AND bool_and((prosecdef OR oid='private.proposal_ai_hash(public.proposals)'::regprocedure) AND proconfig @> ARRAY['search_path=""'] AND pg_get_userbyid(proowner) NOT IN ('anon','authenticated')) FROM pg_proc WHERE pronamespace='private'::regnamespace), 'Seluruh helper private memiliki owner tepercaya dan search_path kosong');
 SELECT pg_temp.check_true(NOT EXISTS (SELECT 1 FROM pg_proc p CROSS JOIN LATERAL aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) a WHERE p.pronamespace='private'::regnamespace AND a.grantee=0 AND a.privilege_type='EXECUTE'), 'Tidak ada EXECUTE helper private melalui grant PUBLIC');
 SELECT pg_temp.check_true(has_function_privilege('anon','public.is_admin()','EXECUTE'), 'Anon tetap dapat memanggil pemeriksaan peran yang aman');
 SELECT pg_temp.check_true((SELECT bool_and(prosecdef AND proconfig @> ARRAY['search_path=""']) FROM pg_proc WHERE oid IN ('private.change_proposal_status_with_note(bigint,text,text)'::regprocedure, 'public.moderate_proposal(bigint,text,text)'::regprocedure, 'public.save_allocations(jsonb)'::regprocedure)), 'Worker berhak istimewa memakai search_path kosong');
@@ -559,6 +559,88 @@ SELECT pg_temp.check_true((SELECT count(*)=2 FROM private.musrenai_provider_atte
 SELECT pg_temp.check_true((SELECT count(*)=0 FROM private.musrenai_requests), 'Reservasi provider tidak memotong kuota pesan warga');
 UPDATE private.musrenai_provider_attempts SET attempted_at=(date_trunc('day',now() AT TIME ZONE 'Asia/Jakarta') AT TIME ZONE 'Asia/Jakarta') - interval '1 second';
 SELECT pg_temp.check_true(public.reserve_musrenai_provider_attempt('admin'), 'Kuota provider memakai batas pergantian hari WIB');
+-- Admin-only aspiration statistics use database counts and validated filters.
+SET LOCAL ROLE anon;
+SELECT pg_temp.expect_error('SELECT public.get_aspiration_statistics()', '42501', 'Anon tidak membaca statistik aspirasi');
+RESET ROLE;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
+SELECT pg_temp.expect_error('SELECT public.get_aspiration_statistics()', '42501', 'Warga tidak membaca statistik aspirasi');
+SELECT set_config('request.jwt.claim.sub', '33333333-3333-4333-8333-333333333333', true);
+SELECT pg_temp.check_true((public.get_aspiration_statistics(now()-interval '1 day', now()+interval '1 day', 'Menunggu', 'Pendidikan')->>'total')::integer = (SELECT count(*) FROM public.proposals WHERE dibuat_pada >= now()-interval '1 day' AND dibuat_pada < now()+interval '1 day' AND moderasi='Menunggu' AND kategori='Pendidikan'), 'Statistik aspirasi menghitung filter SQL');
+SELECT pg_temp.check_true(public.get_aspiration_statistics(now()-interval '1 day', now()+interval '1 day', 'Semua', NULL)->>'moderation_filter'='Semua', 'Filter semua moderasi diterima');
+SELECT pg_temp.check_true(public.get_aspiration_statistics()->>'moderation_filter'='Menunggu', 'Filter default menunggu');
+SELECT pg_temp.check_true((public.get_aspiration_statistics(now()-interval '1 day', now()+interval '1 day', 'Disetujui', NULL)->>'total')::integer = (SELECT count(*) FROM public.proposals WHERE dibuat_pada>=now()-interval '1 day' AND dibuat_pada<now()+interval '1 day' AND moderasi='Disetujui'), 'Filter disetujui menghitung baris yang tepat');
+SELECT pg_temp.check_true((public.get_aspiration_statistics(now()-interval '1 day', now()+interval '1 day', 'Semua', NULL)->'categories'->>'Pendidikan')::integer = (SELECT count(*) FROM public.proposals WHERE dibuat_pada>=now()-interval '1 day' AND dibuat_pada<now()+interval '1 day' AND kategori='Pendidikan'), 'Distribusi kategori berasal dari SQL');
+SELECT pg_temp.expect_error('SELECT public.get_aspiration_statistics(now(),now(),''Menunggu'',NULL)', '22023', 'Periode kosong ditolak');
+SELECT pg_temp.expect_error('SELECT public.get_aspiration_statistics(now()-interval ''1 day'',now(),''Ditolak'',NULL)', '22023', 'Filter moderasi asing ditolak');
+SELECT pg_temp.expect_error('SELECT public.get_aspiration_statistics(now()-interval ''1 day'',now(),''Menunggu'',''tidak ada'')', '22023', 'Kategori asing ditolak');
+RESET ROLE;
+SET LOCAL ROLE anon;
+SELECT pg_temp.expect_error('SELECT * FROM public.request_aspiration_summary(now()-interval ''1 day'',now()+interval ''1 day'')', '42501', 'Anon tidak meminta snapshot');
+RESET ROLE;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
+SELECT pg_temp.expect_error('SELECT * FROM public.get_aspiration_summary(1)', '42501', 'Warga tidak membaca snapshot');
+SELECT set_config('request.jwt.claim.sub', '33333333-3333-4333-8333-333333333333', true);
+CREATE TEMP TABLE summary_fixture AS SELECT * FROM public.request_aspiration_summary(now()-interval '1 day',now()+interval '1 day');
+SELECT pg_temp.check_true((SELECT state='pending' AND coverage='complete' FROM summary_fixture), 'Admin meminta snapshot');
+SELECT pg_temp.check_true((SELECT a.summary_id=b.summary_id FROM summary_fixture a CROSS JOIN public.request_aspiration_summary(now()-interval '1 day',now()+interval '1 day') b), 'Snapshot identik memakai cache');
+SELECT pg_temp.check_true((SELECT NOT stale AND state='pending' FROM public.get_aspiration_summary((SELECT summary_id FROM summary_fixture))), 'Snapshot awal belum stale');
+RESET ROLE;
+UPDATE public.proposals SET deskripsi='Perubahan konten untuk pengujian penanda snapshot stale.' WHERE id=98000003;
+SET LOCAL ROLE authenticated;
+SELECT pg_temp.check_true((SELECT stale AND narrative IS NULL FROM public.get_aspiration_summary((SELECT summary_id FROM summary_fixture))), 'Perubahan sumber membuat snapshot stale');
+RESET ROLE;
+UPDATE private.aspiration_summaries SET state='failed' WHERE id=(SELECT summary_id FROM summary_fixture);
+SELECT * FROM public.request_aspiration_summary(now()-interval '1 day',now()+interval '1 day');
+CREATE TEMP TABLE summary_claim AS SELECT * FROM private.claim_aspiration_summary();
+GRANT SELECT ON summary_claim TO authenticated;
+SELECT pg_temp.check_true((SELECT count(*)=1 FROM summary_claim), 'Worker ringkasan memperoleh lease');
+SELECT pg_temp.expect_error('SELECT private.finish_aspiration_summary(summary_id,token,''{"themes":[{"topic":"Jalan","explanation":"Perlu tinjauan","source_ids":[999999999]}],"limitations":"Tinjauan diperlukan"}''::jsonb,false) FROM summary_claim', '22023', 'Referensi usulan di luar snapshot ditolak');
+SELECT pg_temp.expect_error('SELECT private.finish_aspiration_summary(summary_id,token,''{"themes":[{"topic":"Jalan","explanation":"Ada 99 usulan","source_ids":[1]}],"limitations":"Tinjauan diperlukan"}''::jsonb,false) FROM summary_claim', '22023', 'Angka karangan dalam narasi ditolak');
+SELECT pg_temp.check_true((SELECT private.finish_aspiration_summary(summary_id,token,jsonb_build_object('themes',jsonb_build_array(jsonb_build_object('topic','Kebutuhan warga','explanation','Usulan memerlukan tinjauan','source_ids',jsonb_build_array(sources->0->'id'))),'limitations','Ringkasan hanya membantu tinjauan'),false)='completed' FROM summary_claim), 'Narasi dengan sumber snapshot diterima');
+SET LOCAL ROLE authenticated;
+SELECT pg_temp.check_true((SELECT state='completed' AND NOT stale AND narrative IS NOT NULL FROM public.get_aspiration_summary((SELECT summary_id FROM summary_claim))), 'Admin membaca narasi tervalidasi');
+RESET ROLE;
+UPDATE private.aspiration_summaries SET state='failed' WHERE id=(SELECT summary_id FROM summary_claim);
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
+SELECT pg_temp.expect_error('SELECT public.retry_aspiration_summary((SELECT summary_id FROM summary_claim))', '42501', 'Warga tidak dapat mengulang ringkasan');
+SELECT set_config('request.jwt.claim.sub', '33333333-3333-4333-8333-333333333333', true);
+SELECT pg_temp.check_true(public.retry_aspiration_summary((SELECT summary_id FROM summary_claim)), 'Admin mengulang ringkasan gagal yang masih sesuai sumber');
+SELECT pg_temp.check_true((SELECT state='pending' FROM public.get_aspiration_summary((SELECT summary_id FROM summary_claim))), 'Retry admin mengembalikan status pending');
+RESET ROLE;
+INSERT INTO public.proposals(judul,deskripsi,kategori,estimasi_biaya,dibuat_pada)
+SELECT 'Fixture usulan pendidikan', 'Kondisi pendidikan perlu ditinjau untuk kebutuhan warga.', 'Pendidikan', 1000, '2025-01-10 00:00:00+00'::timestamptz FROM generate_series(1,101);
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', '33333333-3333-4333-8333-333333333333', true);
+CREATE TEMP TABLE summary_sample AS SELECT * FROM public.request_aspiration_summary('2025-01-01+00','2025-02-01+00');
+SELECT pg_temp.check_true((SELECT coverage='sample' FROM summary_sample), 'Lebih dari seratus sumber ditandai sampel');
+SELECT pg_temp.check_true((SELECT jsonb_array_length(sources)=100 AND (statistics->>'total')::integer=101 FROM public.get_aspiration_summary((SELECT summary_id FROM summary_sample))), 'Statistik total tetap lengkap walaupun sumber sampel');
+RESET ROLE;
+UPDATE private.aspiration_summaries SET state='failed' WHERE id<>(SELECT summary_id FROM summary_sample) AND state='pending';
+CREATE TEMP TABLE summary_failed_claim AS SELECT * FROM private.claim_aspiration_summary();
+SELECT pg_temp.check_true((SELECT private.finish_aspiration_summary(summary_id,token,NULL,true)='failed' FROM summary_failed_claim), 'Kegagalan provider menandai ringkasan gagal');
+SET LOCAL ROLE authenticated;
+SELECT pg_temp.check_true((SELECT (statistics->>'total')::integer=101 AND state='failed' FROM public.get_aspiration_summary((SELECT summary_id FROM summary_sample))), 'Statistik snapshot tetap tersedia ketika provider gagal');
+SELECT pg_temp.check_true((public.get_aspiration_statistics('2025-01-01+00','2025-02-01+00')->>'total')::integer=101, 'Statistik SQL tetap tersedia ketika provider gagal');
+RESET ROLE;
+-- Deterministic stratification covers both categories and the time range.
+INSERT INTO public.proposals(judul,deskripsi,kategori,estimasi_biaya,dibuat_pada)
+SELECT 'Fixture sampel kategori','Usulan fixture untuk memeriksa distribusi sampel lintas waktu.',
+ CASE WHEN n<=60 THEN 'Pendidikan' ELSE 'Kesehatan' END,1000,
+ '2024-01-01 00:00:00+00'::timestamptz + (((n-1)%60) * interval '1 day')
+FROM generate_series(1,120) n;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','33333333-3333-4333-8333-333333333333',true);
+CREATE TEMP TABLE stratified_fixture AS SELECT * FROM public.request_aspiration_summary('2024-01-01+00','2024-04-01+00','Semua',NULL);
+SELECT pg_temp.check_true((SELECT coverage='sample' AND sampling_method='category_time_decile_round_robin_v1' FROM stratified_fixture), 'Sampel menjelaskan metode secara eksplisit');
+SELECT pg_temp.check_true((SELECT jsonb_array_length(sources)=100 AND (statistics->>'total')::integer=120 FROM public.get_aspiration_summary((SELECT summary_id FROM stratified_fixture))), 'Statistik sampel tetap menghitung seluruh data');
+SELECT pg_temp.check_true((SELECT count(*) FILTER (WHERE source->>'kategori'='Pendidikan')=50 AND count(*) FILTER (WHERE source->>'kategori'='Kesehatan')=50 FROM public.get_aspiration_summary((SELECT summary_id FROM stratified_fixture)) s CROSS JOIN LATERAL jsonb_array_elements(s.sources) source), 'Sampel mencakup kedua kategori seimbang untuk fixture setara');
+SELECT pg_temp.check_true((SELECT min(p.dibuat_pada)<'2024-01-05'::timestamptz AND max(p.dibuat_pada)>'2024-02-15'::timestamptz FROM public.get_aspiration_summary((SELECT summary_id FROM stratified_fixture)) s CROSS JOIN LATERAL jsonb_array_elements(s.sources) source JOIN public.proposals p ON p.id=(source->>'id')::bigint), 'Sampel menjangkau awal dan akhir periode');
+SELECT pg_temp.check_true((SELECT a.summary_id=b.summary_id FROM stratified_fixture a CROSS JOIN public.request_aspiration_summary('2024-01-01+00','2024-04-01+00','Semua',NULL) b), 'Sampling yang sama memakai cache deterministik');
+RESET ROLE;
 SELECT jsonb_build_object('lulus', count(*), 'gagal', 0, 'pengujian', jsonb_agg(nama ORDER BY nomor)) AS hasil
 FROM security_results;
 ROLLBACK;
