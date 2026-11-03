@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registerSchema, type RegisterInput } from '@musrenbang/shared';
+import { tandaiPernahMasuk, tujuanSetelahLogin } from '@/lib/halamanAsal';
 import { useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -16,7 +17,7 @@ type LoginLocationState = { from?: string } | null;
 export function RegisterForm({ onNeedsLogin }: { onNeedsLogin: () => void }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as LoginLocationState)?.from ?? '/beranda';
+  const from = tujuanSetelahLogin((location.state as LoginLocationState)?.from);
   const mutation = useSignUpMutation();
   const splash = useWelcomeSplash();
   const form = useForm<RegisterInput>({
@@ -24,19 +25,24 @@ export function RegisterForm({ onNeedsLogin }: { onNeedsLogin: () => void }) {
     defaultValues: { nama: '', email: '', password: '' },
   });
 
-  const onSubmit = form.handleSubmit((values) => {
-    mutation.mutate(values, {
-      onSuccess: (data) => {
-        if (data.session) {
-          splash.play();
-          toast.success('Akun dibuat. Selamat bergabung!');
-          navigate(from, { replace: true });
-          return;
-        }
-        toast.info('Akun dibuat. Cek email untuk konfirmasi, lalu masuk.');
-        onNeedsLogin();
-      },
-    });
+  // Pakai await, bukan callback mutate: setelah sesi terbentuk formulir ini lepas dari layar dan
+  // callback mutate ikut hilang. Galatnya tampil lewat mutation.error di bawah.
+  const onSubmit = form.handleSubmit(async (values) => {
+    let data;
+    try {
+      data = await mutation.mutateAsync(values);
+    } catch {
+      return;
+    }
+    if (data.session) {
+      tandaiPernahMasuk();
+      splash.play();
+      toast.success('Akun dibuat. Selamat bergabung!');
+      navigate(from, { replace: true });
+      return;
+    }
+    toast.info('Akun dibuat. Cek email untuk konfirmasi, lalu masuk.');
+    onNeedsLogin();
   });
 
   return (

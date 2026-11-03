@@ -12,7 +12,7 @@ import {
 } from 'react';
 import { queryKeys } from '@/lib/query-keys';
 import { supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
+import { toastSelamatDatang } from '@/components/ui/ToastMasuk';
 import { ambilBaruMasuk, signOut as signOutRequest } from './api';
 import { useProfileQuery, useSessionQuery } from './queries';
 
@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (nilai): nilai is string => typeof nilai === 'string' && nilai.trim() !== '',
     );
     const nama = (dariMeta ?? user.email ?? 'Warga').trim().split(/\s+/)[0];
-    toast.success(`Berhasil masuk. Halo, ${nama}!`);
+    toastSelamatDatang(nama);
   }, [user]);
 
   useEffect(() => {

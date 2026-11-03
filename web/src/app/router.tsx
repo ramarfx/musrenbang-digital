@@ -2,6 +2,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { RequireAdmin, RequireAuth } from '@/features/auth';
 import { lazy, Suspense, type ReactNode } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
+import { LacakHalaman } from './LacakHalaman';
 import { RouteError } from '@/routes/RouteError';
 
 const Landing = lazy(() => import('@/routes/Landing'));
@@ -26,61 +27,66 @@ function page(element: ReactNode) {
 }
 
 export const router = createBrowserRouter([
-  // Landing berdiri sendiri tanpa sidebar; halaman aplikasi lain memakai AppLayout.
-  { path: '/', element: page(<Landing />), errorElement: <RouteError /> },
   {
-    element: <AppLayout />,
-    errorElement: <RouteError />,
+    element: <LacakHalaman />,
     children: [
-      { path: 'beranda', element: page(<Beranda />) },
-      { path: 'bandingkan', element: page(<Bandingkan />) },
-      { path: 'apbd', element: page(<Apbd />) },
-      { path: 'simulator', element: page(<Simulator />) },
-      { path: 'usulan', element: page(<UsulanWarga />) },
+      // Landing berdiri sendiri tanpa sidebar; halaman aplikasi lain memakai AppLayout.
+      { path: '/', element: page(<Landing />), errorElement: <RouteError /> },
       {
-        path: 'hasilmu',
-        element: page(
-          <RequireAuth>
-            <Hasilmu />
-          </RequireAuth>,
-        ),
+        element: <AppLayout />,
+        errorElement: <RouteError />,
+        children: [
+          { path: 'beranda', element: page(<Beranda />) },
+          { path: 'bandingkan', element: page(<Bandingkan />) },
+          { path: 'apbd', element: page(<Apbd />) },
+          { path: 'simulator', element: page(<Simulator />) },
+          { path: 'usulan', element: page(<UsulanWarga />) },
+          {
+            path: 'hasilmu',
+            element: page(
+              <RequireAuth>
+                <Hasilmu />
+              </RequireAuth>,
+            ),
+          },
+          { path: 'metodologi', element: page(<Metodologi />) },
+          {
+            path: 'usulan/baru',
+            element: page(
+              <RequireAuth>
+                <BuatUsulan />
+              </RequireAuth>,
+            ),
+          },
+          {
+            path: 'usulan-saya',
+            element: page(
+              <RequireAuth>
+                <UsulanSaya />
+              </RequireAuth>,
+            ),
+          },
+          {
+            path: 'profil',
+            element: page(
+              <RequireAuth>
+                <Profil />
+              </RequireAuth>,
+            ),
+          },
+          { path: 'usulan/:id', element: page(<UsulanDetail />) },
+          { path: 'login', element: page(<Auth />) },
+          {
+            path: 'admin',
+            element: page(
+              <RequireAdmin>
+                <Admin />
+              </RequireAdmin>,
+            ),
+          },
+          { path: '*', element: page(<NotFound />) },
+        ],
       },
-      { path: 'metodologi', element: page(<Metodologi />) },
-      {
-        path: 'usulan/baru',
-        element: page(
-          <RequireAuth>
-            <BuatUsulan />
-          </RequireAuth>,
-        ),
-      },
-      {
-        path: 'usulan-saya',
-        element: page(
-          <RequireAuth>
-            <UsulanSaya />
-          </RequireAuth>,
-        ),
-      },
-      {
-        path: 'profil',
-        element: page(
-          <RequireAuth>
-            <Profil />
-          </RequireAuth>,
-        ),
-      },
-      { path: 'usulan/:id', element: page(<UsulanDetail />) },
-      { path: 'login', element: page(<Auth />) },
-      {
-        path: 'admin',
-        element: page(
-          <RequireAdmin>
-            <Admin />
-          </RequireAdmin>,
-        ),
-      },
-      { path: '*', element: page(<NotFound />) },
     ],
   },
 ]);

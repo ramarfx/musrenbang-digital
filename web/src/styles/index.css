@@ -482,6 +482,50 @@ html::-webkit-scrollbar,
   animation-delay: 315ms;
 }
 
+/* Centang atau silang di kartu notifikasi masuk digambar dari awal garis. */
+.tanda-toast path {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: tanda-gambar 380ms 160ms var(--ease-out) forwards;
+}
+@keyframes tanda-gambar {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tanda-toast path {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+/*
+ * Stabilo di belakang nama kategori (simulator). Seluruh tinggi tulisan diwarnai, dan tiap baris
+ * bila nama terlipat, lalu tersapu dari kiri ke kanan setelah barisnya naik. Jedanya mengikuti
+ * urutan baris lewat --urutan.
+ */
+.tanda-kategori {
+  padding: 1px 4px;
+  margin-inline: -4px;
+  border-radius: 3px;
+  background: linear-gradient(var(--tanda), var(--tanda)) left center / 100% 100% no-repeat;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  animation: tanda-sapu 420ms var(--ease-out) backwards;
+  animation-delay: calc(var(--urutan, 0) * 45ms + 220ms);
+}
+@keyframes tanda-sapu {
+  from {
+    background-size: 0% 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tanda-kategori {
+    animation: none;
+  }
+}
+
 /*
  * Masuk saat discroll (landing, lihat lib/reveal.ts): bagian di bawah hero memudar naik
  * sekali saat pertama terlihat, lewat IntersectionObserver, bukan saat halaman dimuat.
@@ -1166,8 +1210,8 @@ html::-webkit-scrollbar,
 }
 /* Ruas cincin menyala satu per satu setelah pin mendarat. */
 .pin-ruas-nyala {
-  animation: pin-ruas-nyala 260ms var(--ease-out) calc(var(--tunda, 0ms) + 240ms + var(--urut, 0) * 60ms)
-    backwards;
+  animation: pin-ruas-nyala 260ms var(--ease-out)
+    calc(var(--tunda, 0ms) + 240ms + var(--urut, 0) * 60ms) backwards;
 }
 @keyframes pin-ruas-nyala {
   from {

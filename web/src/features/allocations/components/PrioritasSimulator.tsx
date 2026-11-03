@@ -4,10 +4,12 @@ import {
   createBudgetAllocationSchema,
   totalAllocation,
 } from '@musrenbang/shared';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/Button';
+import { Button, buttonClass } from '@/components/ui/Button';
+import { Icon } from '@/components/ui/Icon';
 import { Card, HeroCard } from '@/components/ui/Card';
 import { buildRingSlices, DonutRing } from '@/components/ui/DonutRing';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -21,6 +23,7 @@ import { useGapQuery } from '@/features/gap/queries';
 import { cn } from '@/lib/cn';
 import { allocateByWeights, formatSelisih } from '../lib';
 import { useSaveAllocationsMutation, useUserAllocationsQuery } from '../queries';
+import { PetunjukSimulator } from './PetunjukSimulator';
 import { AllocationDetailDialog } from './AllocationDetailDialog';
 
 /**
@@ -29,7 +32,7 @@ import { AllocationDetailDialog } from './AllocationDetailDialog';
  * anggaran dalam konfigurasi, jadi database, fungsi simpan, dan halaman Bandingkan tetap
  * memakai bentuk data yang sama. Rupiah tidak pernah ditampilkan ke warga.
  */
-export function PrioritasSimulator() {
+export function PrioritasSimulator({ slotAksi }: { slotAksi: HTMLElement | null }) {
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const categoriesQuery = useCategoriesQuery();
@@ -192,53 +195,63 @@ export function PrioritasSimulator() {
   const nomorList = Array.from({ length: jumlahProgram }, (_, index) => index + 1);
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
-          {bisaMulaiDariApbd && (
-            <Button type="button" variant="outline" size="sm" onClick={mulaiDariApbd}>
-              Mulai dari urutan APBD
-            </Button>
-          )}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={terisi === 0}
-            onClick={() => setPeringkat({})}
-          >
-            Hapus semua nomor
-          </Button>
-        </div>
-        <p className="max-w-[72ch] text-sm text-muted">
-          Beri nomor 1 sampai {jumlahProgram} pada tiap program. Nomor 1 untuk yang paling penting,
-          nomor {jumlahProgram} untuk yang paling tidak. Setiap nomor hanya dipakai sekali: kalau
-          kamu memilih nomor yang sudah dipakai program lain, kedua program saling bertukar nomor.{' '}
-          <span className="font-semibold text-ink">
-            Sudah diurutkan {terisi} dari {jumlahProgram}.
-          </span>
-        </p>
-      </div>
+    <div className="stagger space-y-6">
+      {slotAksi &&
+        createPortal(
+          <>
+            {bisaMulaiDariApbd && (
+              <Button type="button" variant="outline" size="sm" onClick={mulaiDariApbd}>
+                Mulai dari urutan APBD
+              </Button>
+            )}
+            <button
+              type="button"
+              disabled={terisi === 0}
+              onClick={() => setPeringkat({})}
+              className={cn(buttonClass('outline', 'sm'), 'border-edge')}
+            >
+              <Icon name="sampah" size={16} />
+              Hapus semua nomor
+            </button>
+          </>,
+          slotAksi,
+        )}
+
+      <PetunjukSimulator
+        langkah={[
+          { ikon: 'pensil', teks: 'Pilih nomor di tiap program' },
+          { ikon: 'bintang', teks: `Nomor 1 paling penting, nomor ${jumlahProgram} paling tidak` },
+          { ikon: 'tukar', teks: 'Nomor kembar? Dua program otomatis bertukar' },
+        ]}
+        ruasTerisi={Math.round((terisi / jumlahProgram) * 10)}
+        keterangan={`${terisi} dari ${jumlahProgram} sudah diurutkan`}
+      />
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <Card className="lg:flex lg:flex-col lg:self-stretch">
           <div
             role="group"
             aria-label="Urutan prioritas per program"
-            className="stagger lg:flex lg:flex-1 lg:flex-col"
+            className="stagger grid auto-rows-fr gap-3.5 lg:flex-1"
           >
-            {categories.map((kategori) => {
+            {categories.map((kategori, urutan) => {
               const nomor = peringkat[kategori];
               const labelId = `urutan-${kategori}`;
               const persen = persenDari(alokasi[kategori] ?? 0);
               return (
                 <div
                   key={kategori}
-                  className="grid grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2.5 border-t border-rule py-3.5 first:border-t-0 first:pt-0 last:pb-0 lg:flex-1 lg:content-center"
+                  style={{ '--urutan': Math.min(urutan, 7) } as CSSProperties}
+                  className="grid grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2.5 rounded-2xl border-[1.5px] border-edge bg-surface p-3.5 shadow-[0_3px_0_var(--edge)] lg:flex-1 lg:content-center"
                 >
                   <CategoryTile kategori={kategori} />
                   <span id={labelId} className="min-w-0 font-semibold">
-                    {kategori}
+                    <span
+                      className="tanda-kategori"
+                      style={{ '--tanda': getCategoryInfo(kategori).warna.latar } as CSSProperties}
+                    >
+                      {kategori}
+                    </span>
                     <span className="block text-[13px] font-normal text-muted">
                       {getCategoryInfo(kategori).deskripsi}
                     </span>

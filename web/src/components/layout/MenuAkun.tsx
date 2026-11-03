@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { PemuatLayar } from '@/components/brand/PemuatLayar';
+import { toastGagalMasuk, toastSudahKeluar } from '@/components/ui/ToastMasuk';
 import { Avatar } from '@/components/ui/Avatar';
 import { Icon } from '@/components/ui/Icon';
 import { useAuth } from '@/features/auth';
@@ -31,11 +32,11 @@ export function MenuAkun() {
     setKeluar(true);
     try {
       await signOut();
-      toast.success('Kamu sudah keluar.');
+      toastSudahKeluar(namaDepan);
       setBuka(false);
       navigate('/');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Gagal keluar.');
+      toastGagalMasuk(error instanceof Error ? error.message : undefined, 'Gagal keluar');
     } finally {
       setKeluar(false);
     }
@@ -43,6 +44,7 @@ export function MenuAkun() {
 
   return (
     <div ref={akar} className="relative">
+      {keluar && <PemuatLayar label="Keluar dari akun" />}
       <button
         type="button"
         aria-haspopup="menu"

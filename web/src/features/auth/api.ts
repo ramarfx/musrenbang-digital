@@ -1,3 +1,4 @@
+import { bacaHalamanAsal, simpanKembaliGoogle } from '@/lib/halamanAsal';
 import {
   loginSchema,
   profileSchema,
@@ -139,6 +140,7 @@ export async function signUp(input: RegisterInput) {
  */
 export async function signInWithGoogle() {
   tandaiBaruMasuk();
+  simpanKembaliGoogle(bacaHalamanAsal() ?? '/');
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: `${window.location.origin}/` },
