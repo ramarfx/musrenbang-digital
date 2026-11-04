@@ -7,7 +7,16 @@ type Dependencies = {
   reserve: () => Promise<boolean>;
   analyze: (job: Pick<Job, 'judul' | 'deskripsi' | 'kategori'>) => Promise<Review>;
   finish: (id: string, job: Job, result: Review | null) => Promise<string>;
+  // Diagnostik operator: hanya nama tahap dan kode tetap, tidak pernah isi usulan.
+  log?: (stage: string, code: string) => void;
 };
+
+// Hanya kode pendek bercirikan huruf kecil, angka, dan _=:.- yang boleh dicatat.
+function safeCode(error: unknown): string {
+  if (error instanceof Error && error.name === 'TimeoutError') return 'timeout';
+  const message = error instanceof Error ? error.message : '';
+  return /^[a-z0-9_=:.-]{1,60}$/.test(message) ? message : 'unknown';
+}
 
 export function redact(text: string): string {
   return text
@@ -60,14 +69,17 @@ export function createHandler(d: Dependencies) {
       const job = await d.claim(user, body.proposal_id);
       if (!job) return reply(200, { state: 'completed' });
       let result: Review | null = null;
+      let stage = 'reserve';
       try {
         if (!(await d.reserve())) throw new Error('quota');
+        stage = 'analyze';
         result = await d.analyze({
           judul: redact(job.judul),
           deskripsi: redact(job.deskripsi),
           kategori: redact(job.kategori),
         });
-      } catch {
+      } catch (error) {
+        d.log?.(stage, safeCode(error));
         await d.finish(user, job, null);
         return reply(503, { error: 'Analisis sementara tidak tersedia.' });
       }
