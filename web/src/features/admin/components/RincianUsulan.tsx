@@ -1,16 +1,28 @@
-import { AnalisisAi } from './AnalisisAi';
 import type { Proposal } from '@musrenbang/shared';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
+import { getCategoryInfo } from '@/features/categories/info';
 import { ModerationBadge } from '@/features/proposals/components/ModerationBadge';
 import { StatusBadge } from '@/features/proposals/components/StatusBadge';
 import { formatAngka, formatRupiahRingkas, formatTanggal } from '@/lib/format';
+import { AnalisisAi } from './AnalisisAi';
+
+/** Satu kotak angka bercap kecil di kartu rincian. */
+function Kotak({ label, nilai }: { label: string; nilai: string }) {
+  return (
+    <div className="min-w-0 rounded-xl border-[1.5px] border-edge bg-surface px-3 py-2">
+      <dt className="text-[12px] text-muted">{label}</dt>
+      <dd className="truncate text-sm font-bold">{nilai}</dd>
+    </div>
+  );
+}
 
 /**
- * Rincian usulan terpilih di kolom kanan halaman admin, lengkap dengan keputusannya. Kartunya
- * ikut setinggi kolom antrean di sebelahnya, jadi dua kolom selalu sama tinggi.
+ * Rincian usulan terpilih di kolom kanan halaman admin: pita berwarna kategori di atas, lalu
+ * deskripsi dan analisis MusrenAI yang menggulir di dalam kartu, dan di bawahnya empat kotak
+ * angka serta keputusan yang selalu terlihat. Tingginya sama dengan kartu antrean di sebelahnya,
+ * jadi ukuran kartu tidak berubah walau teksnya panjang.
  */
 export function RincianUsulan({
   proposal,
@@ -26,99 +38,99 @@ export function RincianUsulan({
   onUbahStatus: (proposal: Proposal) => void;
 }) {
   return (
-    <Card className="flex flex-col">
-      <h2 className="text-lg font-bold">Rincian usulan</h2>
+    <section
+      aria-label="Rincian usulan"
+      className="kartu-cap flex flex-col overflow-hidden rounded-3xl bg-surface lg:h-[480px]"
+    >
       {proposal === null ? (
-        <p className="mt-3 text-sm text-muted">Pilih usulan di antrean untuk melihat rinciannya.</p>
+        <div className="p-5 sm:p-6">
+          <h2 className="text-lg font-bold">Rincian usulan</h2>
+          <p className="mt-3 text-sm text-muted">
+            Pilih usulan di antrean untuk melihat rinciannya.
+          </p>
+        </div>
       ) : (
-        <div key={proposal.id} className="anim-page mt-3 flex flex-1 flex-col">
-          <div className="flex items-start gap-3">
+        <div key={proposal.id} className="anim-page flex min-h-0 flex-1 flex-col">
+          <div
+            className="flex items-center gap-3 border-b-[1.5px] border-edge px-5 py-3.5 sm:px-6"
+            style={{ backgroundColor: getCategoryInfo(proposal.kategori).warna.latar }}
+          >
             <CategoryTile kategori={proposal.kategori} />
             <div className="min-w-0">
-              <h3 className="font-bold">
+              <h2 className="font-bold [overflow-wrap:anywhere]">
                 <Link
                   to={`/usulan/${proposal.id}`}
-                  className="hover:text-warga focus-visible:outline-2 focus-visible:outline-warga"
+                  className="hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-edge"
                 >
                   {proposal.judul}
                 </Link>
-              </h3>
-              <p className="text-[13px] text-muted">
+              </h2>
+              <p className="text-[13px] text-ink/75">
                 {proposal.kategori} · oleh {proposal.pengusul_nama}
               </p>
             </div>
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <ModerationBadge moderasi={proposal.moderasi} />
-            <StatusBadge status={proposal.status} />
-          </div>
-
-          <p className="mt-3 text-sm whitespace-pre-line text-ink/80">{proposal.deskripsi}</p>
-
-          <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-rule pt-3.5 text-sm">
-            <div>
-              <dt className="text-[12.5px] text-muted">Estimasi</dt>
-              <dd className="font-semibold">{formatRupiahRingkas(proposal.estimasi_biaya)}</dd>
+          <div className="flex min-h-0 flex-1 flex-col px-5 pt-4 pb-5 sm:px-6">
+            <div className="flex flex-wrap items-center gap-2">
+              <ModerationBadge moderasi={proposal.moderasi} />
+              <StatusBadge status={proposal.status} />
             </div>
-            <div>
-              <dt className="text-[12.5px] text-muted">Suara</dt>
-              <dd className="font-semibold tabular-nums">{formatAngka(proposal.jumlah_suara)}</dd>
-            </div>
-            <div>
-              <dt className="text-[12.5px] text-muted">Lokasi</dt>
-              <dd className="font-semibold [overflow-wrap:anywhere]">
-                {proposal.lokasi || 'Tanpa lokasi'}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-[12.5px] text-muted">Diajukan</dt>
-              <dd className="font-semibold">{formatTanggal(proposal.dibuat_pada)}</dd>
-            </div>
-          </dl>
 
-          {proposal.moderasi === 'Ditolak' && proposal.catatan_moderasi && (
-            <p className="mt-4 rounded-xl bg-active px-3.5 py-2.5 text-[13px] text-ink">
-              <b>Alasan penolakan:</b> {proposal.catatan_moderasi}
-            </p>
-          )}
+            <div className="mt-3 max-h-64 min-h-0 flex-1 overflow-y-auto pr-1 lg:max-h-none">
+              <p className="text-sm whitespace-pre-line text-ink/80 [overflow-wrap:anywhere]">
+                {proposal.deskripsi}
+              </p>
+              {proposal.moderasi === 'Ditolak' && proposal.catatan_moderasi && (
+                <p className="mt-4 rounded-xl bg-active px-3.5 py-2.5 text-[13px] text-ink [overflow-wrap:anywhere]">
+                  <b>Alasan penolakan:</b> {proposal.catatan_moderasi}
+                </p>
+              )}
+              <AnalisisAi proposalId={proposal.id} />
+            </div>
 
-          <AnalisisAi proposalId={proposal.id} />
+            <dl className="mt-3 grid grid-cols-2 gap-2.5">
+              <Kotak label="Estimasi" nilai={formatRupiahRingkas(proposal.estimasi_biaya)} />
+              <Kotak label="Suara" nilai={formatAngka(proposal.jumlah_suara)} />
+              <Kotak label="Lokasi" nilai={proposal.lokasi || 'Tanpa lokasi'} />
+              <Kotak label="Diajukan" nilai={formatTanggal(proposal.dibuat_pada)} />
+            </dl>
 
-          <div className="mt-auto flex flex-wrap gap-2.5 pt-5">
-            {proposal.moderasi !== 'Disetujui' && (
-              <Button
-                type="button"
-                size="sm"
-                isLoading={sedangDiproses === proposal.id}
-                disabled={sedangDiproses !== null}
-                onClick={() => onSetujui(proposal)}
-              >
-                Setujui
-              </Button>
-            )}
-            {proposal.moderasi !== 'Ditolak' && (
+            <div className="flex flex-wrap gap-2.5 pt-4">
+              {proposal.moderasi !== 'Disetujui' && (
+                <Button
+                  type="button"
+                  size="sm"
+                  isLoading={sedangDiproses === proposal.id}
+                  disabled={sedangDiproses !== null}
+                  onClick={() => onSetujui(proposal)}
+                >
+                  Setujui
+                </Button>
+              )}
+              {proposal.moderasi !== 'Ditolak' && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={sedangDiproses !== null}
+                  onClick={() => onTolak(proposal)}
+                >
+                  Tolak
+                </Button>
+              )}
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
-                disabled={sedangDiproses !== null}
-                onClick={() => onTolak(proposal)}
+                onClick={() => onUbahStatus(proposal)}
               >
-                Tolak
+                Ubah status
               </Button>
-            )}
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => onUbahStatus(proposal)}
-            >
-              Ubah status
-            </Button>
+            </div>
           </div>
         </div>
       )}
-    </Card>
+    </section>
   );
 }

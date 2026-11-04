@@ -25,3 +25,16 @@ export async function createComment(input: { proposalId: number; isi: string }) 
   });
   if (error) throw toAppError(error, 'Gagal mengirim komentar.');
 }
+
+/**
+ * Jumlah komentar tiap usulan, dihitung dari satu permintaan ke v_comments (hanya kolom
+ * proposal_id), supaya daftar usulan tidak meminta komentar satu per satu.
+ */
+export async function listCommentCounts(): Promise<Record<number, number>> {
+  const data = await unwrap(supabase.from('v_comments').select('proposal_id'), 'jumlah komentar');
+  const hasil: Record<number, number> = {};
+  for (const baris of parseWith(z.array(z.object({ proposal_id: z.number() })), data, 'komentar')) {
+    hasil[baris.proposal_id] = (hasil[baris.proposal_id] ?? 0) + 1;
+  }
+  return hasil;
+}

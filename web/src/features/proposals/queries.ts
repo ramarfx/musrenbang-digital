@@ -19,6 +19,10 @@ export function useProposalsQuery() {
   return useQuery({
     queryKey: queryKeys.proposals,
     queryFn: listProposals,
+    // Status, suara, dan moderasi bisa berubah dari tab atau perangkat lain (mis. admin mengubah
+    // status), jadi data diambil ulang saat tab dibuka kembali dan tidak dianggap segar lama.
+    staleTime: 10_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -27,6 +31,8 @@ export function useProposalQuery(proposalId: number | null) {
     queryKey: queryKeys.proposal(proposalId ?? 0),
     queryFn: () => getProposal(proposalId as number),
     enabled: proposalId !== null,
+    staleTime: 10_000,
+    refetchOnWindowFocus: true,
   });
 }
 

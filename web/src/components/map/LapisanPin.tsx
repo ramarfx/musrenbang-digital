@@ -5,6 +5,7 @@ import { Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import { Link } from 'react-router-dom';
 import { Icon } from '@/components/ui/Icon';
 import { getCategoryInfo } from '@/features/categories/info';
+import { useCommentCountsQuery } from '@/features/comments/queries';
 import { IKON_TAHAP } from '@/features/proposals/components/StatusTimeline';
 import { UpvoteButton } from '@/features/proposals/components/UpvoteButton';
 import { buatIkonGugus, buatIkonKota, buatIkonPin, hitungTingkat } from '@/lib/penanda';
@@ -211,6 +212,7 @@ function PinUsulan({
   tunda: number;
   suaraTerbanyak: number;
 }) {
+  const jumlahKomentar = useCommentCountsQuery().data?.[proposal.id] ?? 0;
   const status = (proposal.status as ProposalStatus) ?? 'Diajukan';
   const tingkat = hitungTingkat(proposal.jumlah_suara, suaraTerbanyak);
   const ikon = useMemo(
@@ -269,11 +271,12 @@ function PinUsulan({
             <UpvoteButton proposalId={proposal.id} jumlah={proposal.jumlah_suara} />
             <Link
               to={`/usulan/${proposal.id}#komentar`}
-              aria-label="Lihat komentar"
+              aria-label={`Lihat komentar, ${jumlahKomentar} komentar`}
               title="Komentar"
-              className="grid size-9 place-items-center rounded-xl border border-border bg-surface !text-ink transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.95] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
+              className="inline-flex h-9 min-w-9 items-center justify-center gap-1.5 rounded-xl border border-border bg-surface px-2.5 text-[13px] font-semibold !text-ink transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.95] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
             >
               <Icon name="usulan" size={16} />
+              <span className="tabular-nums">{jumlahKomentar}</span>
             </Link>
           </div>
           <Link
