@@ -1414,6 +1414,30 @@ html::-webkit-scrollbar,
   }
 }
 
+/* Asisten MusrenAI melayang: panel tumbuh dari pojok tombolnya, pesan baru naik sedikit. */
+.asisten-panel {
+  transform-origin: bottom right;
+  animation: asisten-masuk 200ms var(--ease-out);
+}
+@keyframes asisten-masuk {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
+}
+.asisten-gelembung {
+  animation: anim-rise 220ms var(--ease-out) backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .asisten-panel {
+    animation: anim-fade 160ms ease;
+  }
+  .asisten-gelembung {
+    animation: none;
+  }
+}
+  
+  
 /* Nama status usulan: teks tebal distabilo warna tahap, tanpa animasi (muncul di banyak daftar). */
 .tanda-status {
   padding: 1px 6px;
