@@ -251,25 +251,16 @@ export function ProposalForm({ proposal, onSaved, onCancel }: ProposalFormProps 
               OpenStreetMap, jadi koordinat titik terkirim ke layanan itu.
             </p>
           </div>
-          {latitude !== null && longitude !== null && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                form.setValue('latitude', null);
-                form.setValue('longitude', null);
-              }}
-            >
-              Hapus titik
-            </Button>
-          )}
         </div>
         <div className="mt-3">
           <LocationPicker
             latitude={latitude}
             longitude={longitude}
             kategori={form.watch('kategori')}
+            onHapus={() => {
+              form.setValue('latitude', null);
+              form.setValue('longitude', null);
+            }}
             onChange={(lat, lng, nama) => {
               form.setValue('latitude', lat, { shouldValidate: true });
               form.setValue('longitude', lng, { shouldValidate: true });
