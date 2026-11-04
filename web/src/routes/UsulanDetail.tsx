@@ -98,7 +98,9 @@ export default function UsulanDetail() {
         <ul className="mt-3 grid gap-3">
           {[...history].reverse().map((item) => (
             <li key={item.id} className="border-t border-rule pt-3 first:border-t-0 first:pt-0">
-              <p className="text-sm font-semibold">{item.status_baru}</p>
+              <p className="text-sm">
+                <StatusBadge status={item.status_baru} />
+              </p>
               <p className="text-[12.5px] text-muted">
                 {formatTanggalWaktu(item.diubah_pada)} · {item.diubah_oleh_nama ?? 'Sistem'}
               </p>

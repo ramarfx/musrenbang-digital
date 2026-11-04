@@ -1413,3 +1413,15 @@ html::-webkit-scrollbar,
     animation: none;
   }
 }
+
+/* Nama status usulan: teks tebal distabilo warna tahap, tanpa animasi (muncul di banyak daftar). */
+.tanda-status {
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--tanda);
+  color: var(--hitam);
+  font-weight: 700;
+  white-space: nowrap;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
