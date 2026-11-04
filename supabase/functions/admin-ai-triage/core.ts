@@ -9,7 +9,17 @@ type Dependencies = {
   finish: (id: string, job: Job, result: Review | null) => Promise<string>;
   // Diagnostik operator: hanya nama tahap dan kode tetap, tidak pernah isi usulan.
   log?: (stage: string, code: string) => void;
+  wait?: (ms: number) => Promise<void>;
 };
+
+const defaultWait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+// Hanya gangguan sesaat: 5xx penyedia atau kegagalan jaringan. Bukan 429, 4xx, atau respons rusak.
+function retryable(error: unknown): boolean {
+  if (error instanceof TypeError) return true;
+  const message = error instanceof Error ? error.message : '';
+  return /^provider_status=(500|502|503|504)$/.test(message);
+}
 
 // Hanya kode pendek bercirikan huruf kecil, angka, dan _=:.- yang boleh dicatat.
 function safeCode(error: unknown): string {
@@ -71,13 +81,24 @@ export function createHandler(d: Dependencies) {
       let result: Review | null = null;
       let stage = 'reserve';
       try {
-        if (!(await d.reserve())) throw new Error('quota');
-        stage = 'analyze';
-        result = await d.analyze({
+        const input = {
           judul: redact(job.judul),
           deskripsi: redact(job.deskripsi),
           kategori: redact(job.kategori),
-        });
+        };
+        // Satu ulangan untuk gangguan sesaat penyedia; tiap percobaan memakai kuota bersama.
+        for (let attempt = 0; result === null; attempt++) {
+          stage = 'reserve';
+          if (!(await d.reserve())) throw new Error('quota');
+          stage = 'analyze';
+          try {
+            result = await d.analyze(input);
+          } catch (error) {
+            if (attempt > 0 || !retryable(error)) throw error;
+            d.log?.('analyze_retry', safeCode(error));
+            await (d.wait ?? defaultWait)(200 + Math.floor(Math.random() * 200));
+          }
+        }
       } catch (error) {
         d.log?.(stage, safeCode(error));
         await d.finish(user, job, null);
