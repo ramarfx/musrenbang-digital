@@ -1413,3 +1413,20 @@ html::-webkit-scrollbar,
     animation: none;
   }
 }
+
+/* Notifikasi "di luar Jakarta" di dekat kursor pada peta pemilih titik. */
+.tanda-salah {
+  transform: translate(-50%, -135%);
+  animation: tanda-salah-masuk 160ms var(--ease-out);
+}
+@keyframes tanda-salah-masuk {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -105%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tanda-salah {
+    animation: none;
+  }
+}

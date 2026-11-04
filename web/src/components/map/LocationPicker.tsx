@@ -6,7 +6,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { cariTempat, type HasilCari } from '@/lib/geocode';
 import { ATTRIBUTION_PREFIX, OPSI_PETA } from '@/lib/leaflet';
 import { buatIkonPin } from '@/lib/penanda';
-import { BATAS_GERAK_JAKARTA, BATAS_JAKARTA_DARAT, dalamJakarta } from '@/lib/wilayah';
+import { BATAS_JAKARTA_DARAT, dalamJakarta } from '@/lib/wilayah';
 import { BatasJakartaPeta } from './BatasJakartaPeta';
 import { LapisanPeta } from './LapisanPeta';
 import { TombolKembaliPeta } from './TombolKembaliPeta';
@@ -17,6 +17,8 @@ type LocationPickerProps = {
   longitude: number | null;
   /** `nama` terisi bila titik dipilih dari hasil cari (nama singkat tempatnya). */
   onChange: (latitude: number, longitude: number, nama?: string) => void;
+  /** Bila diisi, peta menampilkan tombol untuk menghapus tanda yang sudah dipasang. */
+  onHapus?: () => void;
   /** Kategori usulan; ikon pin di peta mengikutinya dan berganti saat kategori diganti. */
   kategori?: string;
   className?: string;
@@ -28,14 +30,22 @@ const ZOOM_TEMPAT = 16;
 const tombolIkon =
   'inline-flex size-11 flex-none items-center justify-center rounded-xl border border-edge bg-surface text-ink transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.92] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga';
 
+/** Titik klik di dalam peta (piksel dari pojok kiri atas) dan lebar peta, untuk menaruh notifikasi. */
+type TitikKlik = { x: number; y: number; lebar: number };
+
 function ClickHandler({
   onChange,
 }: {
-  onChange: (latitude: number, longitude: number) => unknown;
+  onChange: (latitude: number, longitude: number, titik: TitikKlik) => unknown;
 }) {
+  const map = useMap();
   useMapEvents({
     click(event) {
-      onChange(event.latlng.lat, event.latlng.lng);
+      onChange(event.latlng.lat, event.latlng.lng, {
+        x: event.containerPoint.x,
+        y: event.containerPoint.y,
+        lebar: map.getSize().x,
+      });
     },
   });
   return null;
@@ -61,6 +71,7 @@ export function LocationPicker({
   latitude,
   longitude,
   onChange,
+  onHapus,
   kategori = '',
   className = 'h-80',
 }: LocationPickerProps) {
@@ -71,18 +82,29 @@ export function LocationPicker({
   const [mencariPosisi, setMencariPosisi] = useState(false);
   const [pesan, setPesan] = useState<string | null>(null);
   const [tujuan, setTujuan] = useState<{ lat: number; lng: number; id: number } | null>(null);
+  const [salahPencet, setSalahPencet] = useState<(TitikKlik & { id: number }) | null>(null);
   const permintaan = useRef<AbortController | null>(null);
   const punyaTitik = latitude !== null && longitude !== null;
 
   useEffect(() => () => permintaan.current?.abort(), []);
 
+  // Notifikasi salah pencet hilang sendiri setelah beberapa detik.
+  useEffect(() => {
+    if (!salahPencet) return;
+    const waktu = window.setTimeout(() => setSalahPencet(null), 3000);
+    return () => window.clearTimeout(waktu);
+  }, [salahPencet]);
+
   /** Satu-satunya jalan titik masuk: titik di luar Jakarta ditolak dengan penjelasan. */
-  const terima = (lat: number, lng: number, nama?: string): boolean => {
+  const terima = (lat: number, lng: number, nama?: string, titik?: TitikKlik): boolean => {
     if (!dalamJakarta(lat, lng)) {
-      setPesan('Titik harus ada di wilayah DKI Jakarta, di dalam garis hijau putus-putus.');
+      // Klik di peta: kabarnya muncul di dekat kursor. Cara lain (cari, lokasiku): teks di atas peta.
+      if (titik) setSalahPencet({ ...titik, id: Date.now() });
+      else setPesan('Titik harus ada di wilayah DKI Jakarta, di dalam garis hijau putus-putus.');
       return false;
     }
     setPesan(null);
+    setSalahPencet(null);
     onChange(lat, lng, nama);
     return true;
   };
@@ -219,29 +241,55 @@ export function LocationPicker({
         </ul>
       )}
 
-      <MapContainer
-        center={punyaTitik ? [latitude, longitude] : JAKARTA_CENTER}
-        zoom={punyaTitik ? ZOOM_TEMPAT : 11}
-        {...OPSI_PETA}
-        maxBounds={BATAS_GERAK_JAKARTA}
-        minZoom={9}
-        attributionControl={false}
-        className={`peta-hangat ${className} isolate w-full rounded-3xl border border-border`}
-      >
-        <AttributionControl prefix={ATTRIBUTION_PREFIX} />
-        <LapisanPeta />
-        <BatasJakartaPeta />
-        <ClickHandler onChange={terima} />
-        <Terbang tujuan={tujuan} />
-        <TombolKembaliPeta
-          tujuan={
-            punyaTitik
-              ? { pusat: [latitude, longitude], zoom: ZOOM_TEMPAT }
-              : { batas: BATAS_JAKARTA_DARAT }
-          }
-        />
-        {punyaTitik && <Marker position={[latitude, longitude]} icon={ikonPin} />}
-      </MapContainer>
+      <div className="relative">
+        <MapContainer
+          center={punyaTitik ? [latitude, longitude] : JAKARTA_CENTER}
+          zoom={punyaTitik ? ZOOM_TEMPAT : 11}
+          {...OPSI_PETA}
+          attributionControl={false}
+          className={`peta-hangat ${className} isolate w-full rounded-3xl border border-border`}
+        >
+          <AttributionControl prefix={ATTRIBUTION_PREFIX} />
+          <LapisanPeta />
+          <BatasJakartaPeta />
+          <ClickHandler onChange={(lat, lng, titik) => terima(lat, lng, undefined, titik)} />
+          <Terbang tujuan={tujuan} />
+          <TombolKembaliPeta
+            tujuan={
+              punyaTitik
+                ? { pusat: [latitude, longitude], zoom: ZOOM_TEMPAT }
+                : { batas: BATAS_JAKARTA_DARAT }
+            }
+          />
+          {punyaTitik && <Marker position={[latitude, longitude]} icon={ikonPin} />}
+        </MapContainer>
+        {punyaTitik && onHapus && (
+          <button
+            type="button"
+            onClick={() => {
+              setSalahPencet(null);
+              onHapus();
+            }}
+            className="absolute bottom-7 left-3 z-[500] inline-flex h-9 items-center gap-1.5 rounded-xl border-[1.5px] border-edge bg-surface px-3 text-[13px] font-bold text-ink shadow-sm transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
+          >
+            <Icon name="sampah" size={16} />
+            Hapus tanda
+          </button>
+        )}
+        {salahPencet && (
+          <p
+            key={salahPencet.id}
+            role="status"
+            style={{
+              left: Math.min(Math.max(salahPencet.x, 110), salahPencet.lebar - 110),
+              top: Math.max(salahPencet.y, 56),
+            }}
+            className="tanda-salah pointer-events-none absolute z-[1000] w-52 rounded-xl bg-ink px-3 py-2 text-center text-[12.5px] leading-snug font-semibold text-on-ink"
+          >
+            Di luar Jakarta. Pilih titik di dalam garis hijau.
+          </p>
+        )}
+      </div>
     </div>
   );
 }
