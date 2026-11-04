@@ -22,9 +22,11 @@ export function buildNav(isAdmin: boolean, sudahMasuk = false): NavGroup[] {
     {
       title: 'Langkahmu',
       items: [
-        { to: '/simulator', label: 'Prioritasku', icon: 'simulator' },
+        ...(isAdmin
+          ? []
+          : [{ to: '/simulator', label: 'Prioritasku', icon: 'simulator' } satisfies NavItem]),
         { to: '/usulan', label: 'Usulan warga', icon: 'usulan' },
-        ...(sudahMasuk
+        ...(sudahMasuk && !isAdmin
           ? [{ to: '/usulan-saya', label: 'Usulanku', icon: 'daftar' } satisfies NavItem]
           : []),
       ],

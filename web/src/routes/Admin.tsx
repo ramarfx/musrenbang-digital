@@ -1,7 +1,8 @@
 import { PROPOSAL_STATUSES, type Proposal, type ProposalStatus } from '@musrenbang/shared';
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
+import { Icon, type IconName } from '@/components/ui/Icon';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { PageLoader } from '@/components/ui/PageLoader';
@@ -17,16 +18,28 @@ import {
 } from '@/features/admin/queries';
 import { StatusBadge } from '@/features/proposals/components/StatusBadge';
 import { useProposalsQuery } from '@/features/proposals/queries';
+import { cn } from '@/lib/cn';
 import { formatAngka } from '@/lib/format';
 
-function Angka({ label, nilai }: { label: string; nilai: number }) {
+function Angka({ ikon, label, nilai }: { ikon: IconName; label: string; nilai: number }) {
   return (
-    <div className="min-w-0 flex-1 basis-32 px-4 py-3 first:pl-0 last:pr-0 sm:border-l sm:border-rule sm:first:border-l-0">
-      <p className="truncate text-[13px] text-muted">{label}</p>
-      <p className="text-xl font-bold tabular-nums">{formatAngka(nilai)}</p>
+    <div className="kartu-cap flex items-center gap-3 rounded-2xl bg-surface p-3.5">
+      <span
+        aria-hidden="true"
+        className="grid size-10 flex-none place-items-center rounded-[13px] border-[1.5px] border-edge bg-surface text-ink shadow-[0_3px_0_var(--edge)]"
+      >
+        <Icon name={ikon} size={20} />
+      </span>
+      <span className="min-w-0">
+        <b className="block text-xl font-bold tabular-nums">{formatAngka(nilai)}</b>
+        <span className="block truncate text-[13px] text-muted">{label}</span>
+      </span>
     </div>
   );
 }
+
+/** Warna batang tiap tahap kemajuan, dari Diajukan sampai Selesai. */
+const WARNA_TAHAP = ['#F6D98B', '#A9E0DC', '#4FC79C', '#F5C79B', '#D9CCF0'] as const;
 
 export default function Admin() {
   const proposalsQuery = useProposalsQuery();
@@ -46,6 +59,7 @@ export default function Admin() {
   const hitungStatus = (status: ProposalStatus) =>
     stats?.usulan_per_status[status] ??
     proposals.filter((proposal) => proposal.status === status).length;
+  const terbanyak = Math.max(0, ...PROPOSAL_STATUSES.map((status) => hitungStatus(status)));
   const menungguModerasi =
     stats?.usulan_per_moderasi.Menunggu ??
     proposals.filter((proposal) => proposal.moderasi === 'Menunggu').length;
@@ -108,37 +122,73 @@ export default function Admin() {
         description="Setujui atau tolak usulan baru, lalu perbarui status kemajuannya. Setiap perubahan status wajib memakai catatan dan tercatat di riwayat."
       />
 
-      <Card as="section" aria-label="Ringkasan" className="anim-page">
-        <div className="flex flex-wrap">
+      <section aria-label="Ringkasan" className="space-y-3">
+        <div className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {stats ? (
             <>
-              <Angka label="Pengguna terdaftar" nilai={stats.total_pengguna} />
-              <Angka label="Usulan" nilai={stats.total_usulan} />
-              <Angka label="Upvote" nilai={stats.total_suara} />
-              <Angka label="Warga yang mengurutkan" nilai={stats.jumlah_partisipan_alokasi} />
+              <Angka ikon="profil" label="Pengguna terdaftar" nilai={stats.total_pengguna} />
+              <Angka ikon="usulan" label="Usulan" nilai={stats.total_usulan} />
+              <Angka ikon="panah-atas" label="Upvote" nilai={stats.total_suara} />
+              <Angka
+                ikon="simulator"
+                label="Warga yang mengurutkan"
+                nilai={stats.jumlah_partisipan_alokasi}
+              />
             </>
           ) : (
             <>
-              <Angka label="Usulan terbaca" nilai={proposals.length} />
-              <Angka label="Menunggu persetujuan" nilai={menungguModerasi} />
+              <Angka ikon="usulan" label="Usulan terbaca" nilai={proposals.length} />
+              <Angka ikon="lonceng" label="Menunggu persetujuan" nilai={menungguModerasi} />
             </>
           )}
         </div>
-        <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-rule pt-3 text-[13px] text-muted">
-          <span>Status kemajuan:</span>
-          {PROPOSAL_STATUSES.map((status) => (
-            <span key={status}>
-              {status} <b className="text-ink tabular-nums">{formatAngka(hitungStatus(status))}</b>
-            </span>
-          ))}
-        </p>
+        <ol
+          aria-label="Usulan per status kemajuan"
+          className="kartu-cap grid h-[148px] grid-cols-5 gap-3 rounded-2xl bg-surface px-4 pt-3 pb-3"
+        >
+          {PROPOSAL_STATUSES.map((status, index) => {
+            const jumlah = hitungStatus(status);
+            // Tinggi batang mengikuti jumlah terbanyak, jadi ukuran kartunya tidak pernah berubah.
+            const persen = terbanyak > 0 ? (jumlah / terbanyak) * 100 : 0;
+            return (
+              <li
+                key={status}
+                style={{ '--urutan': index } as CSSProperties}
+                className="flex min-w-0 flex-col text-center"
+              >
+                <b className="text-base font-bold tabular-nums">{formatAngka(jumlah)}</b>
+                <span className="flex min-h-0 flex-1 items-end justify-center pt-1.5">
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      height: jumlah > 0 ? `max(${persen}%, 10px)` : '3px',
+                      backgroundColor: jumlah > 0 ? WARNA_TAHAP[index] : undefined,
+                    }}
+                    className={cn(
+                      'batang-tahap w-full max-w-9 rounded-t-md',
+                      jumlah > 0 ? 'border-[1.5px] border-b-0 border-edge' : 'bg-track',
+                    )}
+                  />
+                </span>
+                <span
+                  className={cn(
+                    'mt-2 block truncate border-t-2 border-ink pt-1.5 text-[13px]',
+                    jumlah > 0 ? 'font-semibold text-ink' : 'text-muted',
+                  )}
+                >
+                  {status}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
         {!stats && !statsQuery.isPending && (
-          <p className="mt-2 text-[13px] text-muted">
+          <p className="text-[13px] text-muted">
             Statistik lengkap (pengguna, upvote, peserta simulator) belum tersedia di server, jadi
             angka di atas dihitung dari daftar usulan yang terbaca.
           </p>
         )}
-      </Card>
+      </section>
 
       {proposalsQuery.isPending && <PageLoader label="Memuat usulan..." />}
 
@@ -166,6 +216,7 @@ export default function Admin() {
               onPilih={setTerpilihId}
               sedangDiproses={sedangDiproses}
               onSetujui={setujui}
+              onTolak={bukaTolak}
             />
             <RincianUsulan
               proposal={proposals.find((proposal) => proposal.id === terpilihId) ?? null}

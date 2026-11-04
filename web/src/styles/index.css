@@ -1396,3 +1396,20 @@ html::-webkit-scrollbar,
     animation: none !important;
   }
 }
+
+/* Batang status kemajuan di halaman admin: tumbuh dari bawah, bergiliran per tahap. */
+.batang-tahap {
+  transform-origin: bottom center;
+  animation: batang-tumbuh 480ms var(--ease-out) backwards;
+  animation-delay: calc(var(--urutan, 0) * 70ms + 120ms);
+}
+@keyframes batang-tumbuh {
+  from {
+    transform: scaleY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .batang-tahap {
+    animation: none;
+  }
+}

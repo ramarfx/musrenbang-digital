@@ -3,6 +3,7 @@ import { useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '@/components/ui/Icon';
 import { useAuth } from '@/features/auth';
+import { useCommentCountsQuery } from '@/features/comments/queries';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
 import { cn } from '@/lib/cn';
 import { formatRupiahRingkas, formatTanggal } from '@/lib/format';
@@ -219,6 +220,7 @@ export function ProposalCard({ proposal }: { proposal: Proposal }) {
   const milikku = user !== null && proposal.pengusul_id === user.id;
   const punyaAksi = milikku && (bisaDiubah(proposal) || bisaDihapus(proposal));
   const keadaan = keadaanUsulan(proposal);
+  const jumlahKomentar = useCommentCountsQuery().data?.[proposal.id] ?? 0;
 
   return (
     <article
@@ -303,6 +305,12 @@ export function ProposalCard({ proposal }: { proposal: Proposal }) {
               >
                 <Icon name="usulan" size={16} />
                 Komentar
+                <span
+                  aria-label={`${jumlahKomentar} komentar`}
+                  className="rounded-md bg-pasir px-1.5 text-[12px] font-bold tabular-nums"
+                >
+                  {jumlahKomentar}
+                </span>
               </Link>
             </>
           ) : (

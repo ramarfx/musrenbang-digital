@@ -1,4 +1,4 @@
-import type { Proposal } from '@musrenbang/shared';
+import { PROPOSAL_STATUSES, type Proposal } from '@musrenbang/shared';
 import {
   createColumnHelper,
   flexRender,
@@ -13,7 +13,7 @@ import { Link } from 'react-router-dom';
 import { Input } from '@/components/ui/Input';
 import { ModerationBadge } from '@/features/proposals/components/ModerationBadge';
 import { formatAngka, formatRupiah, formatTanggal } from '@/lib/format';
-import { StatusBadge } from '@/features/proposals/components/StatusBadge';
+import { cn } from '@/lib/cn';
 
 type AdminProposalTableProps = {
   proposals: Proposal[];
@@ -60,19 +60,35 @@ export function AdminProposalTable({ proposals, onUbahStatus }: AdminProposalTab
       }),
       columnHelper.accessor('status', {
         header: 'Status',
-        cell: (info) => (
-          <div className="space-y-2">
-            <StatusBadge status={info.getValue()} />
-            <button
-              type="button"
-              onClick={() => onUbahStatus(info.row.original)}
-              aria-label={`Ubah status ${info.row.original.judul}`}
-              className="block h-8 rounded-lg border border-border bg-surface px-3 text-[13px] font-semibold transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
-            >
-              Ubah status
-            </button>
-          </div>
-        ),
+        cell: (info) => {
+          const tahap = PROPOSAL_STATUSES.indexOf(info.getValue());
+          return (
+            <div className="space-y-2">
+              <div className="flex gap-1" aria-hidden="true">
+                {PROPOSAL_STATUSES.map((nama, index) => (
+                  <span
+                    key={nama}
+                    className={cn(
+                      'h-1.5 w-6 rounded-full',
+                      index <= tahap ? 'bg-hijau-terang' : 'bg-track',
+                    )}
+                  />
+                ))}
+              </div>
+              <p className="text-[12.5px] font-semibold whitespace-nowrap text-ink">
+                {info.getValue()} · tahap {tahap + 1} dari {PROPOSAL_STATUSES.length}
+              </p>
+              <button
+                type="button"
+                onClick={() => onUbahStatus(info.row.original)}
+                aria-label={`Ubah status ${info.row.original.judul}`}
+                className="block h-8 rounded-lg border border-border bg-surface px-3 text-[13px] font-semibold transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
+              >
+                Ubah status
+              </button>
+            </div>
+          );
+        },
       }),
       columnHelper.accessor('dibuat_pada', {
         header: 'Diajukan',
