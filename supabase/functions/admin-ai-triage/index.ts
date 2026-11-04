@@ -26,6 +26,7 @@ async function rpc(name: string, data: object): Promise<unknown> {
 Deno.serve(
   createHandler({
     origin,
+    log: (stage, code) => console.error('admin-ai-triage gagal', stage, code),
     authenticate: async (token) => {
       if (!enabled || !url || !anon || !service || !key || !model || !origin)
         throw new Error('unavailable');
@@ -66,13 +67,26 @@ Deno.serve(
           }),
         },
       );
-      if (!response.ok) throw new Error('provider unavailable');
+      if (!response.ok) throw new Error(`provider_status=${response.status}`);
       const data = await response.json();
-      const text = data?.candidates?.[0]?.content?.parts
-        ?.map((p: { text?: string }) => p.text ?? '')
-        .join('');
-      if (typeof text !== 'string' || text.length > 4000) throw new Error('invalid response');
-      return validateReview(JSON.parse(text), model);
+      const candidate = data?.candidates?.[0];
+      const finish = String(candidate?.finishReason ?? 'none')
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, '');
+      const text = candidate?.content?.parts?.map((p: { text?: string }) => p.text ?? '').join('');
+      if (typeof text !== 'string' || text.length === 0 || text.length > 4000)
+        throw new Error(`bad_text:finish=${finish}`);
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        throw new Error(`bad_json:finish=${finish}`);
+      }
+      try {
+        return validateReview(parsed, model);
+      } catch {
+        throw new Error(`bad_schema:finish=${finish}`);
+      }
     },
     finish: async (id, job, result) => {
       const state = await rpc('finish_admin_ai_triage', {
