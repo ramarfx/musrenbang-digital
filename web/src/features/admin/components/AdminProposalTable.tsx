@@ -1,4 +1,5 @@
 import { PROPOSAL_STATUSES, type Proposal } from '@musrenbang/shared';
+import { StatusBadge } from '@/features/proposals/components/StatusBadge';
 import {
   createColumnHelper,
   flexRender,
@@ -75,8 +76,9 @@ export function AdminProposalTable({ proposals, onUbahStatus }: AdminProposalTab
                   />
                 ))}
               </div>
-              <p className="text-[12.5px] font-semibold whitespace-nowrap text-ink">
-                {info.getValue()} · tahap {tahap + 1} dari {PROPOSAL_STATUSES.length}
+              <p className="text-[12.5px] whitespace-nowrap text-muted">
+                <StatusBadge status={info.getValue()} /> · tahap {tahap + 1} dari{' '}
+                {PROPOSAL_STATUSES.length}
               </p>
               <button
                 type="button"

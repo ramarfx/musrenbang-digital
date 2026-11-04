@@ -36,9 +36,6 @@ export function buildNav(isAdmin: boolean, sudahMasuk = false): NavGroup[] {
       items: [{ to: '/bandingkan', label: 'Warga vs APBD', icon: 'bandingkan' }],
     },
   ];
-  if (import.meta.env.VITE_MUSRENAI_ENABLED === 'true') {
-    groups.push({ items: [{ to: '/musrenai', label: 'MusrenAI', icon: 'usulan' }] });
-  }
   if (sudahMasuk) {
     groups.push({ title: 'Akun', items: [{ to: '/profil', label: 'Profil', icon: 'profil' }] });
   }

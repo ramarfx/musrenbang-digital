@@ -1,7 +1,7 @@
 import { AppLayout } from '@/components/layout/AppLayout';
 import { RequireAdmin, RequireAuth } from '@/features/auth';
 import { lazy, Suspense, type ReactNode } from 'react';
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { LacakHalaman } from './LacakHalaman';
 import { RouteError } from '@/routes/RouteError';
 
@@ -18,7 +18,6 @@ const Auth = lazy(() => import('@/routes/Auth'));
 const Admin = lazy(() => import('@/routes/Admin'));
 const Metodologi = lazy(() => import('@/routes/Metodologi'));
 const UsulanSaya = lazy(() => import('@/routes/UsulanSaya'));
-const MusrenAI = lazy(() => import('@/routes/MusrenAI'));
 const Profil = lazy(() => import('@/routes/Profil'));
 const NotFound = lazy(() => import('@/routes/NotFound'));
 
@@ -51,7 +50,7 @@ export const router = createBrowserRouter([
             ),
           },
           { path: 'metodologi', element: page(<Metodologi />) },
-          { path: 'musrenai', element: page(<MusrenAI />) },
+          { path: 'musrenai', element: <Navigate to="/beranda" replace /> },
           {
             path: 'usulan/baru',
             element: page(

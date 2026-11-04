@@ -3,6 +3,7 @@ import { Outlet, ScrollRestoration, useLocation, useNavigate } from 'react-route
 import { cn } from '@/lib/cn';
 import { TutorialAwal } from '@/components/tutorial/TutorialAwal';
 import { useAuth } from '@/features/auth';
+import { AsistenMelayang } from '@/features/musrenai/AsistenMelayang';
 import { sudahLihatTutorial, tandaiTutorialSelesai } from '@/lib/tutorial';
 import { Footer } from './Footer';
 import { MobileNav } from './MobileNav';
@@ -61,6 +62,7 @@ export function AppLayout() {
         <Footer />
       </div>
       <ScrollRestoration />
+      <AsistenMelayang sembunyi={menuOpen} />
       {tampilTutorial && (
         <TutorialAwal
           onSelesai={(tujuan) => {
