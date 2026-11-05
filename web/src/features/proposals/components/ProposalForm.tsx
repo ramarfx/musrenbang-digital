@@ -16,6 +16,7 @@ import { Select } from '@/components/ui/Select';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Textarea } from '@/components/ui/Textarea';
 import { useCategoriesQuery } from '@/features/categories/queries';
+import { SaranBiaya } from '@/features/musrenai/SaranBiaya';
 import { useAlamatTitik } from '@/lib/useAlamatTitik';
 import { wilayahDariTitik } from '@/lib/wilayah';
 import { useCreateProposalMutation, useUpdateProposalMutation } from '../queries';
@@ -217,17 +218,34 @@ export function ProposalForm({ proposal, onSaved, onCancel }: ProposalFormProps 
             label="Estimasi biaya (rupiah)"
             htmlFor="estimasi"
             error={form.formState.errors.estimasi_biaya?.message}
-            hint="Perkiraan kasar saja, tanpa titik atau koma. Harus lebih dari nol."
+            hint={
+              import.meta.env.VITE_MUSRENAI_ENABLED === 'true'
+                ? 'Perkiraan kasar saja, tanpa titik atau koma. Tombol Perkirakan mengirim judul dan deskripsi ke Google Gemini, jadi jangan tulis data pribadi.'
+                : 'Perkiraan kasar saja, tanpa titik atau koma. Harus lebih dari nol.'
+            }
             required
           >
-            <Input
-              id="estimasi"
-              type="text"
-              inputMode="numeric"
-              placeholder="cth. 450000000"
-              invalid={Boolean(form.formState.errors.estimasi_biaya)}
-              {...form.register('estimasi_biaya')}
-            />
+            <div className="relative">
+              <Input
+                id="estimasi"
+                type="text"
+                inputMode="numeric"
+                placeholder="cth. 450000000"
+                invalid={Boolean(form.formState.errors.estimasi_biaya)}
+                className={import.meta.env.VITE_MUSRENAI_ENABLED === 'true' ? 'pr-28' : undefined}
+                {...form.register('estimasi_biaya')}
+              />
+              <SaranBiaya
+                ambil={() => ({
+                  judul: form.getValues('judul'),
+                  deskripsi: form.getValues('deskripsi'),
+                  kategori: form.getValues('kategori'),
+                })}
+                onPakai={(angka) =>
+                  form.setValue('estimasi_biaya', String(angka), { shouldValidate: true })
+                }
+              />
+            </div>
           </Field>
         </div>
 
