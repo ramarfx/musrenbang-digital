@@ -67,10 +67,10 @@ describe('admin AI triage', () => {
         }),
       );
     };
-    expect((await call('provider_status=503')).status).toBe(503);
+    expect((await call('provider_status=400')).status).toBe(503);
     expect((await call('Isi rahasia 081234567890')).status).toBe(503);
     expect(logs).toEqual([
-      ['analyze', 'provider_status=503'],
+      ['analyze', 'provider_status=400'],
       ['analyze', 'unknown'],
     ]);
   });
@@ -96,6 +96,76 @@ describe('admin AI triage', () => {
     );
     expect(response.status).toBe(503);
     expect(logs).toEqual([['reserve', 'quota']]);
+  });
+  describe('retry', () => {
+    const run = async (errors: string[]) => {
+      const calls = { reserve: 0, analyze: 0, finish: 0 };
+      const logs: string[][] = [];
+      let saved: unknown = 'unset';
+      const handler = createHandler({
+        origin: 'http://localhost',
+        authenticate: async () => 'admin',
+        claim: async () => ({
+          review_id: 1,
+          token: 't',
+          judul: 'a',
+          deskripsi: 'b',
+          kategori: 'c',
+        }),
+        reserve: async () => {
+          calls.reserve += 1;
+          return calls.reserve <= (errors.includes('noquota') ? 1 : 9);
+        },
+        analyze: async () => {
+          const next = errors[calls.analyze];
+          calls.analyze += 1;
+          if (next && next !== 'noquota') throw new Error(next);
+          return { flags: [], reason: 'Relevan', model: 'mock' };
+        },
+        finish: async (_id, _job, result) => {
+          calls.finish += 1;
+          saved = result;
+          return result ? 'completed' : 'failed';
+        },
+        log: (stage, code) => logs.push([stage, code]),
+        wait: async () => {},
+      });
+      const response = await handler(
+        new Request('http://localhost', {
+          method: 'POST',
+          headers: { authorization: 'Bearer test' },
+          body: JSON.stringify({ proposal_id: 1 }),
+        }),
+      );
+      return { status: response.status, calls, logs, saved };
+    };
+    test('retries once after a transient provider error and reserves quota again', async () => {
+      const out = await run(['provider_status=503']);
+      expect(out.status).toBe(200);
+      expect(out.calls).toEqual({ reserve: 2, analyze: 2, finish: 1 });
+      expect(out.logs).toEqual([['analyze_retry', 'provider_status=503']]);
+      expect(out.saved).toEqual({ flags: [], reason: 'Relevan', model: 'mock' });
+    });
+    test('gives up after one retry', async () => {
+      const out = await run(['provider_status=503', 'provider_status=502']);
+      expect(out.status).toBe(503);
+      expect(out.calls).toEqual({ reserve: 2, analyze: 2, finish: 1 });
+      expect(out.saved).toBeNull();
+      expect(out.logs.at(-1)).toEqual(['analyze', 'provider_status=502']);
+    });
+    test('does not retry quota, client, or malformed responses', async () => {
+      for (const code of ['provider_status=429', 'provider_status=400', 'bad_json:finish=stop']) {
+        const out = await run([code]);
+        expect(out.status).toBe(503);
+        expect(out.calls).toEqual({ reserve: 1, analyze: 1, finish: 1 });
+      }
+    });
+    test('stops when the shared quota is exhausted before the retry', async () => {
+      const out = await run(['provider_status=503', 'noquota']);
+      expect(out.status).toBe(503);
+      expect(out.calls).toEqual({ reserve: 2, analyze: 1, finish: 1 });
+      expect(out.logs.at(-1)).toEqual(['reserve', 'quota']);
+    });
   });
   test('rejects unauthenticated and non-admin requests without calling provider', async () => {
     let called = false;
