@@ -1466,3 +1466,35 @@ html::-webkit-scrollbar,
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
+
+/* Tombol upvote di kartu hijau (VotePanel): panah melompat sekali setelah warna terisi, dan
+   angka suara baru naik masuk dari bawah. */
+.upvote-lompat {
+  animation: upvote-lompat 450ms var(--ease-out) 100ms;
+}
+@keyframes upvote-lompat {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  45% {
+    transform: translateY(-5px) scale(1.25);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+.angka-masuk {
+  animation: angka-masuk 320ms var(--ease-out) backwards;
+}
+@keyframes angka-masuk {
+  from {
+    opacity: 0;
+    transform: translateY(40%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .upvote-lompat,
+  .angka-masuk {
+    animation: none;
+  }
+}
