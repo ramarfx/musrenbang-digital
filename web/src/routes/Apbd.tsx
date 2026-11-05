@@ -16,7 +16,7 @@ export default function Apbd() {
   const configQuery = useAppConfigQuery();
   const items = apbdQuery.data ?? [];
   const kota = items[0]?.kota ?? configQuery.data?.kota ?? 'DKI Jakarta';
-  const tahun = items[0]?.tahun ?? configQuery.data?.tahunAnggaran ?? 2026;
+  const tahun = items[0]?.tahun ?? configQuery.data?.tahunAnggaran ?? 2025;
 
   // Tiga keadaan data (kontrak backend): hanya yang terverifikasi masuk perbandingan.
   const terverifikasi = items.filter((item) => statusData(item) === 'terverifikasi');
@@ -65,17 +65,16 @@ export default function Apbd() {
             di data. Hanya ini yang masuk perbandingan dengan pilihan warga.
           </li>
           <li>
-            <b>Belum terverifikasi</b>: angka awal dari pemberitaan tentang APBD {tahun}. Belum
-            dicocokkan ke lampiran resmi, jadi jangan dibaca sebagai angka resmi.
+            <b>Belum terverifikasi</b>: angka awal APBD {tahun} yang belum dicocokkan ke dokumen
+            resmi, jadi jangan dibaca sebagai angka resmi.
           </li>
           <li>
             <b>Data belum ada</b>: tidak dirinci di sumber yang kami punya, dan tidak dikarang.
           </li>
           <li>
-            Total belanja daerah resmi Rp74.285.299.931.740, sama di Perda 4/2025 dan Pergub
-            44/2025. Lampiran I Perda memuat ringkasan per jenis belanja, bukan per bidang seperti
-            sepuluh kategori di sini, jadi angka per kategori masih dihimpun dari rincian program.
-            Dokumen sumbernya ada di{' '}
+            Angka tiap kategori diambil dari Lampiran 2 Perda DKI Jakarta No. 9 Tahun 2024: total
+            belanja per urusan pemerintahan, bukan per program. Sepuluh kategori di sini dipetakan
+            dari urusan itu, dan catatan pemetaannya ada di tabel. Dokumen sumbernya ada di{' '}
             <Link to="/apbd#dokumen-resmi" className="font-semibold text-warga underline">
               daftar dokumen resmi
             </Link>

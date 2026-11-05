@@ -219,7 +219,7 @@ export default function Landing() {
   const configQuery = useAppConfigQuery();
   const categoriesQuery = useCategoriesQuery();
   const kota = configQuery.data?.kota ?? 'DKI Jakarta';
-  const tahun = configQuery.data?.tahunAnggaran ?? 2026;
+  const tahun = configQuery.data?.tahunAnggaran ?? 2025;
 
   // Hero sudah terlihat saat halaman dibuka, jadi tidak perlu animasi masuk; bagian di
   // bawahnya memudar naik satu per satu begitu pertama kali terlihat saat discroll.

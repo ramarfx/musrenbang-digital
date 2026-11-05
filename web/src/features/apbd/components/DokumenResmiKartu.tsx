@@ -17,9 +17,8 @@ export function DokumenResmiKartu() {
           Dokumen resmi
         </h2>
         <p className="mt-1 max-w-[68ch] text-sm text-muted">
-          Angka total dan jenis belanja di sini dicocokkan ke tiga dokumen ini, yang dibuka dari
-          situs pemerintah sendiri. File PDF terbuka di tab baru, dan tombol unduh ada di penampil
-          PDF peramban.
+          Angka tiap kategori di sini diambil dari dokumen ini, yang dibuka dari situs pemerintah
+          sendiri. Berkasnya berbentuk zip, jadi akan terunduh dan perlu dibuka dulu di perangkatmu.
         </p>
         <ul className="mt-4 grid gap-3">
           {DOKUMEN_RESMI.map((dokumen) => (
@@ -47,12 +46,15 @@ export function DokumenResmiKartu() {
                 rel="noopener noreferrer"
                 className={cn(buttonClass('outline', 'sm'), 'flex-none')}
               >
-                {dokumen.jenis === 'PDF' ? 'Buka PDF' : 'Baca artikel'}
+                {dokumen.jenis === 'PDF'
+                  ? 'Buka PDF'
+                  : dokumen.jenis === 'Berkas zip'
+                    ? 'Unduh berkas'
+                    : 'Baca artikel'}
               </a>
             </li>
           ))}
         </ul>
-        <p className="mt-4 text-[13px] text-muted">Terakhir dicek 2 November 2026.</p>
       </section>
     </Card>
   );

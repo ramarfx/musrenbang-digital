@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { PERGUB_APBD_URL } from '@/features/apbd/lib';
+import { SUMBER_APBD_URL } from '@/features/apbd/lib';
 import { useAppConfigQuery } from '@/features/config/queries';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -21,7 +21,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 export default function Metodologi() {
   const { data: config } = useAppConfigQuery();
   const kota = config?.kota ?? 'DKI Jakarta';
-  const tahun = config?.tahunAnggaran ?? 2026;
+  const tahun = config?.tahunAnggaran ?? 2025;
 
   return (
     <div className="stagger space-y-6">
@@ -40,38 +40,35 @@ export default function Metodologi() {
 
       <Section title="Sumber data APBD">
         <p>
-          Data APBD adalah APBD murni {tahun} {kota}. Total belanja daerah resminya
-          Rp74.285.299.931.740, menurut{' '}
+          Data APBD adalah APBD {tahun} {kota} menurut Perda DKI Jakarta No. 9 Tahun 2024. Angka
+          tiap kategori diambil dari Lampiran 2 Perda itu, yaitu total belanja per urusan
+          pemerintahan, bukan per program. Berkasnya (
           <a
-            href={PERGUB_APBD_URL}
+            href={SUMBER_APBD_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="font-semibold text-warga underline"
           >
-            Pergub DKI Jakarta No. 44 Tahun 2025
+            zip dari PPID DKI Jakarta
           </a>
-          . Pergub itu hanya memuat total besar. Lampiran I Perda APBD 2026 di apbd.jakarta.go.id
-          memuat ringkasan per jenis belanja, tetapi bukan per bidang seperti sepuluh kategori di
-          sini. Ketiga dokumen resmi yang dirujuk bisa dibuka di{' '}
+          ) bisa dibuka juga di{' '}
           <Link to="/apbd#dokumen-resmi" className="font-semibold text-warga underline">
             halaman APBD
           </Link>
           .
         </p>
         <p>
-          Karena itu angka per kategori di aplikasi ini bukan angka resmi per kategori. Angkanya
-          dijumlahkan dari program yang dirinci pemberitaan (detiksatu.com, saiber.tv, dan
-          maklumat.id) tentang APBD {tahun} yang disahkan. Total belanja daerah dan rincian per
-          jenis belanja sudah dicocokkan ke dokumen resmi, begitu pula porsi fungsi pendidikan
-          26,59% dari belanja daerah. Angka per kategori belum punya padanan resmi, karena APBD
-          tidak disusun dengan sepuluh kategori ini.
+          Sepuluh kategori di aplikasi ini dipetakan dari urusan itu, misalnya kategori Pendidikan
+          dari urusan Pendidikan. Pemetaan ini buatan kami, dan catatannya tampil di tabel halaman
+          APBD. Satu urusan bisa mencakup lebih dari satu jenis kegiatan (penerangan jalan,
+          misalnya, masih ikut belanja Bina Marga), jadi angka per kategori adalah pendekatan, bukan
+          angka resmi per kategori.
         </p>
         <p>
           Tiap kategori punya salah satu dari tiga status: terverifikasi (ada tautan sumber), belum
           terverifikasi (ada angka awal, belum resmi), atau data belum ada. Hanya kategori
           terverifikasi yang ikut dibandingkan dengan pilihan warga. Angka yang belum terverifikasi
-          tidak dipakai di perbandingan. Pergub 44/2025 tercatat sudah diubah oleh Pergub 10/2026;
-          angka di sini belum dicocokkan dengan perubahan itu.
+          tidak dipakai di perbandingan.
         </p>
         <p>
           Rincian nominal, sumber, dan status tiap kategori ada di halaman{' '}

@@ -233,7 +233,7 @@ export function RegionBox({ dark }: { dark: boolean }) {
         <span className={cn('text-xs', dark ? 'text-white/90' : 'text-muted')}>Wilayah</span>
         <span className="text-[15px] font-bold">{data?.kota ?? 'DKI Jakarta'}</span>
         <span className={cn('text-xs', dark ? 'text-white/90' : 'text-muted')}>
-          APBD {data?.tahunAnggaran ?? 2026}
+          APBD {data?.tahunAnggaran ?? 2025}
         </span>
       </span>
     </div>
