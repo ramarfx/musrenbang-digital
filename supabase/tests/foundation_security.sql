@@ -505,7 +505,7 @@ SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
 SELECT pg_temp.expect_error('SELECT * FROM public.get_proposal_ai_review(98000001)', '42501', 'Warga tidak membaca hasil auto flag');
 SELECT set_config('request.jwt.claim.sub', '33333333-3333-4333-8333-333333333333', true);
-SELECT pg_temp.check_true((SELECT state='pending' FROM public.get_proposal_ai_review(98000001)), 'Admin melihat pending berbeda dari hasil selesai');
+SELECT pg_temp.check_true((SELECT state='not_analyzed' FROM public.get_proposal_ai_review(98000001)), 'Admin melihat antrean pending sebagai belum dianalisis');
 RESET ROLE;
 DELETE FROM private.proposal_ai_jobs WHERE review_id=(SELECT id FROM private.proposal_ai_reviews WHERE proposal_id=98000001);
 DELETE FROM private.proposal_ai_reviews WHERE proposal_id=98000001;
