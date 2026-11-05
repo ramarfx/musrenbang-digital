@@ -139,3 +139,19 @@ export function buatCsv(rows: readonly GapRow[], adaWarga = true): string {
   );
   return `﻿${[kepala.join(','), ...baris].join('\n')}\n`;
 }
+
+/** Selisih di bawah ini (dalam poin persentase) dianggap hampir pas. */
+export const AMBANG_PAS = 2;
+
+/** Warna stabilo untuk tiga arah selisih, sama gayanya dengan label status usulan. */
+export const WARNA_ARAH = { tambah: '#4FC79C', pas: '#E4DDCF', kurang: '#F5C79B' } as const;
+
+export type ArahSelisih = { kunci: keyof typeof WARNA_ARAH; label: string; warna: string };
+
+/** Menerjemahkan selisih poin jadi label yang mudah dibaca warga. */
+export function arahSelisih(selisihPoin: number): ArahSelisih {
+  const dibulatkan = Math.round(selisihPoin * 10) / 10;
+  const kunci = Math.abs(dibulatkan) < AMBANG_PAS ? 'pas' : dibulatkan > 0 ? 'tambah' : 'kurang';
+  const label = { tambah: 'Perlu ditambah', pas: 'Hampir pas', kurang: 'Terlalu besar' }[kunci];
+  return { kunci, label, warna: WARNA_ARAH[kunci] };
+}
