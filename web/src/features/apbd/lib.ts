@@ -1,21 +1,14 @@
 import type { ApbdItem } from '@musrenbang/shared';
 
-/** Alamat teks lengkap Pergub DKI Jakarta No. 44 Tahun 2025 di JDIH (hanya batang tubuh, tanpa lampiran). */
-export const PERGUB_APBD_URL =
-  'https://jdih.jakarta.go.id/dokumenPeraturanDirectory/0031/2025PERGUB003144.pdf';
-
-/** Lampiran I Perda DKI Jakarta No. 4 Tahun 2025: ringkasan APBD 2026 menurut kelompok dan jenis. */
-export const LAMPIRAN_PERDA_URL =
-  'https://apbd.jakarta.go.id/doc/publik/6.%20APBD/APBD%202026/PENETAPAN/PERDA/Lampiran%201%20Perda%20APBD%202026.pdf';
-
-/** Artikel BPKD DKI Jakarta tentang postur APBD 2026 beserta infografisnya. */
-export const ARTIKEL_BPKD_URL = 'https://bpkd.jakarta.go.id/artikel/detail/862';
+/** Berkas sumber angka APBD 2025 di PPID DKI Jakarta (zip berisi Perda dan lampirannya). */
+export const SUMBER_APBD_URL =
+  'https://ppid.jakarta.go.id/assets/zip/apbd-pemerintah-provinsi-dki-jakarta/2025/APBD%202025.zip';
 
 export type DokumenResmi = {
   judul: string;
   penerbit: string;
-  jenis: 'PDF' | 'Halaman web';
-  /** Perkiraan ukuran berkas, hanya untuk PDF. */
+  jenis: 'PDF' | 'Halaman web' | 'Berkas zip';
+  /** Perkiraan ukuran berkas, hanya bila diketahui. */
   ukuran?: string;
   isi: string;
   url: string;
@@ -23,32 +16,16 @@ export type DokumenResmi = {
 
 /**
  * Dokumen resmi yang menjadi rujukan angka APBD. Tautannya langsung ke situs pemerintah, bukan
- * salinan, supaya isinya selalu yang terbaru dan bisa dicek asalnya. Ketiganya terakhir dibuka
- * dan dicocokkan pada 2 November 2026.
+ * salinan, supaya isinya selalu yang terbaru dan bisa dicek asalnya. Tautan ini sama dengan
+ * `sumber_url` di data APBD.
  */
 export const DOKUMEN_RESMI: DokumenResmi[] = [
   {
-    judul: 'Pergub DKI Jakarta No. 44 Tahun 2025',
-    penerbit: 'JDIH Pemprov DKI Jakarta',
-    jenis: 'PDF',
-    ukuran: '0,4 MB',
-    isi: 'Memuat total pendapatan dan belanja daerah 2026 (Pasal 3 dan Pasal 9). Hanya batang tubuh, tanpa lampiran.',
-    url: PERGUB_APBD_URL,
-  },
-  {
-    judul: 'Lampiran I Perda DKI Jakarta No. 4 Tahun 2025',
-    penerbit: 'apbd.jakarta.go.id',
-    jenis: 'PDF',
-    ukuran: '1,5 MB',
-    isi: 'Ringkasan APBD 2026 menurut kelompok dan jenis belanja: pegawai, barang dan jasa, modal, bansos, dan lainnya. Bukan per bidang seperti sepuluh kategori di aplikasi ini.',
-    url: LAMPIRAN_PERDA_URL,
-  },
-  {
-    judul: 'Postur APBD 2026 dan infografisnya',
-    penerbit: 'BPKD DKI Jakarta',
-    jenis: 'Halaman web',
-    isi: 'Penjelasan resmi postur anggaran, termasuk porsi infrastruktur pelayanan publik, dan keterangan pimpinan BPKD.',
-    url: ARTIKEL_BPKD_URL,
+    judul: 'Perda DKI Jakarta No. 9 Tahun 2024 dan lampirannya (APBD 2025)',
+    penerbit: 'PPID Pemprov DKI Jakarta',
+    jenis: 'Berkas zip',
+    isi: 'Angka tiap kategori diambil dari Lampiran 2, yaitu total belanja per urusan pemerintahan. Bukan per program, dan sepuluh kategori di aplikasi ini dipetakan dari urusan itu.',
+    url: SUMBER_APBD_URL,
   },
 ];
 
