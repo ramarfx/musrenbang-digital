@@ -6,7 +6,13 @@ import { cn } from '@/lib/cn';
 import type { StatusKategori } from '@/features/apbd/lib';
 import { formatPersen } from '@/lib/format';
 import { formatSelisih } from '@/lib/selisih';
-import { formatBesarSingkat, setaraRupiah, type GapRingkasan, type GapRow } from '../lib';
+import {
+  arahSelisih,
+  formatBesarSingkat,
+  setaraRupiah,
+  type GapRingkasan,
+  type GapRow,
+} from '../lib';
 
 type Props = {
   ringkasan: GapRingkasan;
@@ -15,53 +21,38 @@ type Props = {
   statusApbd?: Record<string, StatusKategori>;
 };
 
-/** Satu baris bar dua arah: garis tengah = porsi APBD, ke kanan = warga ingin lebih besar. */
-function BarDuaArah({
-  row,
-  maks,
+/** Satu batang persentase: hijau untuk warga, tinta untuk APBD. Panjangnya relatif ke batang terpanjang. */
+function BatangPersen({
+  label,
+  persen,
+  skala,
   index,
-  aktif,
+  warna,
 }: {
-  row: GapRow;
-  maks: number;
+  label: string;
+  persen: number;
+  skala: number;
   index: number;
-  aktif: boolean;
+  warna: string;
 }) {
-  const lebar = aktif ? (Math.abs(row.gap_poin_persen) / maks) * 50 : 0;
-  const naik = row.gap_poin_persen >= 0;
   return (
-    <div
-      className="relative h-[22px] min-w-[200px]"
-      role="img"
-      aria-label={
-        aktif
-          ? `${row.kategori}: warga ${formatPersen(row.persen_warga)}, APBD ${formatPersen(row.persen_apbd)}, selisih ${formatSelisih(row.gap_poin_persen)} poin`
-          : `${row.kategori}: belum bisa dibandingkan`
-      }
-    >
-      <i className="absolute top-0 bottom-0 left-1/2 w-0.5 -translate-x-1/2 rounded-sm bg-apbd" />
-      {lebar > 0 && (
+    <div className="flex items-center gap-3 text-[13px]">
+      <span className="w-11 flex-none text-muted">{label}</span>
+      <div className="relative h-2.5 min-w-0 flex-1 rounded-full bg-track" aria-hidden="true">
         <i
-          className={`bar-in absolute top-1 bottom-1 rounded-full ${
-            naik ? 'origin-left bg-warga' : 'origin-right bg-apbd'
-          }`}
-          style={
-            {
-              ...(naik ? { left: 'calc(50% + 2px)' } : { right: 'calc(50% + 2px)' }),
-              width: `${lebar}%`,
-              ['--i' as string]: index,
-            } as CSSProperties
-          }
+          className={cn('bar-in absolute inset-y-0 left-0 origin-left rounded-full', warna)}
+          style={{ width: `${(persen / skala) * 100}%`, ['--i' as string]: index } as CSSProperties}
         />
-      )}
+      </div>
+      <b className="w-14 flex-none text-right font-semibold tabular-nums">{formatPersen(persen)}</b>
     </div>
   );
 }
 
 /**
- * Kartu perbandingan: legenda dan tabel semua kategori. Tiap baris bisa diklik
- * untuk membuka rincian di pop-up. Kategori tanpa data APBD tampil "data menyusul"
- * dan tidak dibandingkan.
+ * Kartu perbandingan: daftar semua kategori, tiap kategori dengan dua batang (warga dan APBD)
+ * dan label arahnya. Tiap baris bisa diklik untuk membuka rincian di pop-up. Kategori tanpa
+ * data APBD tampil keterangannya dan tidak dibandingkan.
  */
 export function GapComparison({ ringkasan, onPilih, statusApbd = {} }: Props) {
   // Kategori tanpa angka terverifikasi: bedakan "belum terverifikasi" dari "belum ada data".
@@ -71,14 +62,19 @@ export function GapComparison({ ringkasan, onPilih, statusApbd = {} }: Props) {
     if (status === 'sebagian') return 'APBD sebagian terverifikasi';
     return 'Data APBD belum ada';
   };
-  const { maks, adaWarga, totalApbd } = ringkasan;
+  const { adaWarga, totalApbd } = ringkasan;
   // Bawaan: urutan sama dengan simulator (PRD). Pilihan kedua: selisih terbesar dulu.
   const [urutan, setUrutan] = useState<'simulator' | 'selisih'>('simulator');
   const rows = urutan === 'simulator' ? ringkasan.rows : ringkasan.rowsSelisih;
+  // Satu skala untuk semua baris, supaya panjang batang antarprogram bisa dibandingkan.
+  const skala = Math.max(
+    1,
+    ...rows.flatMap((row) => (row.adaApbd ? [row.persen_apbd, row.persen_warga] : [])),
+  );
 
   return (
-    <Card className="overflow-x-auto">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <Card>
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
         <p className="text-[13px] text-muted">Urutan program</p>
         <div
           role="group"
@@ -108,126 +104,96 @@ export function GapComparison({ ringkasan, onPilih, statusApbd = {} }: Props) {
           ))}
         </div>
       </div>
-      <div className="mb-4 flex flex-wrap gap-x-5 gap-y-2 text-[12.5px] text-muted">
-        <span className="inline-flex items-center gap-2">
-          <i className="block h-3.5 w-[3px] rounded-sm bg-apbd" />
-          Garis tengah = porsi APBD
-        </span>
-        <span className="inline-flex items-center gap-2">
-          <i className="block size-3 rounded-[4px] bg-warga" />
-          Ke kanan: warga ingin lebih besar
-        </span>
-        <span className="inline-flex items-center gap-2">
-          <i className="block size-3 rounded-[4px] bg-apbd" />
-          Ke kiri: warga ingin lebih kecil
-        </span>
-      </div>
 
-      <table className="w-full border-collapse text-left">
-        <caption className="sr-only">
-          Perbandingan persentase pilihan warga dan APBD per program. Pilih satu baris untuk melihat
-          rinciannya.
-        </caption>
-        <thead>
-          <tr className="border-b border-border text-[12.5px] text-muted">
-            <th className="pr-3 pb-2.5 font-normal">Program</th>
-            <th className="hidden pb-2.5 pl-2 font-normal lg:table-cell">
-              Selisih warga dari APBD
-            </th>
-            <th className="hidden w-[72px] pb-2.5 pl-3 text-right font-normal md:table-cell">
-              Warga
-            </th>
-            <th className="hidden w-[72px] pb-2.5 pl-3 text-right font-normal md:table-cell">
-              APBD
-            </th>
-            <th className="pb-2.5 pl-3 text-right font-normal">Selisih</th>
-          </tr>
-        </thead>
-        <tbody className="stagger">
-          {rows.map((row, index) => {
-            const aktif = adaWarga && row.adaApbd;
-            const naik = row.gap_poin_persen >= 0;
-            return (
-              <tr
-                key={row.kategori}
-                className="relative border-b border-rule transition-colors duration-150 last:border-b-0 hover:bg-ground"
-              >
-                <td className="py-3.5 pr-3">
-                  <span className="flex items-center gap-3">
-                    <CategoryTile kategori={row.kategori} small />
-                    <span className="min-w-0">
-                      <button
-                        type="button"
-                        onClick={() => onPilih(row)}
-                        aria-haspopup="dialog"
-                        className="text-left font-semibold after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:rounded-2xl focus-visible:after:outline-2 focus-visible:after:outline-warga"
-                      >
-                        {row.kategori}
-                      </button>
-                      {statusApbd[row.kategori] === 'sebagian' && (
-                        <span className="block text-[12.5px] text-muted">
-                          APBD sebagian terverifikasi; angka hanya mencakup data terverifikasi.
-                        </span>
-                      )}
-                      <span className="block text-[12.5px] text-muted md:hidden">
-                        {row.adaApbd
-                          ? `Warga ${adaWarga ? formatPersen(row.persen_warga) : 'belum ada'} · APBD ${formatPersen(row.persen_apbd)}`
-                          : keteranganApbd(row.kategori)}
-                      </span>
-                    </span>
+      <ul className="stagger">
+        {rows.map((row, index) => {
+          const aktif = adaWarga && row.adaApbd;
+          const arah = arahSelisih(row.gap_poin_persen);
+          const naik = row.gap_poin_persen >= 0;
+          return (
+            <li
+              key={row.kategori}
+              className="relative border-b border-rule py-4 transition-colors duration-150 last:border-b-0 hover:bg-ground"
+            >
+              <div className="flex items-center gap-3">
+                <CategoryTile kategori={row.kategori} small />
+                <button
+                  type="button"
+                  onClick={() => onPilih(row)}
+                  aria-haspopup="dialog"
+                  aria-label={
+                    aktif
+                      ? `${row.kategori}: warga ${formatPersen(row.persen_warga)}, APBD ${formatPersen(row.persen_apbd)}, selisih ${formatSelisih(row.gap_poin_persen)} poin`
+                      : `${row.kategori}: ${row.adaApbd ? 'menunggu pilihan warga' : 'belum bisa dibandingkan'}`
+                  }
+                  className="min-w-0 flex-1 text-left font-semibold after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:rounded-2xl focus-visible:after:outline-2 focus-visible:after:outline-warga"
+                >
+                  {row.kategori}
+                </button>
+                {aktif && (
+                  <span
+                    className="tanda-status flex-none"
+                    style={{ '--tanda': arah.warna } as CSSProperties}
+                  >
+                    {arah.label}
                   </span>
-                </td>
-                <td className="hidden pl-2 lg:table-cell">
-                  {row.adaApbd ? (
-                    <BarDuaArah row={row} maks={maks} index={index} aktif={aktif} />
-                  ) : (
-                    <span className="text-[13px] text-muted">{keteranganApbd(row.kategori)}</span>
-                  )}
-                </td>
-                <td className="hidden pl-3 text-right md:table-cell">
-                  {adaWarga ? (
-                    formatPersen(row.persen_warga)
-                  ) : (
-                    <span className="text-[13px] text-muted">Belum ada</span>
-                  )}
-                </td>
-                <td className="hidden pl-3 text-right md:table-cell">
-                  {row.adaApbd ? (
-                    formatPersen(row.persen_apbd)
-                  ) : (
-                    <span className="text-[13px] text-muted">Belum ada</span>
-                  )}
-                </td>
-                <td className="pl-3 text-right md:whitespace-nowrap">
-                  {aktif ? (
-                    <span className="block font-semibold">
-                      {formatSelisih(row.gap_poin_persen)} poin
-                      <small className="block text-[12.5px] font-normal text-muted">
-                        {naik ? 'warga ingin lebih besar' : 'warga ingin lebih kecil'}, ≈{' '}
-                        {formatBesarSingkat(setaraRupiah(row, totalApbd))}
-                      </small>
-                    </span>
-                  ) : (
-                    <span className="text-[13px] text-muted">
-                      {row.adaApbd ? 'Menunggu pilihan warga' : 'Belum bisa dibandingkan'}
-                    </span>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                )}
+              </div>
 
-      <p className="mt-4 rounded-xl bg-ground px-3 py-2.5 text-[13px] text-muted">
-        Angka APBD adalah hasil pemetaan dari pos APBD resmi, bukan total belanja daerah. Selisih
-        dihitung dari persentase warga dikurangi persentase APBD, dalam poin persentase.{' '}
+              <div className="mt-2.5 space-y-1.5 pl-[3.25rem]">
+                {row.adaApbd ? (
+                  <>
+                    {adaWarga ? (
+                      <BatangPersen
+                        label="Warga"
+                        persen={row.persen_warga}
+                        skala={skala}
+                        index={index}
+                        warna="bg-warga"
+                      />
+                    ) : (
+                      <p className="text-[13px] text-muted">Warga: belum ada pilihan.</p>
+                    )}
+                    <BatangPersen
+                      label="APBD"
+                      persen={row.persen_apbd}
+                      skala={skala}
+                      index={index}
+                      warna="bg-apbd"
+                    />
+                    {statusApbd[row.kategori] === 'sebagian' && (
+                      <p className="text-[12.5px] text-muted">
+                        APBD sebagian terverifikasi; angka hanya mencakup data terverifikasi.
+                      </p>
+                    )}
+                    {aktif && (
+                      <p className="pt-0.5 text-[12.5px] text-muted">
+                        <b className="font-semibold text-ink">
+                          {formatSelisih(row.gap_poin_persen)} poin
+                        </b>
+                        , {naik ? 'warga ingin lebih besar' : 'warga ingin lebih kecil'}, ≈{' '}
+                        {formatBesarSingkat(setaraRupiah(row, totalApbd))}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-[13px] text-muted">{keteranganApbd(row.kategori)}</p>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      <p className="mt-5 max-w-[68ch] text-[13px] text-muted">
+        Angka APBD dipetakan dari belanja per urusan, bukan total belanja daerah. Selisih adalah
+        persen warga dikurangi persen APBD, dalam poin. Cara hitungnya ada di{' '}
         <Link to="/metodologi" className="font-semibold text-warga underline">
-          Lihat metodologi
-        </Link>{' '}
-        atau{' '}
+          Metodologi
+        </Link>
+        , asal tiap angka di{' '}
         <Link to="/apbd" className="font-semibold text-warga underline">
-          sumber tiap kategori
+          halaman APBD
         </Link>
         .
       </p>
