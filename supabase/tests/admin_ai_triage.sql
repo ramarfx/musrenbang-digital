@@ -13,7 +13,7 @@ CREATE FUNCTION private.is_admin() RETURNS boolean LANGUAGE sql SECURITY DEFINER
 $$;
 \i supabase/migrations/20261103100955_musrenai_admin_autoflag.sql
 \i supabase/migrations/20261103232447_admin_ai_triage.sql
-\i supabase/migrations/20261104223000_admin_ai_triage_failed_state.sql
+\i supabase/migrations/20261105024359_admin_ai_triage_failed_state.sql
 INSERT INTO public.profiles VALUES
 ('11111111-1111-4111-8111-111111111111','admin'),
 ('22222222-2222-4222-8222-222222222222','warga');
