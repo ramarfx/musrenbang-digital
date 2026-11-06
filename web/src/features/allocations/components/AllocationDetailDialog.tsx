@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { HeroCard } from '@/components/ui/Card';
 import { buildRingSlices, DonutRing } from '@/components/ui/DonutRing';
 import { Modal } from '@/components/ui/Modal';
+import { TombolX } from '@/components/ui/TombolX';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
 import { formatSelisih } from '../lib';
 
@@ -61,13 +62,7 @@ export function AllocationDetailDialog({
               Semua program menurut nomornya, dengan bobot dari urutanmu.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-10 flex-none items-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.97]"
-          >
-            Tutup
-          </button>
+          <TombolX onClick={onClose} />
         </div>
 
         <div className="stagger mt-5 grid gap-6 md:grid-cols-[288px_minmax(0,1fr)]">
