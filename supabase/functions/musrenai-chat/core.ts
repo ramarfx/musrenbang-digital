@@ -239,6 +239,18 @@ export function createHandler(deps: Dependencies) {
           ? failure.message
           : 'unknown';
       deps.log?.('output', rule);
+      // Angka APBD dari model tidak diteruskan; arahkan warga ke data bersumber di /apbd.
+      if (rule === 'answer_apbd_number')
+        return Response.json(
+          {
+            answer:
+              'Angka APBD per kategori bisa dilihat langsung di halaman APBD, lengkap dengan sumber resminya. Saya tidak menyebutkan angkanya di sini agar tidak keliru.',
+            links: [routes.apbd, routes.bandingkan],
+            disclaimer: null,
+            request_id: id,
+          },
+          { headers: cors },
+        );
       return unavailable();
     }
     const links = [...new Set(output.route_ids)].map((route) => routes[route]);

@@ -81,16 +81,31 @@ describe('MusrenAI handler', () => {
     expect(r.status).toBe(200);
     expect(n).toBe(0);
   });
-  test('tolak URL, HTML, klaim APBD numerik dan rute asing', async () => {
+  test('tolak URL, HTML, dan rute asing', async () => {
     for (const output of [
       { answer: '<img src=x>', route_ids: [], disclaimer: null },
       { answer: 'lihat https://evil.test', route_ids: [], disclaimer: null },
-      { answer: 'APBD Rp 100 juta', route_ids: [], disclaimer: null },
       { answer: 'buka ini', route_ids: ['https://evil.test'], disclaimer: null },
     ])
       expect((await call(make({ provider: async () => output }), { message: 'halo' })).status).toBe(
         503,
       );
+  });
+  test('angka APBD dari model diganti jawaban aman ke halaman APBD', async () => {
+    const r = await call(
+      make({
+        provider: async () => ({
+          answer: 'APBD pendidikan Rp 18 triliun',
+          route_ids: [],
+          disclaimer: null,
+        }),
+      }),
+      { message: 'Berapa APBD pendidikan?' },
+    );
+    expect(r.status).toBe(200);
+    const data = await r.json();
+    expect(data.answer).not.toMatch(/\d/);
+    expect(data.links[0].path).toBe('/apbd');
   });
   test('tidak membocorkan error provider', async () => {
     const r = await call(
