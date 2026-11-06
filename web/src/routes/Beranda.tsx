@@ -125,9 +125,9 @@ function AksiUtamaWarga() {
       varian: 'outline' as const,
     },
     {
-      judul: '3. Atur Prioritas Anggaran',
+      judul: '3. Bagi Anggaran Virtual',
       keterangan:
-        'Simulasikan alokasi anggaran dan tentukan bidang kebutuhan mana yang paling mendesak bagi warga.',
+        'Tentukan sendiri berapa porsi anggaran untuk tiap bidang, lalu bandingkan dengan anggaran daerah (APBD).',
       labelTombol: 'Buka Simulator Anggaran',
       ikon: 'simulator' as IconName,
       ke: '/simulator',
@@ -197,8 +197,8 @@ function LangkahMu() {
   const daftar: Langkah[] = [
     {
       nomor: 1,
-      label: 'Atur Prioritas Anggaran',
-      penjelasan: 'Pilih bidang yang paling mendesak menurut Anda lewat simulator anggaran.',
+      label: 'Bagi Anggaran Virtual',
+      penjelasan: 'Tentukan porsi anggaran untuk tiap bidang lewat simulator anggaran.',
       statusTeks: sudahUrut ? 'Sudah Diisi' : 'Belum Diisi',
       selesai: sudahUrut,
       ke: '/simulator',
@@ -420,7 +420,7 @@ function AspirasiPilihanWarga() {
         />
       ) : !ringkasan.adaWarga ? (
         <div className="mt-3 rounded-xl bg-active p-4 text-sm">
-          <p className="text-muted">Belum ada warga yang mengurutkan prioritas.</p>
+          <p className="text-muted">Belum ada warga yang membagi anggaran.</p>
           <Link to="/simulator" className={buttonClass('primary', 'sm', 'mt-3')}>
             Jadi yang pertama
           </Link>
@@ -429,8 +429,8 @@ function AspirasiPilihanWarga() {
         <>
           <p className="mt-1 text-sm text-muted">
             {ringkasan.jumlahPartisipan !== undefined
-              ? `Dari ${formatAngka(ringkasan.jumlahPartisipan)} warga yang sudah mengurutkan.`
-              : 'Dari semua warga yang sudah mengurutkan.'}
+              ? `Dari ${formatAngka(ringkasan.jumlahPartisipan)} warga yang sudah membagi anggaran.`
+              : 'Dari semua warga yang sudah membagi anggaran.'}
             {ringkasan.sorotan &&
               ` Selisih terbesar dengan APBD ada di ${ringkasan.sorotan.kategori}.`}
           </p>

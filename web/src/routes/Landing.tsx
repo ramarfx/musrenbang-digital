@@ -49,6 +49,19 @@ function JudulBagian({ id, judul, children }: { id: string; judul: string; child
   );
 }
 
+/** Contoh untuk bagian "Usulan, bukan laporan": program terencana lawan kerusakan mendesak. */
+const CONTOH_COCOK = [
+  'Pembangunan drainase di sepanjang Jalan X',
+  'Tambahan lampu jalan untuk satu RW',
+  'Pelatihan usaha kecil di kelurahan',
+] as const;
+
+const CONTOH_BUKAN = [
+  'Lubang jalan yang berbahaya hari ini',
+  'Lampu jalan yang mati malam ini',
+  'Pohon tumbang yang menutup jalan',
+] as const;
+
 type Fitur = {
   judul: string;
   isi: string;
@@ -81,8 +94,8 @@ const FITUR: Fitur[] = [
     gelap: false,
   },
   {
-    judul: 'Urutkan prioritasmu',
-    isi: 'Susun bidang mana yang paling penting menurutmu. Urutanmu digabung dengan warga lain.',
+    judul: 'Bagi anggaran virtual',
+    isi: 'Bagi anggaran virtual ke sepuluh bidang sesuai kebutuhanmu. Pembagianmu digabung dengan warga lain.',
     ke: '/simulator',
     aksi: 'Buka simulator',
     ikon: 'simulator',
@@ -290,9 +303,9 @@ export default function Landing() {
               Suara warga, sampai ke <span className="stabilo">meja anggaran.</span>
             </h1>
             <p className="mt-5 max-w-[50ch] text-[17px] text-muted">
-              Usulkan program untuk lingkunganmu, dukung usulan tetangga, lalu lihat seberapa jauh
-              prioritas warga dari APBD {kota} {tahun}. Semua usulan dan perbandingannya bisa dibaca
-              tanpa akun.
+              Usulkan program untuk anggaran kota tahun depan, dukung usulan tetangga, lalu lihat
+              seberapa jauh prioritas warga dari APBD {kota} {tahun}. Semua usulan dan
+              perbandingannya bisa dibaca tanpa akun.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link
@@ -410,6 +423,41 @@ export default function Landing() {
         </section>
 
         <section
+          aria-labelledby="judul-batas"
+          className="mx-auto max-w-[1160px] px-4 pt-20 sm:px-6"
+        >
+          <JudulBagian id="judul-batas" judul="Usulan, bukan laporan">
+            Di sini warga mengusulkan program untuk anggaran tahun depan. Yang mendesak hari ini,
+            laporkan lewat kanal pengaduan resmi pemerintah.
+          </JudulBagian>
+          <div className="mt-8 grid gap-x-12 gap-y-8 md:grid-cols-2">
+            <div>
+              <h3 className="text-[19px] font-bold">
+                <span className="stabilo">Cocok diusulkan di sini</span>
+              </h3>
+              <ul className="mt-4 divide-y divide-rule border-y border-rule text-[16px]">
+                {CONTOH_COCOK.map((contoh) => (
+                  <li key={contoh} className="py-3">
+                    {contoh}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-[19px] font-bold">Bukan untuk di sini</h3>
+              <ul className="mt-4 divide-y divide-rule border-y border-rule text-[16px] text-muted">
+                {CONTOH_BUKAN.map((contoh) => (
+                  <li key={contoh} className="py-3">
+                    {contoh}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <p className="mt-3 text-[13px] text-muted">Semua contoh di atas hanya ilustrasi.</p>
+        </section>
+
+        <section
           aria-labelledby="judul-ajakan"
           className="mx-auto max-w-[1160px] px-4 pt-20 sm:px-6"
         >
@@ -428,8 +476,8 @@ export default function Landing() {
                 Anggaran kota juga urusanmu
               </h2>
               <p className="mt-3 max-w-[50ch] text-[15px] text-ink">
-                Daftar dengan email atau akun Google, lalu tulis usulan untuk lingkunganmu. Admin
-                memeriksa usulan dulu sebelum tampil untuk umum.
+                Daftar dengan email atau akun Google, lalu tulis usulan untuk anggaran tahun depan.
+                Admin memeriksa usulan dulu sebelum tampil untuk umum.
               </p>
               <Link
                 to={user ? '/usulan/baru' : '/login'}

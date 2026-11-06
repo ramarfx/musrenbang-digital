@@ -10,6 +10,7 @@ import { Select } from '@/components/ui/Select';
 import { AdminProposalTable } from '@/features/admin/components/AdminProposalTable';
 import { CatatanDialog } from '@/features/admin/components/CatatanDialog';
 import { AntreanTinjau } from '@/features/admin/components/AntreanTinjau';
+import { RankingWarga } from '@/features/admin/components/RankingWarga';
 import { RincianUsulan } from '@/features/admin/components/RincianUsulan';
 import {
   useAdminStatsQuery,
@@ -131,7 +132,7 @@ export default function Admin() {
               <Angka ikon="panah-atas" label="Upvote" nilai={stats.total_suara} />
               <Angka
                 ikon="simulator"
-                label="Warga yang mengurutkan"
+                label="Warga yang membagi anggaran"
                 nilai={stats.jumlah_partisipan_alokasi}
               />
             </>
@@ -189,6 +190,8 @@ export default function Admin() {
           </p>
         )}
       </section>
+
+      <RankingWarga />
 
       {proposalsQuery.isPending && <PageLoader label="Memuat usulan..." />}
 
