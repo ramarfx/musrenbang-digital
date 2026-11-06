@@ -60,7 +60,7 @@ function terbaruPerUsulan(perubahan: StatusChange[]): StatusChange[] {
 }
 
 /** Lima ruas kecil: terisi warna tahap sampai tahap sekarang. */
-function RuasTahap({ status }: { status: string }) {
+export function RuasTahap({ status }: { status: string }) {
   const tahap = Math.max(
     0,
     PROPOSAL_STATUSES.indexOf(status as (typeof PROPOSAL_STATUSES)[number]),

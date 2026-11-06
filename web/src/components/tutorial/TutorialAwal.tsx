@@ -5,10 +5,14 @@ import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { Modal } from '@/components/ui/Modal';
 import { cn } from '@/lib/cn';
-import { DemoDukung, DemoPantau, DemoUrutkan, DemoUsulan } from './DemoTutorial';
+import { DemoAsisten, DemoDukung, DemoPantau, DemoUrutkan, DemoUsulan } from './DemoTutorial';
 import { JalurMusrenbang, KotaSiap } from './IlustrasiTutorial';
 
-const TAHAP = ['Kenalan', 'Alur', 'Urutkan', 'Dukung', 'Usulkan', 'Pantau', 'Siap'] as const;
+// Langkah "Tanya" hanya ada bila asisten MusrenAI menyala di versi ini.
+const ADA_ASISTEN = import.meta.env.VITE_MUSRENAI_ENABLED === 'true';
+const TAHAP: readonly string[] = ADA_ASISTEN
+  ? ['Kenalan', 'Alur', 'Urutkan', 'Dukung', 'Usulkan', 'Pantau', 'Tanya', 'Siap']
+  : ['Kenalan', 'Alur', 'Urutkan', 'Dukung', 'Usulkan', 'Pantau', 'Siap'];
 
 function Judul({ judul, isi }: { judul: string; isi: string }) {
   return (
@@ -128,7 +132,7 @@ export function TutorialAwal({ onSelesai }: { onSelesai: (tujuan?: string) => vo
       teks: (
         <Judul
           judul="Musrenbang, rapat usulan tiap tahun"
-          isi="Usulanmu naik bertahap dari kelurahan sampai masuk APBD."
+          isi="Usulanmu naik bertahap dari kelurahan sampai masuk APBD. Yang dibahas adalah program untuk anggaran tahun depan, bukan laporan kerusakan yang perlu cepat diperbaiki."
         />
       ),
     },
@@ -163,7 +167,7 @@ export function TutorialAwal({ onSelesai }: { onSelesai: (tujuan?: string) => vo
           <PitaDemo />
           <Judul
             judul="Tulis usulanmu sendiri"
-            isi="Isi judul, pilih bidang, tandai lokasi di peta, lalu kirim. Admin memeriksanya dulu."
+            isi="Isi judul, pilih bidang, tandai lokasi di peta, lalu kirim. Tulis programnya, misalnya Pembangunan drainase Jalan X, bukan Jalan berlubang. Admin memeriksanya dulu."
           />
         </>
       ),
@@ -175,11 +179,27 @@ export function TutorialAwal({ onSelesai }: { onSelesai: (tujuan?: string) => vo
           <PitaDemo />
           <Judul
             judul="Pantau sampai selesai"
-            isi="Setiap perubahan status usulanmu muncul sebagai pemberitahuan."
+            isi="Setiap perubahan status usulanmu muncul di lonceng. Kabar yang sudah dibaca bisa kamu tutup."
           />
         </>
       ),
     },
+    ...(ADA_ASISTEN
+      ? [
+          {
+            gambar: <DemoAsisten key={putaran} onUlang={ulang} />,
+            teks: (
+              <>
+                <PitaDemo />
+                <Judul
+                  judul="Bingung? Tanya MusrenAI"
+                  isi="Tombol hijau di pojok kanan bawah menjawab cara memakai website dan membantu menyusun usulanmu."
+                />
+              </>
+            ),
+          },
+        ]
+      : []),
     {
       gambar: <KotaSiap />,
       teks: (

@@ -1,13 +1,23 @@
 import { PROPOSAL_STATUSES } from '@musrenbang/shared';
-import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent,
+  type ReactNode,
+} from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Icon } from '@/components/ui/Icon';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { RuasTahap } from '@/components/layout/NotificationBell';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
 import { getCategoryInfo } from '@/features/categories/info';
 import { TahapMini } from '@/features/proposals/components/ProposalCard';
+import { StatusBadge } from '@/features/proposals/components/StatusBadge';
 import { IKON_TAHAP } from '@/features/proposals/components/StatusTimeline';
 import { cn } from '@/lib/cn';
 import { formatRupiahRingkas, formatTanggal } from '@/lib/format';
@@ -220,7 +230,7 @@ export function DemoUrutkan({ onUlang }: { onUlang: () => void }) {
 
   return (
     <Panggung demo={demo} onUlang={onUlang}>
-      <div className={kartuClass}>
+      <div>
         <p className="mb-3 text-sm text-muted">
           <span className="font-semibold text-ink">
             {terisi === PROGRAM.length
@@ -229,7 +239,7 @@ export function DemoUrutkan({ onUlang }: { onUlang: () => void }) {
           </span>{' '}
           Contoh dengan tiga bidang.
         </p>
-        <div role="group" aria-label="Urutan prioritas per bidang">
+        <div role="group" aria-label="Urutan prioritas per bidang" className="space-y-2.5">
           {PROGRAM.map((nama) => {
             const nomor = urut[nama] ?? 0;
             const labelId = `demo-urutan-${nama}`;
@@ -237,11 +247,16 @@ export function DemoUrutkan({ onUlang }: { onUlang: () => void }) {
             return (
               <div
                 key={nama}
-                className="grid grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2.5 border-t border-rule py-3.5 first:border-t-0 first:pt-0 last:pb-0"
+                className="grid grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2.5 rounded-2xl border-[1.5px] border-edge bg-surface p-3.5 shadow-[0_3px_0_var(--edge)]"
               >
                 <CategoryTile kategori={nama} />
                 <span id={labelId} className="min-w-0 font-semibold">
-                  {nama}
+                  <span
+                    className="tanda-kategori"
+                    style={{ '--tanda': getCategoryInfo(nama).warna.latar } as CSSProperties}
+                  >
+                    {nama}
+                  </span>
                   <span className="block text-[13px] font-normal text-muted">
                     {getCategoryInfo(nama).deskripsi}
                   </span>
@@ -440,8 +455,14 @@ export function DemoUsulan({ onUlang }: { onUlang: () => void }) {
     await p.tunggu(400);
     p.caption('3. Ketuk peta untuk menandai lokasi');
     await p.klik('[data-peta]', () => setPin(PIN_CONTOH), PIN_CONTOH);
+    await p.tunggu(600);
+    p.caption('4. Salah titik? Tekan Hapus tanda');
+    await p.klik('[data-hapus]', () => setPin(null));
+    await p.tunggu(400);
+    p.caption('5. Ketuk lagi di tempat yang benar');
+    await p.klik('[data-peta]', () => setPin(PIN_CONTOH), PIN_CONTOH);
     await p.tunggu(500);
-    p.caption('4. Kirim, admin akan memeriksanya dulu');
+    p.caption('6. Kirim, admin akan memeriksanya dulu');
     await p.klik('[data-kirim]', () => setTerkirim(true));
     await p.tunggu(700);
     p.selesai();
@@ -490,6 +511,20 @@ export function DemoUsulan({ onUlang }: { onUlang: () => void }) {
             <span className="absolute inset-x-0 top-[44px] h-2.5 bg-[#f6d98b]" />
             <span className="absolute inset-y-0 left-[36%] w-2 bg-surface" />
             <span className="absolute inset-x-0 top-[88px] h-1 bg-surface" />
+            {pin && (
+              <button
+                type="button"
+                data-hapus
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setPin(null);
+                }}
+                className="absolute bottom-2 left-2 z-10 inline-flex h-8 items-center gap-1 rounded-lg border-[1.5px] border-edge bg-surface px-2.5 text-[12px] font-bold text-ink transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.95] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
+              >
+                <Icon name="sampah" size={14} />
+                Hapus tanda
+              </button>
+            )}
             {pin && (
               <svg
                 aria-hidden="true"
@@ -567,6 +602,8 @@ export function DemoPantau({ onUlang }: { onUlang: () => void }) {
     p.selesai();
   });
   const status = PROPOSAL_STATUSES[tahap] ?? PROPOSAL_STATUSES[0];
+  const sebelumnya =
+    PROPOSAL_STATUSES[(tahap + PROPOSAL_STATUSES.length - 1) % PROPOSAL_STATUSES.length];
 
   return (
     <Panggung demo={demo} onUlang={onUlang}>
@@ -590,10 +627,21 @@ export function DemoPantau({ onUlang }: { onUlang: () => void }) {
           <div
             key={pesan}
             role="status"
-            className="tt-muncul mt-4 flex items-center gap-2.5 rounded-2xl border-[1.5px] border-edge bg-surface px-3.5 py-2.5 text-[13px] font-semibold shadow-[0_3px_0_var(--edge)]"
+            className="tt-muncul mt-4 rounded-[14px] border-[1.5px] border-edge bg-ground px-3.5 py-3"
           >
-            <Icon name="lonceng" size={18} />
-            Usulanmu kini: {status}
+            <span className="flex items-center gap-2 text-sm font-bold">
+              <Icon name="lonceng" size={15} />
+              <span className="truncate">Lampu jalan Gang Mawar mati</span>
+              <span className="flex-none rounded-md bg-ink px-1.5 py-px text-[11px] font-bold text-on-ink">
+                Baru
+              </span>
+            </span>
+            <span className="mt-1.5 block text-[13px]">
+              <StatusBadge status={status} />{' '}
+              <span className="text-[12px] text-muted">· baru saja</span>
+            </span>
+            <span className="mt-1.5 block text-[12px] text-muted">Sebelumnya: {sebelumnya}</span>
+            <RuasTahap status={status} />
           </div>
         )}
         <Button
@@ -607,6 +655,134 @@ export function DemoPantau({ onUlang }: { onUlang: () => void }) {
             ? 'Ulangi dari Diajukan'
             : 'Contoh tahap berikutnya'}
         </Button>
+      </div>
+    </Panggung>
+  );
+}
+
+/* ---------- 5. Tanya MusrenAI ---------- */
+
+const PERTANYAAN_CONTOH = 'Bagaimana cara mengajukan usulan?';
+const JAWABAN_CONTOH =
+  'Buka Usulan warga lalu pilih Buat usulan. Isi judul, bidang, dan lokasi di peta. Admin memeriksanya dulu sebelum tampil.';
+
+export function DemoAsisten({ onUlang }: { onUlang: () => void }) {
+  const [buka, setBuka] = useState(false);
+  const [tulis, setTulis] = useState('');
+  const [terkirim, setTerkirim] = useState(false);
+  const [jawab, setJawab] = useState(false);
+  const demo = useDemoOtomatis(async (p) => {
+    await p.tunggu(500);
+    p.caption('1. Tekan tombol hijau di pojok kanan bawah');
+    await p.klik('[data-asisten]', () => setBuka(true));
+    await p.tunggu(500);
+    p.caption('2. Tulis pertanyaanmu');
+    await p.klik('[data-asisten-isi]');
+    for (let i = 1; i <= PERTANYAAN_CONTOH.length; i++) {
+      setTulis(PERTANYAAN_CONTOH.slice(0, i));
+      await p.tunggu(35);
+    }
+    await p.tunggu(300);
+    p.caption('3. Kirim, lalu tunggu jawabannya');
+    await p.klik('[data-asisten-kirim]', () => {
+      setTerkirim(true);
+      setTulis('');
+    });
+    await p.tunggu(1000);
+    setJawab(true);
+    await p.tunggu(900);
+    p.selesai();
+  });
+
+  const kirim = () => {
+    if (!tulis.trim()) return;
+    setTerkirim(true);
+    setTulis('');
+    window.setTimeout(() => setJawab(true), 700);
+  };
+
+  return (
+    <Panggung demo={demo} onUlang={onUlang}>
+      <div className="relative h-[360px] overflow-hidden rounded-3xl border border-border bg-ground">
+        <span className="absolute top-5 left-5 h-3 w-32 rounded-full bg-track" />
+        <span className="absolute top-10 left-5 h-3 w-48 rounded-full bg-track" />
+        <span className="absolute top-20 left-5 h-16 w-[70%] rounded-2xl bg-track/60" />
+
+        {buka && (
+          <div className="tt-pop absolute right-3 bottom-[60px] left-3 flex h-[250px] flex-col overflow-hidden rounded-2xl border-[1.5px] border-edge bg-ground shadow-[0_4px_0_var(--edge)]">
+            <div className="flex items-center gap-2.5 bg-ink px-3 py-2 text-on-ink">
+              <span className="grid size-7 place-items-center rounded-lg bg-hijau-terang text-hitam">
+                <Icon name="usulan" size={15} />
+              </span>
+              <span className="leading-tight">
+                <b className="block text-[13px]">MusrenAI</b>
+                <span className="text-[11px] text-on-ink/75">Asisten warga</span>
+              </span>
+            </div>
+            <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-2.5 text-[12.5px]">
+              {!terkirim && !jawab && (
+                <p className="text-muted">
+                  Tanyakan cara memakai website, atau ceritakan masalah di sekitarmu.
+                </p>
+              )}
+              {terkirim && (
+                <p className="tt-muncul ml-auto w-fit max-w-[85%] rounded-xl rounded-br-sm bg-ink px-3 py-1.5 text-on-ink">
+                  {PERTANYAAN_CONTOH}
+                </p>
+              )}
+              {terkirim && !jawab && (
+                <span className="inline-flex rounded-xl rounded-bl-sm border-[1.5px] border-edge bg-surface px-3 py-2">
+                  <span className="flex gap-1">
+                    {[0, 1, 2].map((i) => (
+                      <i
+                        key={i}
+                        className="load-dot block size-1.5 rounded-full bg-hijau-terang"
+                        style={{ animationDelay: `${i * 160}ms` }}
+                      />
+                    ))}
+                  </span>
+                </span>
+              )}
+              {jawab && (
+                <p className="tt-muncul w-fit max-w-[90%] rounded-xl rounded-bl-sm border-[1.5px] border-edge bg-surface px-3 py-1.5">
+                  {JAWABAN_CONTOH}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-2 border-t-[1.5px] border-edge bg-surface p-2">
+              <input
+                data-asisten-isi
+                value={tulis}
+                onChange={(event) => setTulis(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') kirim();
+                }}
+                placeholder="Tulis pertanyaanmu…"
+                aria-label="Pertanyaan untuk MusrenAI (demo)"
+                className="h-9 min-w-0 flex-1 rounded-lg border-[1.5px] border-edge bg-ground px-2.5 text-[12.5px]"
+              />
+              <button
+                type="button"
+                data-asisten-kirim
+                onClick={kirim}
+                aria-label="Kirim pesan (demo)"
+                className="grid size-9 flex-none place-items-center rounded-lg bg-ink text-on-ink active:scale-[0.94]"
+              >
+                <Icon name="panah-atas" size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        <button
+          type="button"
+          data-asisten
+          onClick={() => setBuka((nilai) => !nilai)}
+          className="kartu-cap absolute right-3 bottom-3 inline-flex h-11 items-center gap-2 rounded-full bg-hijau-terang px-4 text-[13px] font-bold text-hitam transition-[scale] duration-150 ease-out active:scale-[0.96]"
+        >
+          <Icon name={buka ? 'tutup' : 'usulan'} size={18} />
+          {buka ? 'Tutup' : 'Tanya MusrenAI'}
+        </button>
       </div>
     </Panggung>
   );
