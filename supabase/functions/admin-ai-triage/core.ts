@@ -35,24 +35,21 @@ export function redact(text: string): string {
     .replace(/\b\d{16}\b/g, '[nomor identitas disamarkan]');
 }
 
+export const ALLOWED_FLAGS = ['spam', 'promotion', 'irrelevant', 'needs_review'];
+
+// Tiap aturan punya kode tetap agar log menunjukkan bagian yang gagal tanpa mencatat isi.
 export function validateReview(value: unknown, model: string): Review {
-  if (!value || typeof value !== 'object') throw new Error('invalid response');
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('not_object');
   const item = value as Record<string, unknown>;
   const flags = item.flags;
-  if (
-    !Array.isArray(flags) ||
-    flags.length > 3 ||
-    flags.some(
-      (x) =>
-        typeof x !== 'string' || !['spam', 'promotion', 'irrelevant', 'needs_review'].includes(x),
-    ) ||
-    new Set(flags).size !== flags.length ||
-    typeof item.reason !== 'string' ||
-    item.reason.trim().length < 1 ||
-    item.reason.length > 500
-  ) {
-    throw new Error('invalid response');
-  }
+  if (!Array.isArray(flags)) throw new Error('flags_type');
+  if (flags.length > 3) throw new Error('flags_count');
+  if (flags.some((x) => typeof x !== 'string' || !ALLOWED_FLAGS.includes(x)))
+    throw new Error('flags_value');
+  if (new Set(flags).size !== flags.length) throw new Error('flags_duplicate');
+  if (typeof item.reason !== 'string') throw new Error('reason_type');
+  if (item.reason.trim().length < 1) throw new Error('reason_empty');
+  if (item.reason.length > 500) throw new Error('reason_long');
   return { flags, reason: item.reason.trim(), model };
 }
 

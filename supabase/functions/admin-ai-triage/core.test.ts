@@ -10,6 +10,20 @@ describe('admin AI triage', () => {
     expect(redact('hubungi saya@example.com atau 081234567890')).not.toContain('saya@example.com');
     expect(redact('hubungi 081234567890')).not.toContain('081234567890');
   });
+  test('rejects each invalid shape with a fixed rule code', () => {
+    const cases: [unknown, string][] = [
+      [null, 'not_object'],
+      [[{ flags: [], reason: 'x' }], 'not_object'],
+      [{ flags: 'spam', reason: 'x' }, 'flags_type'],
+      [{ flags: ['spam', 'promotion', 'irrelevant', 'needs_review'], reason: 'x' }, 'flags_count'],
+      [{ flags: ['approved'], reason: 'x' }, 'flags_value'],
+      [{ flags: ['spam', 'spam'], reason: 'x' }, 'flags_duplicate'],
+      [{ flags: [], reason: 1 }, 'reason_type'],
+      [{ flags: [], reason: '  ' }, 'reason_empty'],
+      [{ flags: [], reason: 'x'.repeat(501) }, 'reason_long'],
+    ];
+    for (const [value, code] of cases) expect(() => validateReview(value, 'mock')).toThrow(code);
+  });
   test('admin receives analysis and results are persisted', async () => {
     let saved: unknown;
     const handler = createHandler({
