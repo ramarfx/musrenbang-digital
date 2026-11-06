@@ -140,7 +140,7 @@ export async function signUp(input: RegisterInput) {
  */
 export async function signInWithGoogle() {
   tandaiBaruMasuk();
-  simpanKembaliGoogle(bacaHalamanAsal() ?? '/');
+  simpanKembaliGoogle(bacaHalamanAsal() ?? '/beranda');
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: `${window.location.origin}/` },

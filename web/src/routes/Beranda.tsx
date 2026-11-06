@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Badge } from '@/components/ui/Badge';
 import { buttonClass } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -15,54 +16,171 @@ import { UpvoteButton } from '@/features/proposals/components/UpvoteButton';
 import { useMyVotesQuery, useProposalsQuery } from '@/features/proposals/queries';
 import { cn } from '@/lib/cn';
 import { formatAngka, formatPersen } from '@/lib/format';
-import { kalimatTahap, TAHAP_MUSRENBANG, tahapSekarang } from '@/lib/jadwal';
+import { TAHAP_MUSRENBANG, tahapSekarang } from '@/lib/jadwal';
 
 const TARGET_DUKUNGAN = 3;
 
-/** Empat tahap Musrenbang: yang sudah lewat bertinta, yang berjalan distabilo. */
-function JadwalMusrenbang() {
+/**
+ * Kartu sambutan ramah warga awam: sapaan jelas, ringkasan tahap berjalan, dan opsi lihat jadwal.
+ */
+function SambutanWarga() {
+  const { user, profile } = useAuth();
+  const [bukaJadwal, setBukaJadwal] = useState(false);
   const sekarang = tahapSekarang(new Date());
+  const tahapAktif = TAHAP_MUSRENBANG[sekarang];
+  const namaPanggilan = profile?.nama?.trim().split(/\s+/)[0];
+
   return (
-    <Card>
-      <h2 className="text-base font-bold">Musrenbang tahun ini</h2>
-      <ol className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-        {TAHAP_MUSRENBANG.map((tahap, index) => (
-          <li
-            key={tahap.nama}
-            aria-current={index === sekarang ? 'step' : undefined}
-            className={cn(
-              'rounded-xl px-3 py-2.5',
-              index < sekarang && 'bg-ink text-on-ink',
-              index === sekarang && 'bg-hijau-terang text-hitam',
-              index > sekarang && 'bg-active',
-            )}
+    <Card className="space-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-warga">
+            Portal Musrenbang Warga
+          </div>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+            {user && namaPanggilan
+              ? `Selamat Datang, ${profile?.nama}`
+              : 'Selamat Datang di Musrenbang Digital'}
+          </h1>
+          <p className="mt-1 max-w-2xl text-base text-muted">
+            Sampaikan usulan perbaikan lingkungan, berikan dukungan suara, dan bantu tentukan
+            prioritas pembangunan daerah secara mudah dan terbuka.
+          </p>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-active/40 p-4 sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Badge tone="emerald" className="px-3 py-1 text-[13px] font-bold bg-warga">
+              Tahap Aktif: {tahapAktif.nama}
+            </Badge>
+            <span className="text-sm font-semibold text-ink sm:text-base">
+              ({tahapAktif.bulan})
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setBukaJadwal((prev) => !prev)}
+            className="text-sm font-bold text-warga underline hover:text-ink focus-visible:outline-warga"
           >
-            <span className={cn('block text-xs', index > sekarang && 'text-muted')}>
-              {index === sekarang ? 'Sekarang' : tahap.bulan}
-            </span>
-            <span className={cn('block text-sm', index === sekarang && 'font-bold')}>
-              {tahap.nama}
-            </span>
-          </li>
-        ))}
-      </ol>
-      <p className="mt-3 text-xs text-muted">
-        Jadwal umum tiap tahun. Tanggal pastinya diumumkan pemerintah daerah.
-      </p>
+            {bukaJadwal ? 'Tutup rincian tahapan' : 'Lihat tahapan tahun ini'}
+          </button>
+        </div>
+
+        {bukaJadwal && (
+          <div className="mt-4 border-t border-border pt-4 anim-page">
+            <p className="text-xs font-semibold text-muted">Alur 4 Tahap Musrenbang Tahunan:</p>
+            <ol className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {TAHAP_MUSRENBANG.map((tahap, index) => (
+                <li
+                  key={tahap.nama}
+                  className={cn(
+                    'rounded-xl p-3 text-center sm:text-left',
+                    index === sekarang
+                      ? 'bg-hijau-terang font-bold text-hitam'
+                      : index < sekarang
+                        ? 'bg-ink text-on-ink'
+                        : 'bg-surface text-muted border border-border',
+                  )}
+                >
+                  <span className="block text-xs font-light">
+                    {index === sekarang ? 'Berjalan Sekarang' : tahap.bulan}
+                  </span>
+                  <span className="mt-0.5 block text-sm">{tahap.nama}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+      </div>
     </Card>
   );
 }
 
+/**
+ * Tiga aksi utama dengan kartu besar, bahasa terang, dan tombol kontras tinggi.
+ * Memandu warga awam tanpa perlu menebak navigasi aplikasi.
+ */
+function AksiUtamaWarga() {
+  const { user } = useAuth();
+
+  const menu = [
+    {
+      judul: '1. Buat Usulan Baru',
+      keterangan:
+        'Ada jalan rusak, saluran air mampet, atau lampu padam? Tuliskan usulan perbaikan untuk lingkungan Anda.',
+      labelTombol: 'Tulis Usulan Baru',
+      ikon: 'pensil' as IconName,
+      ke: user ? '/usulan/baru' : '/login',
+      varian: 'primary' as const,
+    },
+    {
+      judul: '2. Dukung Usulan Warga',
+      keterangan:
+        'Bantu beri suara dukungan untuk usulan warga sekitar agar cepat diperhatikan dan masuk APBD.',
+      labelTombol: 'Lihat & Dukung Usulan',
+      ikon: 'panah-atas' as IconName,
+      ke: '/usulan',
+      varian: 'outline' as const,
+    },
+    {
+      judul: '3. Bagi Anggaran Virtual',
+      keterangan:
+        'Tentukan sendiri berapa porsi anggaran untuk tiap bidang, lalu bandingkan dengan anggaran daerah (APBD).',
+      labelTombol: 'Buka Simulator Anggaran',
+      ikon: 'simulator' as IconName,
+      ke: '/simulator',
+      varian: 'outline' as const,
+    },
+  ];
+
+  return (
+    <section aria-labelledby="judul-aksi-cepat">
+      <h2 id="judul-aksi-cepat" className="sr-only">
+        Aksi Cepat Warga
+      </h2>
+      <div className="grid gap-4 md:grid-cols-3">
+        {menu.map((item) => (
+          <Card
+            key={item.judul}
+            className="flex flex-col justify-between transition-transform duration-150 hover:-translate-y-0.5"
+          >
+            <div>
+              <div className="flex size-11 items-center justify-center rounded-2xl bg-active text-ink">
+                <Icon name={item.ikon} size={22} />
+              </div>
+              <h3 className="mt-3.5 text-lg font-bold text-ink">{item.judul}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{item.keterangan}</p>
+            </div>
+            <div className="mt-6 pt-2">
+              <Link
+                to={item.ke}
+                className={buttonClass(item.varian, 'md', 'w-full text-base font-semibold')}
+              >
+                {item.labelTombol}
+              </Link>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 type Langkah = {
-  ikon: IconName;
+  nomor: number;
   label: string;
-  keterangan?: string;
+  penjelasan: string;
+  statusTeks: string;
   selesai: boolean;
   ke: string;
   aksi: string;
 };
 
-/** Tiga langkah warga, dicentang dari data asli: pembagian anggaran, dukungan, dan usulan milik sendiri. */
+/**
+ * Checklist status partisipasi: 3 langkah warga dengan indikator jelas dan mudah dipahami.
+ */
 function LangkahMu() {
   const { user } = useAuth();
   const userId = user?.id ?? null;
@@ -75,93 +193,111 @@ function LangkahMu() {
   const punyaUsulan = (proposalsQuery.data ?? []).some(
     (proposal) => userId !== null && proposal.pengusul_id === userId,
   );
+
   const daftar: Langkah[] = [
     {
-      ikon: 'simulator',
-      label: 'Bagi anggaran virtualmu',
+      nomor: 1,
+      label: 'Bagi Anggaran Virtual',
+      penjelasan: 'Tentukan porsi anggaran untuk tiap bidang lewat simulator anggaran.',
+      statusTeks: sudahUrut ? 'Sudah Diisi' : 'Belum Diisi',
       selesai: sudahUrut,
       ke: '/simulator',
-      aksi: sudahUrut ? 'Ubah' : 'Mulai',
+      aksi: sudahUrut ? 'Ubah Urutan' : 'Mulai',
     },
     {
-      ikon: 'panah-atas',
-      label: `Dukung ${TARGET_DUKUNGAN} usulan`,
-      keterangan: user
-        ? `${Math.min(jumlahDukungan, TARGET_DUKUNGAN)} dari ${TARGET_DUKUNGAN}`
-        : undefined,
+      nomor: 2,
+      label: `Beri Dukungan untuk ${TARGET_DUKUNGAN} Usulan`,
+      penjelasan: 'Dukung usulan sesama warga di lingkungan Anda agar naik ke tingkat pembahasan.',
+      statusTeks: `${Math.min(jumlahDukungan, TARGET_DUKUNGAN)} dari ${TARGET_DUKUNGAN} usulan didukung`,
       selesai: jumlahDukungan >= TARGET_DUKUNGAN,
       ke: '/usulan',
-      aksi: 'Lihat usulan',
+      aksi: 'Lihat Usulan',
     },
     {
-      ikon: 'lokasi',
-      label: 'Buat usulanmu',
+      nomor: 3,
+      label: 'Ajukan Usulan Lingkungan',
+      penjelasan:
+        'Sampaikan langsung keluhan jalan, selokan, atau sarana umum yang perlu diperbaiki.',
+      statusTeks: punyaUsulan ? 'Usulan Anda Sudah Terkirim' : 'Belum Ada Usulan',
       selesai: punyaUsulan,
       ke: punyaUsulan ? '/usulan-saya' : '/usulan/baru',
-      aksi: punyaUsulan ? 'Pantau' : 'Tulis',
+      aksi: punyaUsulan ? 'Pantau Status' : 'Tulis Sekarang',
     },
   ];
+
   const jumlahSelesai = daftar.filter((item) => item.selesai).length;
 
   return (
     <Card>
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-base font-bold">Langkahmu</h2>
-        <span className="text-sm text-muted tabular-nums">
-          {jumlahSelesai} dari {daftar.length} selesai
-        </span>
+      <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-3">
+        <div>
+          <h2 className="text-lg font-bold text-ink">Status Partisipasi Anda</h2>
+          <p className="mt-0.5 text-xs text-muted">
+            Pantau kontribusi Anda dalam musyawarah perencanaan tahun ini
+          </p>
+        </div>
+        <Badge
+          tone={jumlahSelesai === daftar.length ? 'success' : 'neutral'}
+          className="text-xs font-bold"
+        >
+          {jumlahSelesai} dari {daftar.length} langkah selesai
+        </Badge>
       </div>
-      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-track" aria-hidden="true">
-        <div
-          className="h-full rounded-full bg-hijau-terang transition-[width] duration-500 ease-out"
-          style={{ width: `${(jumlahSelesai / daftar.length) * 100}%` }}
-        />
-      </div>
-      <ol className="mt-2">
+
+      <ol className="divide-y divide-border">
         {daftar.map((item) => (
           <li
             key={item.label}
-            className="flex items-center gap-3 border-t border-rule py-3 first:border-t-0"
+            className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"
           >
-            <span
-              className={cn(
-                'grid size-9 flex-none place-items-center rounded-full border-2 border-ink',
-                item.selesai && 'bg-hijau-terang text-hitam',
-              )}
-            >
-              {item.selesai ? (
-                <svg
-                  viewBox="0 0 24 24"
-                  width={18}
-                  height={18}
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2.4}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M5 12.5l4.5 4.5L19 7.5" />
-                </svg>
-              ) : (
-                <Icon name={item.ikon} />
-              )}
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className={cn('block text-[15px] font-semibold', item.selesai && 'text-muted')}>
-                {item.label}
+            <div className="flex items-start gap-3.5">
+              <span
+                className={cn(
+                  'grid size-8 flex-none place-items-center rounded-full text-sm font-bold',
+                  item.selesai
+                    ? 'bg-hijau-terang text-hitam'
+                    : 'border-2 border-border bg-active text-muted',
+                )}
+              >
+                {item.selesai ? (
+                  <svg
+                    viewBox="0 0 24 24"
+                    width={18}
+                    height={18}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2.6}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M5 12.5l4.5 4.5L19 7.5" />
+                  </svg>
+                ) : (
+                  item.nomor
+                )}
               </span>
-              {item.keterangan && (
-                <span className="block text-xs text-muted tabular-nums">{item.keterangan}</span>
-              )}
-              <span className="sr-only">{item.selesai ? ', selesai' : ', belum'}</span>
-            </span>
-            <Link
-              to={user ? item.ke : '/login'}
-              className={buttonClass(item.selesai ? 'outline' : 'primary', 'sm')}
-            >
-              {user ? item.aksi : 'Masuk'}
-            </Link>
+              <div>
+                <span className="block text-base font-bold text-ink">{item.label}</span>
+                <span className="mt-0.5 block text-sm text-muted">{item.penjelasan}</span>
+                <span className="mt-1 inline-block text-xs font-semibold text-warga">
+                  {item.statusTeks}
+                </span>
+              </div>
+            </div>
+
+            <div className="sm:self-center">
+              <Link
+                to={user ? item.ke : '/login'}
+                className={buttonClass(
+                  item.selesai ? 'outline' : 'primary',
+                  'sm',
+                  'w-full sm:w-auto',
+                )}
+              >
+                {user ? item.aksi : 'Masuk Akun'}
+              </Link>
+            </div>
           </li>
         ))}
       </ol>
@@ -169,7 +305,9 @@ function LangkahMu() {
   );
 }
 
-/** Tiga usulan dengan dukungan terbanyak, bisa langsung didukung dari sini. */
+/**
+ * Usulan paling didukung: kartu ramah baca dengan tombol upvote besar dan kategori yang jelas.
+ */
 function PalingDidukung() {
   const proposalsQuery = useProposalsQuery();
   const teratas = useMemo(
@@ -183,16 +321,20 @@ function PalingDidukung() {
 
   return (
     <Card>
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-base font-bold">Paling didukung</h2>
-        <Link to="/usulan" className="text-sm font-semibold text-warga underline">
-          Semua usulan
+      <div className="flex items-baseline justify-between gap-3 border-b border-border pb-3">
+        <div>
+          <h2 className="text-lg font-bold text-ink">Usulan Warga Paling Populer</h2>
+          <p className="mt-0.5 text-xs text-muted">Usulan yang sedang banyak didukung warga lain</p>
+        </div>
+        <Link to="/usulan" className="text-sm font-bold text-warga underline hover:text-ink">
+          Lihat Semua Usulan →
         </Link>
       </div>
+
       {proposalsQuery.isPending ? (
-        <div className="mt-3 space-y-2">
+        <div className="mt-4 space-y-3">
           {[0, 1, 2].map((index) => (
-            <Skeleton key={index} className="h-14 w-full rounded-xl" />
+            <Skeleton key={index} className="h-16 w-full rounded-2xl" />
           ))}
         </div>
       ) : proposalsQuery.isError ? (
@@ -203,30 +345,36 @@ function PalingDidukung() {
           }}
         />
       ) : teratas.length === 0 ? (
-        <p className="mt-3 rounded-xl bg-active p-4 text-sm text-muted">
-          Belum ada usulan yang didukung.{' '}
-          <Link to="/usulan" className="font-semibold text-ink underline">
-            Jadi pendukung pertama
+        <div className="mt-4 rounded-2xl bg-active/40 p-5 text-center text-sm text-muted">
+          Belum ada usulan yang terdaftar.{' '}
+          <Link to="/usulan/baru" className="font-bold text-ink underline">
+            Jadilah yang pertama membuat usulan
           </Link>
           .
-        </p>
+        </div>
       ) : (
-        <ul className="mt-2">
+        <ul className="divide-y divide-border">
           {teratas.map((proposal) => (
-            <li
-              key={proposal.id}
-              className="flex items-center gap-3 border-t border-rule py-3 first:border-t-0"
-            >
-              <span className="min-w-0 flex-1">
+            <li key={proposal.id} className="flex items-center justify-between gap-4 py-3.5">
+              <div className="min-w-0 flex-1">
                 <Link
                   to={`/usulan/${proposal.id}`}
-                  className="block truncate text-[15px] font-semibold hover:underline"
+                  className="block text-base font-bold text-ink hover:underline line-clamp-2"
                 >
                   {proposal.judul}
                 </Link>
-                <span className="block truncate text-xs text-muted">{proposal.kategori}</span>
-              </span>
-              <UpvoteButton proposalId={proposal.id} jumlah={proposal.jumlah_suara} />
+                <div className="mt-1 flex items-center gap-2">
+                  <Badge tone="neutral" className="text-xs">
+                    {proposal.kategori}
+                  </Badge>
+                  {proposal.lokasi && (
+                    <span className="text-xs text-muted truncate">{proposal.lokasi}</span>
+                  )}
+                </div>
+              </div>
+              <div className="flex-none">
+                <UpvoteButton proposalId={proposal.id} jumlah={proposal.jumlah_suara} />
+              </div>
             </li>
           ))}
         </ul>
@@ -236,10 +384,9 @@ function PalingDidukung() {
 }
 
 /**
- * Lima bidang pilihan warga terbanyak. Garis APBD hanya untuk kategori yang APBD-nya sudah
- * terverifikasi, sama dengan aturan halaman Bandingkan.
+ * Ringkasan aspirasi bidang prioritas warga: sederhana, persentase jelas, tanpa grafik membingungkan.
  */
-function PilihanWarga() {
+function AspirasiPilihanWarga() {
   const gapQuery = useGapQuery();
   const categoriesQuery = useCategoriesQuery();
   const ringkasan = useMemo(
@@ -261,6 +408,7 @@ function PilihanWarga() {
           Lihat perbandingan lengkap
         </Link>
       </div>
+
       {gapQuery.isPending ? (
         <Skeleton className="mt-4 h-48 w-full rounded-xl" />
       ) : gapQuery.isError ? (
@@ -334,27 +482,58 @@ function PilihanWarga() {
 }
 
 /**
- * Beranda warga: posisi Musrenbang tahun ini, tiga langkah yang dicentang dari data asli,
- * usulan paling didukung, dan pilihan warga dibanding APBD. Daftar lengkap ada di Usulan warga.
+ * Petunjuk praktis untuk pengguna awam agar tidak ragu menggunakan aplikasi.
+ */
+function PetunjukAwam() {
+  return (
+    <Card className="border border-border bg-active/20">
+      <div className="flex items-center gap-2">
+        <span className="grid size-7 place-items-center rounded-lg bg-hijau-terang font-bold text-hitam text-sm">
+          ?
+        </span>
+        <h2 className="text-base font-bold text-ink">Panduan Singkat untuk Warga</h2>
+      </div>
+      <div className="mt-3 grid gap-3 text-sm text-muted sm:grid-cols-3">
+        <div className="rounded-xl border border-border/70 bg-surface p-3.5">
+          <b className="block font-semibold text-ink">1. Siapa saja yang bisa usul?</b>
+          <span className="mt-1 block text-xs leading-relaxed">
+            Semua warga dapat mengajukan perbaikan sarana jalan, saluran, atau taman di
+            lingkungannya.
+          </span>
+        </div>
+        <div className="rounded-xl border border-border/70 bg-surface p-3.5">
+          <b className="block font-semibold text-ink">2. Mengapa perlu didukung?</b>
+          <span className="mt-1 block text-xs leading-relaxed">
+            Usulan dengan banyak dukungan warga sekitar akan menjadi perhatian utama tim musyawarah
+            kelurahan.
+          </span>
+        </div>
+        <div className="rounded-xl border border-border/70 bg-surface p-3.5">
+          <b className="block font-semibold text-ink">3. Bagaimana melacaknya?</b>
+          <span className="mt-1 block text-xs leading-relaxed">
+            Status usulan Anda dapat dicek kapan saja di menu Usulan Saya, mulai dari Diajukan
+            hingga Selesai.
+          </span>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+/**
+ * Beranda warga: dirancang sederhana, praktis, ramah untuk semua kalangan (termasuk generasi senior/Boomer).
  */
 export default function Beranda() {
-  const { user, profile } = useAuth();
-  const nama = profile?.nama?.split(' ')[0];
-
   return (
-    <div className="space-y-4">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold tracking-[-0.01em]">
-          {user && nama ? `Halo, ${nama}` : 'Beranda'}
-        </h1>
-        <p className="mt-1 text-muted">{kalimatTahap(new Date())}</p>
-      </header>
-      <JadwalMusrenbang />
-      <div className="grid items-start gap-4 xl:grid-cols-2">
+    <div className="space-y-6">
+      <SambutanWarga />
+      <AksiUtamaWarga />
+      <div className="grid items-start gap-6 lg:grid-cols-2">
         <LangkahMu />
         <PalingDidukung />
       </div>
-      <PilihanWarga />
+      <AspirasiPilihanWarga />
+      <PetunjukAwam />
     </div>
   );
 }

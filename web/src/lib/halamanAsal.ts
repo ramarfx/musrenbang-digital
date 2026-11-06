@@ -57,11 +57,9 @@ export function ambilKembaliGoogle(): string | null {
 }
 
 /**
- * Tujuan sesudah login: halaman asal. Dibawa ke landing hanya bila asalnya landing atau ini
- * pertama kali perangkat dipakai masuk.
+ * Tujuan sesudah login: dashboard (/beranda) secara bawaan, atau halaman asal jika ada permintaan khusus.
  */
 export function tujuanSetelahLogin(dariHalaman?: string): string {
-  if (dariHalaman) return dariHalaman;
-  if (!sudahPernahMasuk()) return '/';
-  return bacaHalamanAsal() ?? '/beranda';
+  if (dariHalaman && dariHalaman !== '/' && dariHalaman !== '/login') return dariHalaman;
+  return '/beranda';
 }
