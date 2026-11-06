@@ -1,12 +1,7 @@
 import { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth';
-import {
-  ambilKembaliGoogle,
-  simpanHalamanAsal,
-  sudahPernahMasuk,
-  tandaiPernahMasuk,
-} from '@/lib/halamanAsal';
+import { ambilKembaliGoogle, simpanHalamanAsal, tandaiPernahMasuk } from '@/lib/halamanAsal';
 
 /**
  * Mengingat halaman terakhir yang dibuka selain halaman login, supaya setelah masuk warga
@@ -26,9 +21,9 @@ export function LacakHalaman() {
     if (!user) return;
     const asal = ambilKembaliGoogle();
     if (asal === null) return;
-    const pertama = !sudahPernahMasuk();
     tandaiPernahMasuk();
-    if (!pertama && pathname === '/' && asal !== '/') navigate(asal, { replace: true });
+    const target = asal && asal !== '/' && asal !== '/login' ? asal : '/beranda';
+    if (pathname === '/' || pathname === '/login') navigate(target, { replace: true });
   }, [user, pathname, navigate]);
 
   return <Outlet />;

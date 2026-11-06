@@ -1,6 +1,6 @@
-import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Button, buttonClass } from '@/components/ui/Button';
+import { Button } from '@/components/ui/Button';
 import { Card, HeroCard } from '@/components/ui/Card';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { LogoGoogle } from '@/components/ui/LogoGoogle';
@@ -41,7 +41,7 @@ const MANFAAT: { ikon: IconName; judul: string; isi: string }[] = [
 ];
 
 export default function Auth() {
-  const { user, profile, loading } = useAuth();
+  const { user, loading } = useAuth();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const mode: Mode = searchParams.get('mode') === 'daftar' ? 'daftar' : 'login';
@@ -51,25 +51,9 @@ export default function Auth() {
   if (loading) return <PageLoader label="Memeriksa sesi..." />;
 
   if (user) {
-    return (
-      <div className="mx-auto max-w-xl space-y-6">
-        <PageHeader
-          title="Kamu sudah masuk"
-          description={`Masuk sebagai ${profile?.nama ?? user.email ?? 'warga'}.`}
-        />
-        <Card>
-          <p className="text-ink">Lanjutkan menjelajah usulan atau urutkan prioritasmu.</p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Link to="/beranda" className={buttonClass('primary', 'md')}>
-              Ke beranda
-            </Link>
-            <Link to="/simulator" className={buttonClass('outline', 'md')}>
-              Buka simulator
-            </Link>
-          </div>
-        </Card>
-      </div>
-    );
+    const tujuan =
+      dariHalaman && dariHalaman !== '/' && dariHalaman !== '/login' ? dariHalaman : '/beranda';
+    return <Navigate to={tujuan} replace />;
   }
 
   return (
