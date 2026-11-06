@@ -168,6 +168,7 @@ export function ProposalForm({ proposal, onSaved, onCancel }: ProposalFormProps 
           label="Judul usulan"
           htmlFor="judul"
           error={form.formState.errors.judul?.message}
+          hint="Tulis programnya, bukan kerusakannya. Misalnya Pembangunan drainase Jalan X, bukan Jalan berlubang."
           required
         >
           <Input
