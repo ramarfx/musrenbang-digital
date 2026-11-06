@@ -32,6 +32,8 @@ export const router = createBrowserRouter([
     children: [
       // Landing berdiri sendiri tanpa sidebar; halaman aplikasi lain memakai AppLayout.
       { path: '/', element: page(<Landing />), errorElement: <RouteError /> },
+      // Login berdiri sendiri tanpa sidebar: halaman penuh dan terpusat.
+      { path: 'login', element: page(<Auth />), errorElement: <RouteError /> },
       {
         element: <AppLayout />,
         errorElement: <RouteError />,
@@ -76,7 +78,6 @@ export const router = createBrowserRouter([
             ),
           },
           { path: 'usulan/:id', element: page(<UsulanDetail />) },
-          { path: 'login', element: page(<Auth />) },
           {
             path: 'admin',
             element: page(

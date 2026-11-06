@@ -20,5 +20,8 @@ export function tahapSekarang(tanggal: Date): number {
 export function kalimatTahap(tanggal: Date): string {
   const tahap = tahapSekarang(tanggal);
   const tahunApbd = tanggal.getFullYear() + 1;
-  // return `${TAHAP_MUSRENBANG[tahap].nama} untuk APBD ${tahunApbd} sedang berjalan.`;
+  if (tahap === 3) {
+    return `Usulan tahun ini sedang dibahas menjadi APBD ${tahunApbd}, biasanya disahkan Desember.`;
+  }
+  return `${TAHAP_MUSRENBANG[tahap].nama} untuk APBD ${tahunApbd} sedang berjalan.`;
 }

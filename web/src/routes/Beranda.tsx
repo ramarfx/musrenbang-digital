@@ -16,7 +16,7 @@ import { UpvoteButton } from '@/features/proposals/components/UpvoteButton';
 import { useMyVotesQuery, useProposalsQuery } from '@/features/proposals/queries';
 import { cn } from '@/lib/cn';
 import { formatAngka, formatPersen } from '@/lib/format';
-import { kalimatTahap, TAHAP_MUSRENBANG, tahapSekarang } from '@/lib/jadwal';
+import { TAHAP_MUSRENBANG, tahapSekarang } from '@/lib/jadwal';
 
 const TARGET_DUKUNGAN = 3;
 
