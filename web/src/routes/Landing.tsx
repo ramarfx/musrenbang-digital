@@ -94,8 +94,8 @@ const FITUR: Fitur[] = [
     gelap: false,
   },
   {
-    judul: 'Urutkan prioritasmu',
-    isi: 'Susun bidang mana yang paling penting menurutmu. Urutanmu digabung dengan warga lain.',
+    judul: 'Bagi anggaran virtual',
+    isi: 'Bagi anggaran virtual ke sepuluh bidang sesuai kebutuhanmu. Pembagianmu digabung dengan warga lain.',
     ke: '/simulator',
     aksi: 'Buka simulator',
     ikon: 'simulator',

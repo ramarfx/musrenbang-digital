@@ -30,8 +30,8 @@ const MANFAAT: { ikon: IconName; judul: string; isi: string }[] = [
   },
   {
     ikon: 'simulator',
-    judul: 'Urutkan prioritasmu',
-    isi: 'Urutanmu digabung dengan warga lain lalu dibandingkan dengan APBD.',
+    judul: 'Bagi anggaran virtual',
+    isi: 'Pembagianmu digabung dengan warga lain lalu dibandingkan dengan APBD.',
   },
   {
     ikon: 'lonceng',

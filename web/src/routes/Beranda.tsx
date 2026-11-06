@@ -62,7 +62,7 @@ type Langkah = {
   aksi: string;
 };
 
-/** Tiga langkah warga, dicentang dari data asli: urutan tersimpan, dukungan, dan usulan milik sendiri. */
+/** Tiga langkah warga, dicentang dari data asli: pembagian anggaran, dukungan, dan usulan milik sendiri. */
 function LangkahMu() {
   const { user } = useAuth();
   const userId = user?.id ?? null;
@@ -78,7 +78,7 @@ function LangkahMu() {
   const daftar: Langkah[] = [
     {
       ikon: 'simulator',
-      label: 'Urutkan prioritasmu',
+      label: 'Bagi anggaran virtualmu',
       selesai: sudahUrut,
       ke: '/simulator',
       aksi: sudahUrut ? 'Ubah' : 'Mulai',
@@ -272,7 +272,7 @@ function PilihanWarga() {
         />
       ) : !ringkasan.adaWarga ? (
         <div className="mt-3 rounded-xl bg-active p-4 text-sm">
-          <p className="text-muted">Belum ada warga yang mengurutkan prioritas.</p>
+          <p className="text-muted">Belum ada warga yang membagi anggaran.</p>
           <Link to="/simulator" className={buttonClass('primary', 'sm', 'mt-3')}>
             Jadi yang pertama
           </Link>
@@ -281,8 +281,8 @@ function PilihanWarga() {
         <>
           <p className="mt-1 text-sm text-muted">
             {ringkasan.jumlahPartisipan !== undefined
-              ? `Dari ${formatAngka(ringkasan.jumlahPartisipan)} warga yang sudah mengurutkan.`
-              : 'Dari semua warga yang sudah mengurutkan.'}
+              ? `Dari ${formatAngka(ringkasan.jumlahPartisipan)} warga yang sudah membagi anggaran.`
+              : 'Dari semua warga yang sudah membagi anggaran.'}
             {ringkasan.sorotan &&
               ` Selisih terbesar dengan APBD ada di ${ringkasan.sorotan.kategori}.`}
           </p>
