@@ -140,6 +140,25 @@ test('validasi output memberi kode aturan tetap dan mencatatnya tanpa isi', asyn
   expect(logs).toEqual([['output', 'routes_value']]);
 });
 
+test('adapter Gemini mengirim skema terstruktur', async () => {
+  const { geminiProvider, responseSchema } = await import('./provider');
+  let body: { generationConfig?: { responseSchema?: unknown } } = {};
+  const mockFetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    body = JSON.parse(String(init?.body));
+    return Response.json({
+      candidates: [
+        { content: { parts: [{ text: '{"answer":"ok","route_ids":[],"disclaimer":null}' }] } },
+      ],
+    });
+  }) as typeof fetch;
+  await geminiProvider(
+    'k',
+    'gemini-test',
+    mockFetch,
+  )({ message: 'halo', history: [] }, new AbortController().signal);
+  expect(body.generationConfig?.responseSchema).toEqual(responseSchema);
+});
+
 test('provider timeout mengembalikan 504 tanpa membocorkan error', async () => {
   const h = make({ timeoutMs: 5, provider: async () => new Promise(() => {}) });
   const response = await call(h, { message: 'Apa itu APBD?' });
