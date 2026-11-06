@@ -14,9 +14,9 @@ const PILIHAN: { nilai: Cara; label: string }[] = [
 ];
 
 /**
- * Dua cara mengisi simulator: membagi anggaran virtual dengan slider (bawaan), atau mengurutkan
- * program 1 sampai 10. Keduanya menyimpan ke tabel alokasi yang sama, jadi yang tersimpan
- * terakhir yang dipakai halaman Bandingkan.
+ * Dua cara mengisi simulator: membagi anggaran virtual dengan slider (utama, bawaan), atau
+ * mengurutkan program 1 sampai 10 (tambahan). Pembagian anggaran disimpan ke tabel alokasi dan
+ * dipakai halaman Bandingkan. Urutan disimpan ke tabel urutan sendiri dan dihitung terpisah.
  */
 export default function Simulator() {
   const [params, setParams] = useSearchParams();
@@ -27,7 +27,7 @@ export default function Simulator() {
     <div className="space-y-6">
       <PageHeader
         title="Simulator"
-        description="Pilih cara mengisi: membagi anggaran virtual atau mengurutkan program. Hasil semua warga digabung dan dibandingkan dengan APBD di halaman Bandingkan."
+        description="Bagi anggaran virtual adalah cara utama dan dibandingkan dengan APBD di halaman Bandingkan. Urutan prioritas dihitung terpisah, untuk membantu admin memilih mana yang didahulukan."
         actions={
           <Link to="/apbd#dokumen-resmi" className={buttonClass('outline', 'sm')}>
             Asal angka APBD

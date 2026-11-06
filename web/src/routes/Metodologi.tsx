@@ -34,7 +34,8 @@ export default function Metodologi() {
         <p>
           Musrenbang Digital adalah prototipe kanal pra-musrenbang untuk warga. Aplikasi ini bukan
           pengganti musrenbang resmi dan bukan sistem pemerintah. Simulator tidak memakai uang
-          nyata: warga hanya mengurutkan program dari yang paling penting.
+          nyata: warga membagi anggaran virtual ke sepuluh program, dan boleh menambahkan urutan
+          prioritas.
         </p>
       </Section>
 
@@ -82,14 +83,12 @@ export default function Metodologi() {
       <Section title="Cara menghitung selisih warga dan APBD">
         <ol className="list-decimal space-y-2 pl-5">
           <li>
-            Tiap warga memberi nomor 1 sampai 10 pada sepuluh program, nomor 1 untuk yang paling
-            penting, dan tiap nomor dipakai sekali. Nomor diubah jadi poin: nomor 1 mendapat 10
-            poin, nomor 2 mendapat 9 poin, dan seterusnya sampai nomor 10 mendapat 1 poin.
+            Tiap warga membagi anggaran virtual ke sepuluh program. Satu warga satu pembagian, dan
+            bisa diubah kapan saja.
           </li>
-          <li>Poin dari semua warga dijumlahkan per kategori.</li>
+          <li>Pembagian dari semua warga dijumlahkan per kategori.</li>
           <li>
-            Persentase warga sebuah kategori adalah poin kategori itu dibagi total poin semua
-            kategori.
+            Persentase warga sebuah kategori adalah jumlah kategori itu dibagi total semua kategori.
           </li>
           <li>
             Persentase APBD sebuah kategori adalah nominal APBD kategori itu dibagi total nominal
@@ -103,8 +102,16 @@ export default function Metodologi() {
         </ol>
         <p>
           Selisih dihitung langsung dari data setiap kali halaman dibuka, tidak disimpan. Kalau
-          belum ada urutan dari warga, persentase warga nol dan halaman tetap menampilkan sisi APBD.
-          Tidak ada angka yang dikarang.
+          belum ada pembagian dari warga, persentase warga nol dan halaman tetap menampilkan sisi
+          APBD. Tidak ada angka yang dikarang.
+        </p>
+        <p>
+          Urutan prioritas dihitung terpisah dan tidak ikut dalam selisih. Warga memberi nomor 1
+          sampai 10 pada sepuluh program, nomor 1 untuk yang paling penting, dan tiap nomor dipakai
+          sekali. Admin merangkumnya dengan skor: nomor 1 mendapat 10 poin sampai nomor 10 mendapat
+          1 poin, dijumlah dari semua warga. Rangkuman baru ada setelah minimal dua warga
+          mengurutkan, dan gunanya membantu memilih mana yang didahulukan kalau dua program punya
+          selisih yang sama.
         </p>
       </Section>
 

@@ -1,9 +1,4 @@
-import {
-  ALLOCATION_STEP,
-  DEFAULT_VIRTUAL_BUDGET,
-  createBudgetAllocationSchema,
-  totalAllocation,
-} from '@musrenbang/shared';
+import { priorityRankingPayloadSchema, totalAllocation } from '@musrenbang/shared';
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
@@ -18,28 +13,26 @@ import { useAuth } from '@/features/auth';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
 import { useCategoriesQuery } from '@/features/categories/queries';
 import { getCategoryInfo } from '@/features/categories/info';
-import { useAppConfigQuery } from '@/features/config/queries';
 import { useGapQuery } from '@/features/gap/queries';
 import { cn } from '@/lib/cn';
-import { allocateByWeights, formatSelisih } from '../lib';
-import { useSaveAllocationsMutation, useUserAllocationsQuery } from '../queries';
+import { useMyRankingQuery, useSaveRankingMutation } from '@/features/ranking/queries';
+import { formatSelisih } from '../lib';
 import { PetunjukSimulator } from './PetunjukSimulator';
 import { AllocationDetailDialog } from './AllocationDetailDialog';
 
 /**
- * Simulator prioritas: warga memberi nomor 1 sampai N pada N program (1 = paling penting),
- * tiap nomor hanya sekali. Urutan diubah diam-diam jadi poin (N+1-nomor) lalu dibagi ke
- * anggaran dalam konfigurasi, jadi database, fungsi simpan, dan halaman Bandingkan tetap
- * memakai bentuk data yang sama. Rupiah tidak pernah ditampilkan ke warga.
+ * Simulator urutan prioritas (cara tambahan): warga memberi nomor 1 sampai N pada N program
+ * (1 = paling penting), tiap nomor hanya sekali. Urutan disimpan apa adanya ke tabel urutan,
+ * terpisah dari pembagian anggaran, dan tidak ikut dihitung di halaman Bandingkan. Bobot yang
+ * tampil (N+1-nomor) hanya untuk gambaran di layar; rupiah tidak pernah dihitung atau disimpan.
  */
 export function PrioritasSimulator({ slotAksi }: { slotAksi: HTMLElement | null }) {
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const categoriesQuery = useCategoriesQuery();
-  const configQuery = useAppConfigQuery();
-  const allocationsQuery = useUserAllocationsQuery(userId);
+  const rankingQuery = useMyRankingQuery(userId);
   const gapQuery = useGapQuery();
-  const saveMutation = useSaveAllocationsMutation(userId);
+  const saveMutation = useSaveRankingMutation(userId);
 
   // Nomor yang dipilih per program; program yang belum diberi nomor tidak ada di sini.
   const [peringkat, setPeringkat] = useState<Record<string, number>>({});
@@ -52,34 +45,28 @@ export function PrioritasSimulator({ slotAksi }: { slotAksi: HTMLElement | null 
     [categoriesQuery.data],
   );
   const jumlahProgram = categories.length;
-  // Skala hitung di balik layar, bukan angka yang ditampilkan.
-  const skala = configQuery.data?.virtualBudgetPerWarga ?? DEFAULT_VIRTUAL_BUDGET;
 
-  // Pengguna login memuat urutan tersimpan sekali. Urutan dibaca dari besar-kecilnya angka
-  // yang tersimpan, jadi urutan yang disimpan di sini kembali persis sama.
+  // Pengguna login memuat urutan tersimpan sekali, persis seperti yang disimpan.
   useEffect(() => {
-    if (userId === null || categories.length === 0 || !allocationsQuery.isSuccess) return;
+    if (userId === null || categories.length === 0 || !rankingQuery.isSuccess) return;
     const identity = `${userId}:${categories.join('|')}`;
     if (initializedRef.current === identity) return;
-    const tersimpan = allocationsQuery.data
-      .filter((row) => row.jumlah > 0 && categories.includes(row.kategori))
-      .sort((a, b) => b.jumlah - a.jumlah || a.kategori.localeCompare(b.kategori));
-    setPeringkat(Object.fromEntries(tersimpan.map((row, index) => [row.kategori, index + 1])));
+    const tersimpan = rankingQuery.data.filter((row) => categories.includes(row.kategori));
+    setPeringkat(Object.fromEntries(tersimpan.map((row) => [row.kategori, row.posisi])));
     initializedRef.current = identity;
-  }, [userId, categories, allocationsQuery.isSuccess, allocationsQuery.data]);
+  }, [userId, categories, rankingQuery.isSuccess, rankingQuery.data]);
 
-  const alokasi = useMemo(() => {
-    const poin = Object.fromEntries(
-      categories.map((kategori) => [
-        kategori,
-        peringkat[kategori] ? jumlahProgram + 1 - peringkat[kategori] : 0,
-      ]),
-    );
-    return (
-      allocateByWeights(categories, poin, skala, ALLOCATION_STEP) ??
-      Object.fromEntries(categories.map((kategori) => [kategori, 0]))
-    );
-  }, [categories, peringkat, jumlahProgram, skala]);
+  // Bobot per program: nomor 1 mendapat N poin, nomor N mendapat 1 poin, belum bernomor 0.
+  const alokasi = useMemo(
+    () =>
+      Object.fromEntries(
+        categories.map((kategori) => [
+          kategori,
+          peringkat[kategori] ? jumlahProgram + 1 - peringkat[kategori] : 0,
+        ]),
+      ),
+    [categories, peringkat, jumlahProgram],
+  );
 
   const items = useMemo(
     () => categories.map((kategori) => ({ kategori, jumlah: alokasi[kategori] ?? 0 })),
@@ -150,7 +137,9 @@ export function PrioritasSimulator({ slotAksi }: { slotAksi: HTMLElement | null 
   }, [items, total, apbdByKategori, bisaMulaiDariApbd]);
 
   const simpan = () => {
-    const validation = createBudgetAllocationSchema(skala).safeParse(items);
+    const validation = priorityRankingPayloadSchema.safeParse(
+      categories.map((kategori) => ({ kategori, posisi: peringkat[kategori] ?? 0 })),
+    );
     if (!validation.success) {
       toast.error(validation.error.issues[0]?.message ?? 'Urutan belum valid.');
       return;
@@ -161,7 +150,7 @@ export function PrioritasSimulator({ slotAksi }: { slotAksi: HTMLElement | null 
     });
   };
 
-  if (categoriesQuery.isPending || configQuery.isPending) {
+  if (categoriesQuery.isPending) {
     return (
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <Skeleton className="h-[640px] w-full rounded-3xl" />
@@ -176,17 +165,6 @@ export function PrioritasSimulator({ slotAksi }: { slotAksi: HTMLElement | null 
         message={categoriesQuery.error.message}
         onRetry={() => {
           void categoriesQuery.refetch();
-        }}
-      />
-    );
-  }
-
-  if (configQuery.isError) {
-    return (
-      <ErrorState
-        message={configQuery.error.message}
-        onRetry={() => {
-          void configQuery.refetch();
         }}
       />
     );
