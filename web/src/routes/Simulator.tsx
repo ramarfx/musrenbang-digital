@@ -9,25 +9,25 @@ import { cn } from '@/lib/cn';
 type Cara = 'prioritas' | 'anggaran';
 
 const PILIHAN: { nilai: Cara; label: string }[] = [
-  { nilai: 'prioritas', label: 'Urutan prioritas' },
   { nilai: 'anggaran', label: 'Bagi anggaran' },
+  { nilai: 'prioritas', label: 'Urutan prioritas' },
 ];
 
 /**
- * Dua cara mengisi simulator untuk dibandingkan: mengurutkan program 1 sampai 10, atau membagi
- * anggaran virtual dengan slider. Keduanya menyimpan ke tabel alokasi yang sama, jadi urutan
- * dan pembagian yang tersimpan terakhir yang dipakai halaman Bandingkan.
+ * Dua cara mengisi simulator: membagi anggaran virtual dengan slider (bawaan), atau mengurutkan
+ * program 1 sampai 10. Keduanya menyimpan ke tabel alokasi yang sama, jadi yang tersimpan
+ * terakhir yang dipakai halaman Bandingkan.
  */
 export default function Simulator() {
   const [params, setParams] = useSearchParams();
-  const cara: Cara = params.get('cara') === 'anggaran' ? 'anggaran' : 'prioritas';
+  const cara: Cara = params.get('cara') === 'prioritas' ? 'prioritas' : 'anggaran';
   const [slotAksi, setSlotAksi] = useState<HTMLDivElement | null>(null);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Simulator"
-        description="Pilih cara mengisi: mengurutkan program atau membagi anggaran virtual. Hasil semua warga digabung dan dibandingkan dengan APBD di halaman Bandingkan."
+        description="Pilih cara mengisi: membagi anggaran virtual atau mengurutkan program. Hasil semua warga digabung dan dibandingkan dengan APBD di halaman Bandingkan."
         actions={
           <Link to="/apbd#dokumen-resmi" className={buttonClass('outline', 'sm')}>
             Asal angka APBD
@@ -44,7 +44,7 @@ export default function Simulator() {
           <span
             aria-hidden="true"
             className="absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-[10px] bg-ink transition-transform duration-[260ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
-            style={{ transform: cara === 'prioritas' ? 'translateX(0)' : 'translateX(100%)' }}
+            style={{ transform: cara === 'anggaran' ? 'translateX(0)' : 'translateX(100%)' }}
           />
           {PILIHAN.map((pilihan) => (
             <button
@@ -52,7 +52,7 @@ export default function Simulator() {
               type="button"
               aria-pressed={cara === pilihan.nilai}
               onClick={() =>
-                setParams(pilihan.nilai === 'prioritas' ? {} : { cara: pilihan.nilai }, {
+                setParams(pilihan.nilai === 'anggaran' ? {} : { cara: pilihan.nilai }, {
                   replace: true,
                 })
               }
@@ -69,10 +69,10 @@ export default function Simulator() {
       </div>
 
       {/* Kunci per cara: berpindah tab memulai komponen baru yang memuat data tersimpannya sendiri. */}
-      {cara === 'prioritas' ? (
-        <PrioritasSimulator key="prioritas" slotAksi={slotAksi} />
-      ) : (
+      {cara === 'anggaran' ? (
         <BudgetSimulator key="anggaran" slotAksi={slotAksi} />
+      ) : (
+        <PrioritasSimulator key="prioritas" slotAksi={slotAksi} />
       )}
     </div>
   );
