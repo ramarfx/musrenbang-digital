@@ -1,5 +1,16 @@
 import { createHandler } from './core.ts';
 
+// Skema terstruktur Gemini: memaksa bentuk balasan di sumbernya; validateHint tetap lapis kedua.
+const responseSchema = {
+  type: 'OBJECT',
+  properties: {
+    min: { type: 'INTEGER' },
+    max: { type: 'INTEGER' },
+    alasan: { type: 'STRING' },
+  },
+  required: ['min', 'max', 'alasan'],
+};
+
 const url = Deno.env.get('SUPABASE_URL') ?? '';
 const anon = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 const service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -62,7 +73,11 @@ Deno.serve(
               ],
             },
             contents: [{ role: 'user', parts: [{ text: JSON.stringify(input) }] }],
-            generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 400 },
+            generationConfig: {
+              responseMimeType: 'application/json',
+              responseSchema,
+              maxOutputTokens: 400,
+            },
           }),
         },
       );
