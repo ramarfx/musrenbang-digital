@@ -1,6 +1,7 @@
 import { describeGap, type ApbdItem } from '@musrenbang/shared';
 import { Link } from 'react-router-dom';
 import { Modal } from '@/components/ui/Modal';
+import { TombolX } from '@/components/ui/TombolX';
 import {
   rapikanSumber,
   sumberKategori,
@@ -148,13 +149,7 @@ export function GapDetailDialog({
                 <p className="text-sm text-muted">{getCategoryInfo(row.kategori).deskripsi}</p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-10 flex-none items-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.97]"
-            >
-              Tutup
-            </button>
+            <TombolX onClick={onClose} />
           </div>
 
           <div className="stagger mt-6 grid gap-4">
