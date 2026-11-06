@@ -1,5 +1,20 @@
-import { prompt } from './knowledge.ts';
+import { prompt, routes } from './knowledge.ts';
 import { ProviderTemporaryError } from './retry.ts';
+
+// Skema terstruktur Gemini: memaksa bentuk balasan di sumbernya; validateOutput tetap lapis kedua.
+export const responseSchema = {
+  type: 'OBJECT',
+  properties: {
+    answer: { type: 'STRING' },
+    route_ids: {
+      type: 'ARRAY',
+      maxItems: 3,
+      items: { type: 'STRING', enum: Object.keys(routes) },
+    },
+    disclaimer: { type: 'STRING', nullable: true },
+  },
+  required: ['answer', 'route_ids', 'disclaimer'],
+};
 export type ChatInput = {
   message: string;
   history: { role: 'user' | 'assistant'; content: string }[];
@@ -25,7 +40,11 @@ export function geminiProvider(
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: prompt }] },
           contents,
-          generationConfig: { maxOutputTokens: 800, responseMimeType: 'application/json' },
+          generationConfig: {
+            maxOutputTokens: 800,
+            responseMimeType: 'application/json',
+            responseSchema,
+          },
         }),
       },
     );

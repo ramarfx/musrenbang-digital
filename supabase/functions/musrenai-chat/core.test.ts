@@ -81,16 +81,31 @@ describe('MusrenAI handler', () => {
     expect(r.status).toBe(200);
     expect(n).toBe(0);
   });
-  test('tolak URL, HTML, klaim APBD numerik dan rute asing', async () => {
+  test('tolak URL, HTML, dan rute asing', async () => {
     for (const output of [
       { answer: '<img src=x>', route_ids: [], disclaimer: null },
       { answer: 'lihat https://evil.test', route_ids: [], disclaimer: null },
-      { answer: 'APBD Rp 100 juta', route_ids: [], disclaimer: null },
       { answer: 'buka ini', route_ids: ['https://evil.test'], disclaimer: null },
     ])
       expect((await call(make({ provider: async () => output }), { message: 'halo' })).status).toBe(
         503,
       );
+  });
+  test('angka APBD dari model diganti jawaban aman ke halaman APBD', async () => {
+    const r = await call(
+      make({
+        provider: async () => ({
+          answer: 'APBD pendidikan Rp 18 triliun',
+          route_ids: [],
+          disclaimer: null,
+        }),
+      }),
+      { message: 'Berapa APBD pendidikan?' },
+    );
+    expect(r.status).toBe(200);
+    const data = await r.json();
+    expect(data.answer).not.toMatch(/\d/);
+    expect(data.links[0].path).toBe('/apbd');
   });
   test('tidak membocorkan error provider', async () => {
     const r = await call(
@@ -109,6 +124,54 @@ describe('MusrenAI handler', () => {
       (await call(make({ faqApproved: false }), { message: 'Apa itu Musrenbang?' })).status,
     ).toBe(503);
   });
+});
+
+test('validasi output memberi kode aturan tetap dan mencatatnya tanpa isi', async () => {
+  const { validateOutput } = await import('./core');
+  const cases: [unknown, string][] = [
+    [[], 'not_object'],
+    [{ answer: 1, route_ids: [] }, 'answer_type'],
+    [{ answer: ' ', route_ids: [] }, 'answer_empty'],
+    [{ answer: 'x'.repeat(4001), route_ids: [] }, 'answer_long'],
+    [{ answer: 'lihat https://evil.test', route_ids: [] }, 'answer_unsafe'],
+    [{ answer: 'email a@b.com', route_ids: [] }, 'answer_sensitive'],
+    [{ answer: 'APBD Rp 100 juta', route_ids: [] }, 'answer_apbd_number'],
+    [{ answer: 'ok', route_ids: 'apbd' }, 'routes_type'],
+    [{ answer: 'ok', route_ids: ['apbd', 'usulan', 'login', 'simulator'] }, 'routes_count'],
+    [{ answer: 'ok', route_ids: ['admin'] }, 'routes_value'],
+    [{ answer: 'ok', route_ids: [], disclaimer: 5 }, 'disclaimer_invalid'],
+  ];
+  for (const [value, code] of cases) expect(() => validateOutput(value)).toThrow(code);
+  expect(validateOutput({ answer: 'ok', route_ids: [] }).disclaimer).toBeNull();
+  const logs: string[][] = [];
+  const r = await call(
+    make({
+      provider: async () => ({ answer: 'Rahasia warga', route_ids: ['admin'], disclaimer: null }),
+      log: (stage: string, code: string) => logs.push([stage, code]),
+    }),
+    { message: 'halo' },
+  );
+  expect(r.status).toBe(503);
+  expect(logs).toEqual([['output', 'routes_value']]);
+});
+
+test('adapter Gemini mengirim skema terstruktur', async () => {
+  const { geminiProvider, responseSchema } = await import('./provider');
+  let body: { generationConfig?: { responseSchema?: unknown } } = {};
+  const mockFetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    body = JSON.parse(String(init?.body));
+    return Response.json({
+      candidates: [
+        { content: { parts: [{ text: '{"answer":"ok","route_ids":[],"disclaimer":null}' }] } },
+      ],
+    });
+  }) as typeof fetch;
+  await geminiProvider(
+    'k',
+    'gemini-test',
+    mockFetch,
+  )({ message: 'halo', history: [] }, new AbortController().signal);
+  expect(body.generationConfig?.responseSchema).toEqual(responseSchema);
 });
 
 test('provider timeout mengembalikan 504 tanpa membocorkan error', async () => {
