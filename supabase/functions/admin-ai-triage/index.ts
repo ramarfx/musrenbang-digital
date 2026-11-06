@@ -84,8 +84,12 @@ Deno.serve(
       }
       try {
         return validateReview(parsed, model);
-      } catch {
-        throw new Error(`bad_schema:finish=${finish}`);
+      } catch (error) {
+        const rule =
+          error instanceof Error && /^[a-z_]{1,20}$/.test(error.message)
+            ? error.message
+            : 'unknown';
+        throw new Error(`bad_schema:${rule}:finish=${finish}`);
       }
     },
     finish: async (id, job, result) => {
