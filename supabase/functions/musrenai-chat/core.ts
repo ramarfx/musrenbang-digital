@@ -9,6 +9,13 @@ type Dependencies = {
   faqApproved: boolean;
   origin: string;
   timeoutMs?: number;
+  // Diagnostik operator: hanya nama tahap dan kode tetap, tidak pernah isi pesan atau jawaban.
+  log?: (stage: string, code: string) => void;
+};
+export type ChatOutput = {
+  answer: string;
+  route_ids: (keyof typeof routes)[];
+  disclaimer: string | null;
 };
 const error = (
   status: number,
@@ -23,8 +30,36 @@ const unsafeOutput =
   /<[^>]*>|https?:\/\/|\bwww\.|javascript:|\b(?:judul|deskripsi)\s*(?:usulan)?\s*:/i;
 const asksDraft =
   /\b(?:buat|tulis|susun|isikan|isi|kirim|ajukan|submit)\w*\s+(?:(?:judul|deskripsi|formulir|form|usulan)\b)/i;
+const apbdNumber = /(?:\b\d[\d.,]*\s*(?:rupiah|rp|persen|%|triliun|miliar|juta)\b|\brp\s*\d)/i;
 const isRecord = (x: unknown): x is Record<string, unknown> =>
   !!x && typeof x === 'object' && !Array.isArray(x);
+
+// Tiap aturan punya kode tetap agar log menunjukkan bagian yang gagal tanpa mencatat isi.
+export function validateOutput(result: unknown): ChatOutput {
+  if (!isRecord(result)) throw new Error('not_object');
+  const answer = result.answer;
+  const routeIds = result.route_ids;
+  const disclaimer = result.disclaimer ?? null;
+  if (typeof answer !== 'string') throw new Error('answer_type');
+  if (!answer.trim()) throw new Error('answer_empty');
+  if (answer.length > 4000) throw new Error('answer_long');
+  if (unsafeOutput.test(answer)) throw new Error('answer_unsafe');
+  if (sensitive.test(answer)) throw new Error('answer_sensitive');
+  if (/\bapbd\b/i.test(answer) && apbdNumber.test(answer)) throw new Error('answer_apbd_number');
+  if (!Array.isArray(routeIds)) throw new Error('routes_type');
+  if (routeIds.length > 3) throw new Error('routes_count');
+  if (routeIds.some((r) => typeof r !== 'string' || !Object.hasOwn(routes, r)))
+    throw new Error('routes_value');
+  if (
+    disclaimer !== null &&
+    (typeof disclaimer !== 'string' ||
+      disclaimer.length > 300 ||
+      unsafeOutput.test(disclaimer) ||
+      sensitive.test(disclaimer))
+  )
+    throw new Error('disclaimer_invalid');
+  return { answer, route_ids: routeIds as ChatOutput['route_ids'], disclaimer };
+}
 export function parseInput(value: unknown): ChatInput | null {
   if (
     !isRecord(value) ||
@@ -171,8 +206,17 @@ export function createHandler(deps: Dependencies) {
     }
     const abort = new AbortController();
     const timer = setTimeout(() => abort.abort(), deps.timeoutMs ?? 15000);
+    const unavailable = () =>
+      error(
+        abort.signal.aborted ? 504 : 503,
+        abort.signal.aborted ? 'AI_TIMEOUT' : 'AI_UNAVAILABLE',
+        'MusrenAI sementara tidak tersedia. Silakan coba lagi.',
+        id,
+        cors,
+      );
+    let result: unknown;
     try {
-      const result = await Promise.race([
+      result = await Promise.race([
         deps.provider(input, abort.signal),
         new Promise<never>((_, reject) =>
           abort.signal.addEventListener('abort', () => reject(new Error('timeout')), {
@@ -180,46 +224,27 @@ export function createHandler(deps: Dependencies) {
           }),
         ),
       ]);
-      if (
-        !isRecord(result) ||
-        typeof result.answer !== 'string' ||
-        !result.answer.trim() ||
-        result.answer.length > 4000 ||
-        unsafeOutput.test(result.answer) ||
-        sensitive.test(result.answer) ||
-        (/\bapbd\b/i.test(result.answer) &&
-          /(?:\b\d[\d.,]*\s*(?:rupiah|rp|persen|%|triliun|miliar|juta)\b|\brp\s*\d)/i.test(
-            result.answer,
-          )) ||
-        !Array.isArray(result.route_ids) ||
-        result.route_ids.length > 3 ||
-        result.route_ids.some((r) => typeof r !== 'string' || !Object.hasOwn(routes, r)) ||
-        !(
-          result.disclaimer === null ||
-          (typeof result.disclaimer === 'string' &&
-            result.disclaimer.length <= 300 &&
-            !unsafeOutput.test(result.disclaimer) &&
-            !sensitive.test(result.disclaimer))
-        )
-      )
-        throw new Error('invalid output');
-      const links = [...new Set(result.route_ids as (keyof typeof routes)[])].map(
-        (route) => routes[route],
-      );
-      return Response.json(
-        { answer: result.answer, links, disclaimer: result.disclaimer, request_id: id },
-        { headers: cors },
-      );
     } catch {
-      return error(
-        abort.signal.aborted ? 504 : 503,
-        abort.signal.aborted ? 'AI_TIMEOUT' : 'AI_UNAVAILABLE',
-        'MusrenAI sementara tidak tersedia. Silakan coba lagi.',
-        id,
-        cors,
-      );
+      deps.log?.('provider', abort.signal.aborted ? 'timeout' : 'unavailable');
+      return unavailable();
     } finally {
       clearTimeout(timer);
     }
+    let output: ChatOutput;
+    try {
+      output = validateOutput(result);
+    } catch (failure) {
+      const rule =
+        failure instanceof Error && /^[a-z_]{1,20}$/.test(failure.message)
+          ? failure.message
+          : 'unknown';
+      deps.log?.('output', rule);
+      return unavailable();
+    }
+    const links = [...new Set(output.route_ids)].map((route) => routes[route]);
+    return Response.json(
+      { answer: output.answer, links, disclaimer: output.disclaimer, request_id: id },
+      { headers: cors },
+    );
   };
 }

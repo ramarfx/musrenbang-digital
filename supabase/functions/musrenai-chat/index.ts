@@ -34,6 +34,7 @@ const provider =
 Deno.serve(
   createHandler({
     origin,
+    log: (stage, code) => console.error('musrenai-chat gagal', stage, code),
     faqApproved: approved && enabled && !!key && !!model,
     provider,
     reserveProvider: reserve,

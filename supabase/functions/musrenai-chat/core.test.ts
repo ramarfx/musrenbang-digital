@@ -111,6 +111,35 @@ describe('MusrenAI handler', () => {
   });
 });
 
+test('validasi output memberi kode aturan tetap dan mencatatnya tanpa isi', async () => {
+  const { validateOutput } = await import('./core');
+  const cases: [unknown, string][] = [
+    [[], 'not_object'],
+    [{ answer: 1, route_ids: [] }, 'answer_type'],
+    [{ answer: ' ', route_ids: [] }, 'answer_empty'],
+    [{ answer: 'x'.repeat(4001), route_ids: [] }, 'answer_long'],
+    [{ answer: 'lihat https://evil.test', route_ids: [] }, 'answer_unsafe'],
+    [{ answer: 'email a@b.com', route_ids: [] }, 'answer_sensitive'],
+    [{ answer: 'APBD Rp 100 juta', route_ids: [] }, 'answer_apbd_number'],
+    [{ answer: 'ok', route_ids: 'apbd' }, 'routes_type'],
+    [{ answer: 'ok', route_ids: ['apbd', 'usulan', 'login', 'simulator'] }, 'routes_count'],
+    [{ answer: 'ok', route_ids: ['admin'] }, 'routes_value'],
+    [{ answer: 'ok', route_ids: [], disclaimer: 5 }, 'disclaimer_invalid'],
+  ];
+  for (const [value, code] of cases) expect(() => validateOutput(value)).toThrow(code);
+  expect(validateOutput({ answer: 'ok', route_ids: [] }).disclaimer).toBeNull();
+  const logs: string[][] = [];
+  const r = await call(
+    make({
+      provider: async () => ({ answer: 'Rahasia warga', route_ids: ['admin'], disclaimer: null }),
+      log: (stage: string, code: string) => logs.push([stage, code]),
+    }),
+    { message: 'halo' },
+  );
+  expect(r.status).toBe(503);
+  expect(logs).toEqual([['output', 'routes_value']]);
+});
+
 test('provider timeout mengembalikan 504 tanpa membocorkan error', async () => {
   const h = make({ timeoutMs: 5, provider: async () => new Promise(() => {}) });
   const response = await call(h, { message: 'Apa itu APBD?' });
