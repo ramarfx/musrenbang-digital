@@ -85,7 +85,7 @@ export default function Hasilmu() {
         title="Kamu belum mengurutkan prioritas"
         description="Urutkan bidang yang paling penting menurutmu, hasilnya muncul di sini."
         action={
-          <Link to="/simulator" className={buttonClass('primary')}>
+          <Link to="/simulator?cara=prioritas" className={buttonClass('primary')}>
             Urutkan prioritas
           </Link>
         }
@@ -166,7 +166,7 @@ export default function Hasilmu() {
         <Link to="/bandingkan" className="font-semibold text-warga underline">
           Lihat perbandingan lengkap
         </Link>
-        <Link to="/simulator" className="font-semibold text-warga underline">
+        <Link to="/simulator?cara=prioritas" className="font-semibold text-warga underline">
           Ubah urutan
         </Link>
         <Link to="/metodologi" className="font-semibold text-warga underline">
