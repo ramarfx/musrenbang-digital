@@ -34,8 +34,7 @@ export default function Metodologi() {
         <p>
           Musrenbang Digital adalah prototipe kanal pra-musrenbang untuk warga. Aplikasi ini bukan
           pengganti musrenbang resmi dan bukan sistem pemerintah. Simulator tidak memakai uang
-          nyata: warga membagi anggaran virtual ke sepuluh program, dan boleh menambahkan urutan
-          prioritas.
+          nyata: warga memilih 3 bidang yang paling penting lalu membagi 10 koin di antaranya.
         </p>
       </Section>
 
@@ -83,8 +82,8 @@ export default function Metodologi() {
       <Section title="Cara menghitung selisih warga dan APBD">
         <ol className="list-decimal space-y-2 pl-5">
           <li>
-            Tiap warga membagi anggaran virtual ke sepuluh program. Satu warga satu pembagian, dan
-            bisa diubah kapan saja.
+            Tiap warga memilih 3 dari sepuluh bidang yang paling penting, lalu membagi 10 koin di
+            antaranya (satu koin 10%). Satu warga satu pembagian, dan bisa diubah kapan saja.
           </li>
           <li>Pembagian dari semua warga dijumlahkan per kategori.</li>
           <li>
@@ -105,18 +104,15 @@ export default function Metodologi() {
           belum ada pembagian dari warga, persentase warga nol dan halaman tetap menampilkan sisi
           APBD. Tidak ada angka yang dikarang.
         </p>
-        <p>
-          Urutan prioritas dihitung terpisah dan tidak ikut dalam selisih. Warga memberi nomor 1
-          sampai 10 pada sepuluh program, nomor 1 untuk yang paling penting, dan tiap nomor dipakai
-          sekali. Admin merangkumnya dengan skor: nomor 1 mendapat 10 poin sampai nomor 10 mendapat
-          1 poin, dijumlah dari semua warga. Rangkuman baru ada setelah minimal dua warga
-          mengurutkan, dan gunanya membantu memilih mana yang didahulukan kalau dua program punya
-          selisih yang sama.
-        </p>
       </Section>
 
       <Section title="Batas yang perlu diketahui">
         <ul className="list-disc space-y-2 pl-5">
+          <li>
+            Bidang yang tidak dipilih seorang warga mendapat porsi nol dari warga itu. Persentase
+            warga di Bandingkan jadi cerminan bidang yang dipilih sebagai prioritas, bukan pembagian
+            seluruh anggaran.
+          </li>
           <li>
             Persentase APBD dihitung terhadap total kategori yang terverifikasi, bukan terhadap
             total belanja daerah resmi. Kalau hanya sebagian kategori yang terverifikasi, porsi APBD

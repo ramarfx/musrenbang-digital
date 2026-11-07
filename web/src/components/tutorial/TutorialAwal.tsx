@@ -142,8 +142,8 @@ export function TutorialAwal({ onSelesai }: { onSelesai: (tujuan?: string) => vo
         <>
           <PitaDemo />
           <Judul
-            judul="Urutkan bidang yang paling penting"
-            isi="Ketuk nomor di bawah tiap bidang. Nomor yang sudah dipakai akan saling bertukar. Ikuti demonya, atau coba sendiri kapan saja."
+            judul="Pilih yang paling penting"
+            isi="Di Simulator kamu memilih 3 bidang yang paling penting, lalu membagi 10 koin di antaranya. Demo ini masih memakai tampilan lama, tetapi caranya sama: tentukan dulu mana yang paling penting."
           />
         </>
       ),
