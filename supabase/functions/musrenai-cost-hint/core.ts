@@ -1,3 +1,5 @@
+import { redact } from '../_shared/pii.ts';
+
 export type CostHint = { min: number; max: number; alasan: string };
 export type HintInput = { judul: string; deskripsi: string; kategori: string };
 
@@ -15,12 +17,7 @@ const MAX_RP = 100_000_000_000;
 const MAX_RATIO = 10;
 const unsafeText = /<[^>]*>|https?:\/\/|\bwww\.|javascript:/i;
 
-export function redact(text: string): string {
-  return text
-    .replace(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi, '[email disamarkan]')
-    .replace(/(?:\+62|62|0)8[\d\s.-]{7,16}\d/g, '[telepon disamarkan]')
-    .replace(/\b\d{16}\b/g, '[nomor identitas disamarkan]');
-}
+export { redact };
 
 const isRecord = (x: unknown): x is Record<string, unknown> =>
   !!x && typeof x === 'object' && !Array.isArray(x);

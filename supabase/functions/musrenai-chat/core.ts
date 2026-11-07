@@ -1,3 +1,4 @@
+import { containsPersonalData } from '../_shared/pii.ts';
 import { routes } from './knowledge.ts';
 import type { ChatInput, Provider } from './provider.ts';
 
@@ -24,13 +25,14 @@ const error = (
   id: string,
   headers: HeadersInit = {},
 ) => Response.json({ error: { code, message, request_id: id } }, { status, headers });
-const sensitive =
-  /(?:\b\d{16}\b|\b(?:\+62|08)\d{8,13}\b|[\w.+-]+@[\w.-]+\.[a-z]{2,}|\b(?:nik|ktp)\s*[:#-]?\s*\d+)/i;
 const unsafeOutput =
   /<[^>]*>|https?:\/\/|\bwww\.|javascript:|\b(?:judul|deskripsi)\s*(?:usulan)?\s*:/i;
 const asksDraft =
   /\b(?:buat|tulis|susun|isikan|isi|kirim|ajukan|submit)\w*\s+(?:(?:judul|deskripsi|formulir|form|usulan)\b)/i;
-const apbdNumber = /(?:\b\d[\d.,]*\s*(?:rupiah|rp|persen|%|triliun|miliar|juta)\b|\brp\s*\d)/i;
+// Pertanyaan cara ("bagaimana cara isi formulir?") adalah permintaan bantuan, bukan minta dibuatkan.
+const asksHow = /\b(?:cara|bagaimana|gimana|langkah)\b/i;
+// `%` bukan huruf, jadi tidak boleh diikuti `\b`; batas kata hanya untuk satuan berupa kata.
+const apbdNumber = /(?:\b\d[\d.,]*\s*(?:(?:rupiah|rp|persen|triliun|miliar|juta)\b|%)|\brp\s*\d)/i;
 const isRecord = (x: unknown): x is Record<string, unknown> =>
   !!x && typeof x === 'object' && !Array.isArray(x);
 
@@ -44,7 +46,7 @@ export function validateOutput(result: unknown): ChatOutput {
   if (!answer.trim()) throw new Error('answer_empty');
   if (answer.length > 4000) throw new Error('answer_long');
   if (unsafeOutput.test(answer)) throw new Error('answer_unsafe');
-  if (sensitive.test(answer)) throw new Error('answer_sensitive');
+  if (containsPersonalData(answer)) throw new Error('answer_sensitive');
   if (/\bapbd\b/i.test(answer) && apbdNumber.test(answer)) throw new Error('answer_apbd_number');
   if (!Array.isArray(routeIds)) throw new Error('routes_type');
   if (routeIds.length > 3) throw new Error('routes_count');
@@ -55,7 +57,7 @@ export function validateOutput(result: unknown): ChatOutput {
     (typeof disclaimer !== 'string' ||
       disclaimer.length > 300 ||
       unsafeOutput.test(disclaimer) ||
-      sensitive.test(disclaimer))
+      containsPersonalData(disclaimer))
   )
     throw new Error('disclaimer_invalid');
   return { answer, route_ids: routeIds as ChatOutput['route_ids'], disclaimer };
@@ -91,9 +93,7 @@ export function parseInput(value: unknown): ChatInput | null {
     )
   )
     return null;
-  if (
-    [value.message, ...history.map((h) => h.content as string)].some((text) => sensitive.test(text))
-  )
+  if ([value.message, ...history.map((h) => h.content as string)].some(containsPersonalData))
     return null;
   return {
     message: value.message.trim(),
@@ -165,6 +165,18 @@ export function createHandler(deps: Dependencies) {
         id,
         cors,
       );
+    // Permintaan menulis isi usulan dijawab templat tanpa memakai kuota warga.
+    if (asksDraft.test(input.message) && !asksHow.test(input.message))
+      return Response.json(
+        {
+          answer:
+            'Saya bisa membantu menjelaskan langkah pengajuan atau memberi ide, tetapi tidak dapat menulis isi formulir atau mengirim usulan untuk Anda.',
+          links: [routes.buat_usulan],
+          disclaimer: null,
+          request_id: id,
+        },
+        { headers: cors },
+      );
     let quota: string;
     try {
       quota = await deps.consume(uid);
@@ -181,17 +193,6 @@ export function createHandler(deps: Dependencies) {
       );
     if (quota !== 'ok')
       return error(503, 'AI_UNAVAILABLE', 'MusrenAI sementara tidak tersedia.', id, cors);
-    if (asksDraft.test(input.message))
-      return Response.json(
-        {
-          answer:
-            'Saya bisa membantu menjelaskan langkah pengajuan atau memberi ide, tetapi tidak dapat menulis isi formulir atau mengirim usulan untuk Anda.',
-          links: [routes.buat_usulan],
-          disclaimer: null,
-          request_id: id,
-        },
-        { headers: cors },
-      );
     try {
       if (!(await deps.reserveProvider()))
         return error(
