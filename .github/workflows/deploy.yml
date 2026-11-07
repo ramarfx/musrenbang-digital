@@ -24,7 +24,11 @@ jobs:
           deno-version: v2.9.6
 
       - name: Check Edge Function types
-        run: deno check supabase/functions/musrenai-chat/index.ts
+        run: >-
+          deno check
+          supabase/functions/musrenai-chat/index.ts
+          supabase/functions/admin-ai-triage/index.ts
+          supabase/functions/musrenai-cost-hint/index.ts
 
       - name: Test Deno HTTP handler on loopback
         run: deno test --allow-net=127.0.0.1 supabase/tests/musrenai_deno_runtime.ts
