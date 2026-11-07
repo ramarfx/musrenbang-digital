@@ -171,6 +171,27 @@ try {
   process.exit(1);
 }
 
+// Seed menghapus seluruh apbd_items dan menimpa config. Tolak bila database berisi APBD
+// tahun lain yang tidak berasal dari CSV contoh (misalnya data resmi yang dimuat manual).
+const seedYears = new Set(apbdItems.map((item) => item.tahun));
+const { data: existingApbd, error: existingApbdError } = await supabase
+  .from('apbd_items')
+  .select('tahun');
+if (existingApbdError) {
+  console.error('Gagal memeriksa apbd_items yang ada:', existingApbdError.message);
+  process.exit(1);
+}
+const foreignYears = [
+  ...new Set((existingApbd ?? []).map((row) => row.tahun).filter((tahun) => !seedYears.has(tahun))),
+];
+if (foreignYears.length > 0 && !process.argv.includes('--replace-apbd')) {
+  console.error(
+    `Dibatalkan: apbd_items berisi data tahun ${foreignYears.join(', ')} yang bukan dari CSV seed. ` +
+      'Seed akan menghapusnya dan menimpa config. Jalankan ulang dengan --replace-apbd bila memang disengaja.',
+  );
+  process.exit(1);
+}
+
 // ---------------------------------------------------------------------------
 // Tulis ke Supabase (service role melewati RLS)
 // ---------------------------------------------------------------------------
