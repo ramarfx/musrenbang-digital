@@ -53,7 +53,9 @@ Deno.serve(
         headers: { apikey: anon, Authorization: `Bearer ${token}` },
         signal: AbortSignal.timeout(5000),
       });
-      if (!response.ok) return null;
+      // Hanya 401/403 berarti sesi tidak sah; gangguan Auth lain menjadi 503, bukan logout.
+      if (response.status === 401 || response.status === 403) return null;
+      if (!response.ok) throw new Error('auth unavailable');
       const user = await response.json();
       return typeof user.id === 'string' && user.role === 'authenticated' && !user.is_anonymous
         ? user.id
