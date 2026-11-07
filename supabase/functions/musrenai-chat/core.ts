@@ -1,3 +1,4 @@
+import { containsPersonalData } from '../_shared/pii.ts';
 import { routes } from './knowledge.ts';
 import type { ChatInput, Provider } from './provider.ts';
 
@@ -24,8 +25,6 @@ const error = (
   id: string,
   headers: HeadersInit = {},
 ) => Response.json({ error: { code, message, request_id: id } }, { status, headers });
-const sensitive =
-  /(?:\b\d{16}\b|\b(?:\+62|08)\d{8,13}\b|[\w.+-]+@[\w.-]+\.[a-z]{2,}|\b(?:nik|ktp)\s*[:#-]?\s*\d+)/i;
 const unsafeOutput =
   /<[^>]*>|https?:\/\/|\bwww\.|javascript:|\b(?:judul|deskripsi)\s*(?:usulan)?\s*:/i;
 const asksDraft =
@@ -44,7 +43,7 @@ export function validateOutput(result: unknown): ChatOutput {
   if (!answer.trim()) throw new Error('answer_empty');
   if (answer.length > 4000) throw new Error('answer_long');
   if (unsafeOutput.test(answer)) throw new Error('answer_unsafe');
-  if (sensitive.test(answer)) throw new Error('answer_sensitive');
+  if (containsPersonalData(answer)) throw new Error('answer_sensitive');
   if (/\bapbd\b/i.test(answer) && apbdNumber.test(answer)) throw new Error('answer_apbd_number');
   if (!Array.isArray(routeIds)) throw new Error('routes_type');
   if (routeIds.length > 3) throw new Error('routes_count');
@@ -55,7 +54,7 @@ export function validateOutput(result: unknown): ChatOutput {
     (typeof disclaimer !== 'string' ||
       disclaimer.length > 300 ||
       unsafeOutput.test(disclaimer) ||
-      sensitive.test(disclaimer))
+      containsPersonalData(disclaimer))
   )
     throw new Error('disclaimer_invalid');
   return { answer, route_ids: routeIds as ChatOutput['route_ids'], disclaimer };
@@ -91,9 +90,7 @@ export function parseInput(value: unknown): ChatInput | null {
     )
   )
     return null;
-  if (
-    [value.message, ...history.map((h) => h.content as string)].some((text) => sensitive.test(text))
-  )
+  if ([value.message, ...history.map((h) => h.content as string)].some(containsPersonalData))
     return null;
   return {
     message: value.message.trim(),
