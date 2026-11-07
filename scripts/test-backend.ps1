@@ -71,6 +71,12 @@ $expectedChecks = ([regex]::Matches($testSql, '(?m)^SELECT pg_temp\.(check_true|
 $testSql = $testSql -replace '(?m)^BEGIN;\r?$', '' -replace '(?m)^ROLLBACK;\r?$', ''
 if ($testSql -match '(?im)^\s*COMMIT\b') { throw 'COMMIT tidak boleh ada di tes.' }
 $sqlParts.Add($testSql)
+# Tes limiter MusrenAI memakai transaksi yang sama, setelah seluruh migration dan fixture.
+# admin_ai_triage.sql tidak ikut: ia berdiri sendiri dan membuat role serta schema sendiri.
+$limiterSql = Get-Content (Join-Path $repoRoot 'supabase/tests/musrenai_rate_limit.sql') -Raw
+if ($limiterSql -match '(?im)^\s*(BEGIN|COMMIT|ROLLBACK)\b') { throw 'Kontrol transaksi tidak boleh ada di tes limiter.' }
+$sqlParts.Add($limiterSql)
+$sqlParts.Add("SELECT 'LIMITER_OK';")
 $sqlParts.Add('ROLLBACK;')
 $sqlParts.Add("SELECT 'ROLLBACK_OK';")
 Set-Content -LiteralPath $payloadPath -Value ($sqlParts -join "`n") -Encoding utf8
@@ -85,10 +91,11 @@ try {
     --set=ON_ERROR_STOP=1 --dbname=$DatabaseUrl --file=$payloadPath 2>&1
   $resultCode = $LASTEXITCODE
   $output | Set-Content -LiteralPath $logPath -Encoding utf8
-  $output | Where-Object { "$_" -match 'MIGRATION_OK:|ROLLBACK_OK|"lulus"|ERROR:|CONTEXT:|GAGAL:' } |
+  $output | Where-Object { "$_" -match 'MIGRATION_OK:|ROLLBACK_OK|LIMITER_OK|"lulus"|ERROR:|CONTEXT:|GAGAL:' } |
     ForEach-Object { Write-Output "$_" }
   if ($resultCode -ne 0) { throw "Tes database gagal (psql exit $resultCode). Log: $logPath" }
   if (-not ($output -match '^ROLLBACK_OK$')) { throw 'Marker ROLLBACK tidak diterima.' }
+  if (-not ($output -match '^LIMITER_OK$')) { throw 'Tes limiter MusrenAI tidak selesai.' }
   $summaryLine = $output | Where-Object { "$_" -match '^\{.*"lulus"\s*:' } | Select-Object -Last 1
   if (-not $summaryLine) { throw 'Ringkasan assertion tidak ditemukan.' }
   $summary = "$summaryLine" | ConvertFrom-Json
