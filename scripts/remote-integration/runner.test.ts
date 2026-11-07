@@ -42,9 +42,10 @@ function manifestFixture(): FixtureManifest {
 }
 
 describe('remote runner safety gates', () => {
-  test('membedakan enam migration remote dari target sepuluh migration', () => {
+  test('membedakan enam migration remote dari target sembilan belas migration', () => {
     expect(FOUNDATION_MIGRATIONS).toHaveLength(6);
-    expect(WRITE_TEST_MIGRATIONS).toHaveLength(10);
+    expect(WRITE_TEST_MIGRATIONS).toHaveLength(19);
+    expect(WRITE_TEST_MIGRATIONS.at(-1)).toBe('20261105094232');
     expect(classifyRemoteMigrationHistory(WRITE_TEST_MIGRATIONS.slice(0, 9))).toBe('unexpected');
     expect(() => assertExpectedMigrationHistory(WRITE_TEST_MIGRATIONS.slice(0, 9))).toThrow();
     expect(WRITE_TEST_MIGRATIONS[9]).toBe('20261102141207');
