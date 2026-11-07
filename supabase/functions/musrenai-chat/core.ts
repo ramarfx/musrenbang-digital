@@ -29,6 +29,8 @@ const unsafeOutput =
   /<[^>]*>|https?:\/\/|\bwww\.|javascript:|\b(?:judul|deskripsi)\s*(?:usulan)?\s*:/i;
 const asksDraft =
   /\b(?:buat|tulis|susun|isikan|isi|kirim|ajukan|submit)\w*\s+(?:(?:judul|deskripsi|formulir|form|usulan)\b)/i;
+// Pertanyaan cara ("bagaimana cara isi formulir?") adalah permintaan bantuan, bukan minta dibuatkan.
+const asksHow = /\b(?:cara|bagaimana|gimana|langkah)\b/i;
 // `%` bukan huruf, jadi tidak boleh diikuti `\b`; batas kata hanya untuk satuan berupa kata.
 const apbdNumber = /(?:\b\d[\d.,]*\s*(?:(?:rupiah|rp|persen|triliun|miliar|juta)\b|%)|\brp\s*\d)/i;
 const isRecord = (x: unknown): x is Record<string, unknown> =>
@@ -163,6 +165,18 @@ export function createHandler(deps: Dependencies) {
         id,
         cors,
       );
+    // Permintaan menulis isi usulan dijawab templat tanpa memakai kuota warga.
+    if (asksDraft.test(input.message) && !asksHow.test(input.message))
+      return Response.json(
+        {
+          answer:
+            'Saya bisa membantu menjelaskan langkah pengajuan atau memberi ide, tetapi tidak dapat menulis isi formulir atau mengirim usulan untuk Anda.',
+          links: [routes.buat_usulan],
+          disclaimer: null,
+          request_id: id,
+        },
+        { headers: cors },
+      );
     let quota: string;
     try {
       quota = await deps.consume(uid);
@@ -179,17 +193,6 @@ export function createHandler(deps: Dependencies) {
       );
     if (quota !== 'ok')
       return error(503, 'AI_UNAVAILABLE', 'MusrenAI sementara tidak tersedia.', id, cors);
-    if (asksDraft.test(input.message))
-      return Response.json(
-        {
-          answer:
-            'Saya bisa membantu menjelaskan langkah pengajuan atau memberi ide, tetapi tidak dapat menulis isi formulir atau mengirim usulan untuk Anda.',
-          links: [routes.buat_usulan],
-          disclaimer: null,
-          request_id: id,
-        },
-        { headers: cors },
-      );
     try {
       if (!(await deps.reserveProvider()))
         return error(

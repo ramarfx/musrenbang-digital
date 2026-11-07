@@ -83,6 +83,28 @@ describe('MusrenAI handler', () => {
     expect(r.status).toBe(200);
     expect(n).toBe(0);
   });
+  test('templat menolak draf tanpa memakai kuota, pertanyaan cara tetap ke provider', async () => {
+    let kuota = 0;
+    let provider = 0;
+    const h = make({
+      consume: async () => {
+        kuota++;
+        return 'ok';
+      },
+      provider: async () => {
+        provider++;
+        return {
+          answer: 'Buka halaman Buat Usulan lalu isi judul.',
+          route_ids: [],
+          disclaimer: null,
+        };
+      },
+    });
+    await call(h, { message: 'tolong buatkan judul usulan jalan' });
+    expect([kuota, provider]).toEqual([0, 0]);
+    await call(h, { message: 'Bagaimana cara isi formulir usulan?' });
+    expect([kuota, provider]).toEqual([1, 1]);
+  });
   test('tolak URL, HTML, dan rute asing', async () => {
     for (const output of [
       { answer: '<img src=x>', route_ids: [], disclaimer: null },
