@@ -46,7 +46,7 @@ const CATEGORY_INFO: Record<string, CategoryInfo> = {
   'Sosial dan Budaya': {
     kode: 'Sb',
     deskripsi: 'Lansia, disabilitas, budaya',
-    ikon: 'M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20a6 6 0 0 1 12 0M16 11a3 3 0 1 0 0-6M17 20a6 6 0 0 0-3-5',
+    ikon: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M16 3.13a4 4 0 0 1 0 7.75M22 21v-2a4 4 0 0 0-3-3.87M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0z',
   },
   'Teknologi dan Layanan Digital': {
     kode: 'Tk',
