@@ -181,13 +181,39 @@ describe('admin AI triage', () => {
       expect(out.logs.at(-1)).toEqual(['reserve', 'quota']);
     });
   });
+  test('maps claim and body failures to specific statuses, not 403', async () => {
+    const make = (claimError: string) =>
+      createHandler({
+        origin: 'http://localhost',
+        authenticate: async () => 'admin',
+        claim: async () => {
+          throw new Error(claimError);
+        },
+        reserve: async () => true,
+        analyze: async () => ({ flags: [], reason: 'x', model: 'mock' }),
+        finish: async () => 'completed',
+      });
+    const call = (handler: ReturnType<typeof make>, body: string) =>
+      handler(
+        new Request('http://localhost', {
+          method: 'POST',
+          headers: { authorization: 'Bearer test' },
+          body,
+        }),
+      );
+    const ok = JSON.stringify({ proposal_id: 1 });
+    expect((await call(make('busy'), ok)).status).toBe(409);
+    expect((await call(make('not_found'), ok)).status).toBe(404);
+    expect((await call(make('database unavailable'), ok)).status).toBe(503);
+    expect((await call(make('busy'), '{rusak')).status).toBe(400);
+  });
   test('rejects unauthenticated and non-admin requests without calling provider', async () => {
     let called = false;
     const handler = createHandler({
       origin: 'http://localhost',
       authenticate: async (token) => (token === 'user' ? 'user' : null),
       claim: async () => {
-        throw new Error('not admin');
+        throw new Error('forbidden');
       },
       reserve: async () => {
         called = true;

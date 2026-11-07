@@ -29,7 +29,16 @@ async function rpc(name: string, data: object): Promise<unknown> {
     body: JSON.stringify(data),
     signal: AbortSignal.timeout(5000),
   });
-  if (!response.ok) throw new Error('database unavailable');
+  if (!response.ok) {
+    // PostgREST mengembalikan SQLSTATE dari RAISE di kolom `code`.
+    const failure = (await response.json().catch(() => null)) as { code?: unknown } | null;
+    const codes: Record<string, string> = {
+      '42501': 'forbidden',
+      '55P03': 'busy',
+      P0002: 'not_found',
+    };
+    throw new Error(codes[String(failure?.code)] ?? 'database unavailable');
+  }
   return response.json();
 }
 

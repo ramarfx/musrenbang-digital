@@ -67,10 +67,15 @@ export function createHandler(d: Dependencies) {
       if (!authorization.startsWith('Bearer ')) return reply(401, { error: 'Login diperlukan.' });
       const user = await d.authenticate(authorization.slice(7));
       if (!user) return reply(401, { error: 'Sesi tidak valid.' });
-      const body = await request.json();
-      if (!Number.isSafeInteger(body?.proposal_id) || body.proposal_id < 1)
+      let body: { proposal_id?: unknown };
+      try {
+        body = await request.json();
+      } catch {
         return reply(400, { error: 'Usulan tidak valid.' });
-      const job = await d.claim(user, body.proposal_id);
+      }
+      if (!Number.isSafeInteger(body?.proposal_id) || (body.proposal_id as number) < 1)
+        return reply(400, { error: 'Usulan tidak valid.' });
+      const job = await d.claim(user, body.proposal_id as number);
       if (!job) return reply(200, { state: 'completed' });
       let result: Review | null = null;
       let stage = 'reserve';
@@ -100,8 +105,14 @@ export function createHandler(d: Dependencies) {
       }
       const state = await d.finish(user, job, result);
       return reply(200, { state });
-    } catch {
-      return reply(403, { error: 'Analisis tidak tersedia atau akses ditolak.' });
+    } catch (error) {
+      // Kode dari rpc(): hanya penolakan peran yang menjadi 403; sisanya bukan soal hak akses.
+      const code = error instanceof Error ? error.message : '';
+      if (code === 'forbidden')
+        return reply(403, { error: 'Hanya admin yang dapat menganalisis.' });
+      if (code === 'busy') return reply(409, { error: 'Analisis usulan ini sedang diproses.' });
+      if (code === 'not_found') return reply(404, { error: 'Usulan tidak ditemukan.' });
+      return reply(503, { error: 'Analisis sementara tidak tersedia.' });
     }
   };
 }
