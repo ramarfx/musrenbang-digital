@@ -11,8 +11,8 @@ import { JalurMusrenbang, KotaSiap } from './IlustrasiTutorial';
 // Langkah "Tanya" hanya ada bila asisten MusrenAI menyala di versi ini.
 const ADA_ASISTEN = import.meta.env.VITE_MUSRENAI_ENABLED === 'true';
 const TAHAP: readonly string[] = ADA_ASISTEN
-  ? ['Kenalan', 'Alur', 'Urutkan', 'Dukung', 'Usulkan', 'Pantau', 'Tanya', 'Siap']
-  : ['Kenalan', 'Alur', 'Urutkan', 'Dukung', 'Usulkan', 'Pantau', 'Siap'];
+  ? ['Kenalan', 'Alur', 'Prioritas', 'Dukung', 'Usulkan', 'Pantau', 'Tanya', 'Siap']
+  : ['Kenalan', 'Alur', 'Prioritas', 'Dukung', 'Usulkan', 'Pantau', 'Siap'];
 
 function Judul({ judul, isi }: { judul: string; isi: string }) {
   return (
@@ -102,7 +102,7 @@ function Stepper({ langkah }: { langkah: number }) {
 /**
  * Tutorial satu layar penuh yang muncul sekali sesudah pertama kali masuk. Dua langkah pertama
  * adalah perkenalan bergambar, lima langkah sesudahnya adalah demo bergerak yang meniru fitur asli
- * (urutkan prioritas, dukung, tulis usulan, pantau status). Demo berjalan sendiri dengan kursor,
+ * (simulator, dukung, tulis usulan, pantau status). Demo berjalan sendiri dengan kursor,
  * tetapi warga bisa mengkliknya kapan saja. "Lewati" dan Escape menutup dan menandainya selesai.
  */
 export function TutorialAwal({ onSelesai }: { onSelesai: (tujuan?: string) => void }) {
@@ -143,7 +143,7 @@ export function TutorialAwal({ onSelesai }: { onSelesai: (tujuan?: string) => vo
           <PitaDemo />
           <Judul
             judul="Pilih yang paling penting"
-            isi="Di Simulator kamu memilih 3 bidang yang paling penting, lalu membagi 10 koin di antaranya. Demo ini masih memakai tampilan lama, tetapi caranya sama: tentukan dulu mana yang paling penting."
+            isi="Di Simulator kamu memilih 3 bidang yang paling penting, lalu membagi 10 koin di antaranya. Hasilnya dibandingkan dengan APBD."
           />
         </>
       ),
@@ -208,7 +208,7 @@ export function TutorialAwal({ onSelesai }: { onSelesai: (tujuan?: string) => vo
           <ol className="mt-5 space-y-2">
             {(
               [
-                ['simulator', 'Urutkan prioritasmu'],
+                ['simulator', 'Isi simulatormu'],
                 ['panah-atas', 'Dukung 3 usulan'],
                 ['lokasi', 'Buat usulanmu'],
               ] as const
@@ -286,7 +286,7 @@ export function TutorialAwal({ onSelesai }: { onSelesai: (tujuan?: string) => vo
             Kembali
           </Button>
           <Button onClick={() => (terakhir ? onSelesai('/simulator') : pindah(langkah + 1))}>
-            {terakhir ? 'Mulai urutkan prioritas' : 'Lanjut'}
+            {terakhir ? 'Mulai isi simulator' : 'Lanjut'}
           </Button>
         </footer>
       </div>

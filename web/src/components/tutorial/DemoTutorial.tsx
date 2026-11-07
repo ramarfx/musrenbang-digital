@@ -14,6 +14,14 @@ import { Icon } from '@/components/ui/Icon';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { RuasTahap } from '@/components/layout/NotificationBell';
+import {
+  BATAS_PILIHAN,
+  JUMLAH_KOIN,
+  bagiRata,
+  sisaKoin,
+  ubahKoin,
+  type Koin,
+} from '@/features/allocations/koin';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
 import { getCategoryInfo } from '@/features/categories/info';
 import { TahapMini } from '@/features/proposals/components/ProposalCard';
@@ -188,124 +196,186 @@ const kartuClass = 'rounded-3xl border border-border bg-surface p-5';
 const kartuUsulanClass =
   'kartu-usulan kartu-tampak rounded-3xl border-[1.5px] border-edge bg-surface p-4 shadow-[0_4px_0_var(--edge)] sm:p-5';
 
-/* ---------- 1. Urutkan prioritas ---------- */
+/* ---------- 1. Simulator: pilih 3 bidang, lalu bagi 10 koin ---------- */
 
-const PROGRAM = ['Kesehatan', 'Pendidikan', 'Infrastruktur dan Jalan'] as const;
-const NOMOR = [1, 2, 3] as const;
+const BIDANG = [
+  'Kesehatan',
+  'Pendidikan',
+  'Infrastruktur dan Jalan',
+  'Air Bersih dan Drainase',
+  'Transportasi Publik',
+  'Lingkungan dan Sampah',
+] as const;
 
-/** Aturan asli simulator: nomor yang sudah dipakai bidang lain ditukar, menekan nomor sendiri melepasnya. */
-function pilihNomor(lama: Record<string, number>, nama: string, nomor: number) {
-  const baru = { ...lama };
-  if (lama[nama] === nomor) {
-    baru[nama] = 0;
-    return baru;
-  }
-  const pemegang = PROGRAM.find((lain) => lain !== nama && lama[lain] === nomor);
-  if (pemegang) baru[pemegang] = lama[nama] ?? 0;
-  baru[nama] = nomor;
-  return baru;
+/** Nama bidang dengan stabilo warna kategorinya, seperti di simulator asli. */
+function NamaStabilo({ nama }: { nama: string }) {
+  return (
+    <span
+      className="tanda-kategori"
+      style={{ '--tanda': getCategoryInfo(nama).warna.latar } as CSSProperties}
+    >
+      {nama}
+    </span>
+  );
 }
 
 export function DemoUrutkan({ onUlang }: { onUlang: () => void }) {
-  const [urut, setUrut] = useState<Record<string, number>>({});
+  const [pilihan, setPilihan] = useState<string[]>([]);
+  const [koin, setKoin] = useState<Koin>({});
+  const [tahap, setTahap] = useState<'pilih' | 'koin'>('pilih');
+
   const demo = useDemoOtomatis(async (p) => {
-    const pilih = (nama: string, nomor: number) => () =>
-      setUrut((lama) => pilihNomor(lama, nama, nomor));
+    const tambahPilihan = (nama: string) => () =>
+      setPilihan((lama) =>
+        lama.includes(nama) || lama.length >= BATAS_PILIHAN ? lama : [...lama, nama],
+      );
     await p.tunggu(500);
-    p.caption('1. Ketuk nomor 1 untuk yang paling penting');
-    await p.klik('[data-nomor="Kesehatan-1"]', pilih('Kesehatan', 1));
-    p.caption('2. Lanjut ke bidang berikutnya');
-    await p.klik('[data-nomor="Pendidikan-2"]', pilih('Pendidikan', 2));
-    await p.klik('[data-nomor="Infrastruktur dan Jalan-3"]', pilih('Infrastruktur dan Jalan', 3));
-    await p.tunggu(500);
-    p.caption('3. Nomor sudah dipakai? Dua bidang saling bertukar');
-    await p.klik('[data-nomor="Infrastruktur dan Jalan-1"]', pilih('Infrastruktur dan Jalan', 1));
+    p.caption('1. Ketuk 3 bidang yang paling penting');
+    await p.klik('[data-bidang="Kesehatan"]', tambahPilihan('Kesehatan'));
+    await p.klik('[data-bidang="Pendidikan"]', tambahPilihan('Pendidikan'));
+    await p.klik(
+      '[data-bidang="Infrastruktur dan Jalan"]',
+      tambahPilihan('Infrastruktur dan Jalan'),
+    );
+    await p.klik('[data-lanjut]', () => {
+      setKoin(bagiRata(['Kesehatan', 'Pendidikan', 'Infrastruktur dan Jalan']));
+      setTahap('koin');
+    });
+    p.caption('2. Bagi 10 koin, satu koin 10%');
+    await p.tunggu(400);
+    await p.klik('[data-kurang="Infrastruktur dan Jalan"]', () =>
+      setKoin((lama) => ubahKoin(lama, 'Infrastruktur dan Jalan', -1)),
+    );
+    await p.klik('[data-tambah="Kesehatan"]', () =>
+      setKoin((lama) => ubahKoin(lama, 'Kesehatan', 1)),
+    );
+    await p.tunggu(900);
+    p.caption('3. Kirim, lalu lihat bedanya dengan APBD');
     await p.tunggu(900);
     p.selesai();
   });
 
-  const terisi = PROGRAM.filter((nama) => (urut[nama] ?? 0) > 0).length;
-  const poin = (nama: string) => (urut[nama] ? PROGRAM.length + 1 - (urut[nama] ?? 0) : 0);
-  const totalPoin = PROGRAM.reduce((jumlah, nama) => jumlah + poin(nama), 0);
+  const ketuk = (nama: string) =>
+    setPilihan((lama) => {
+      if (lama.includes(nama)) return lama.filter((lain) => lain !== nama);
+      return lama.length >= BATAS_PILIHAN ? lama : [...lama, nama];
+    });
+  const sisa = sisaKoin(koin);
 
   return (
     <Panggung demo={demo} onUlang={onUlang}>
-      <div>
-        <p className="mb-3 text-sm text-muted">
-          <span className="font-semibold text-ink">
-            {terisi === PROGRAM.length
-              ? 'Lengkap.'
-              : `Sudah diurutkan ${terisi} dari ${PROGRAM.length}.`}
-          </span>{' '}
-          Contoh dengan tiga bidang.
-        </p>
-        <div role="group" aria-label="Urutan prioritas per bidang" className="space-y-2.5">
-          {PROGRAM.map((nama) => {
-            const nomor = urut[nama] ?? 0;
-            const labelId = `demo-urutan-${nama}`;
-            const persen = totalPoin > 0 ? Math.round((poin(nama) / totalPoin) * 100) : 0;
-            return (
-              <div
-                key={nama}
-                className="grid grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2.5 rounded-2xl border-[1.5px] border-edge bg-surface p-3.5 shadow-[0_3px_0_var(--edge)]"
-              >
-                <CategoryTile kategori={nama} />
-                <span id={labelId} className="min-w-0 font-semibold">
-                  <span
-                    className="tanda-kategori"
-                    style={{ '--tanda': getCategoryInfo(nama).warna.latar } as CSSProperties}
-                  >
-                    {nama}
-                  </span>
-                  <span className="block text-[13px] font-normal text-muted">
-                    {getCategoryInfo(nama).deskripsi}
-                  </span>
-                </span>
-                <span className="text-right text-[13px] whitespace-nowrap text-muted">
-                  {nomor ? (
-                    <>
-                      <b className="text-[15px] text-ink">Nomor {nomor}</b>
-                      <span className="block">{persen}% bobot</span>
-                    </>
-                  ) : (
-                    'Belum bernomor'
+      {tahap === 'pilih' ? (
+        <div>
+          <p className="mb-3 text-sm text-muted">
+            <span className="font-semibold text-ink">
+              Sudah dipilih: {pilihan.length} dari {BATAS_PILIHAN}.
+            </span>{' '}
+            Contoh dengan enam bidang.
+          </p>
+          <div role="group" aria-label="Pilih 3 bidang" className="grid grid-cols-2 gap-2.5">
+            {BIDANG.map((nama) => {
+              const urutan = pilihan.indexOf(nama);
+              const aktif = urutan >= 0;
+              return (
+                <button
+                  key={nama}
+                  type="button"
+                  role="checkbox"
+                  aria-checked={aktif}
+                  data-bidang={nama}
+                  onClick={() => ketuk(nama)}
+                  className={cn(
+                    'relative flex min-h-[92px] flex-col items-start gap-2 rounded-2xl border-[1.5px] border-edge p-3 text-left shadow-[0_3px_0_var(--edge)] transition-[scale,background-color] duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga',
+                    aktif ? 'bg-mint-pucat' : 'bg-surface hover:bg-active',
                   )}
-                </span>
-                <div
-                  role="radiogroup"
-                  aria-labelledby={labelId}
-                  className="col-span-full flex flex-wrap gap-1.5 sm:pl-14"
                 >
-                  {NOMOR.map((angka) => {
-                    const aktif = nomor === angka;
-                    const pemegang = PROGRAM.find((lain) => lain !== nama && urut[lain] === angka);
-                    return (
-                      <button
-                        key={angka}
-                        type="button"
-                        role="radio"
-                        aria-checked={aktif}
-                        data-nomor={`${nama}-${angka}`}
-                        onClick={() => setUrut((lama) => pilihNomor(lama, nama, angka))}
-                        className={cn(
-                          'grid size-9 place-items-center rounded-lg border text-[13px] font-semibold tabular-nums transition-[scale,background-color,border-color,color] duration-150 ease-out active:scale-[0.94] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga',
-                          aktif && 'border-hijau bg-hijau text-white',
-                          !aktif &&
-                            !pemegang &&
-                            'border-border bg-surface text-ink hover:bg-active',
-                          !aktif && pemegang && 'border-rule bg-ground text-muted hover:bg-active',
-                        )}
-                      >
-                        {angka}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
+                  <CategoryTile kategori={nama} gaya="cap" />
+                  <span className="text-[13px] leading-snug font-semibold">
+                    <NamaStabilo nama={nama} />
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      'absolute top-3 right-3 grid size-6 place-items-center rounded-full border-2 text-[12px] font-bold',
+                      aktif ? 'border-ink bg-hijau-terang text-hitam' : 'border-border',
+                    )}
+                  >
+                    {aktif ? urutan + 1 : ''}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <Button
+            data-lanjut
+            className="mt-3 w-full"
+            disabled={pilihan.length < BATAS_PILIHAN}
+            onClick={() => {
+              setKoin(bagiRata(pilihan));
+              setTahap('koin');
+            }}
+          >
+            Lanjut: bagi koin
+          </Button>
         </div>
-      </div>
+      ) : (
+        <div>
+          <p className="mb-3 text-sm text-muted">
+            <span className="font-semibold text-ink">
+              {sisa === 0 ? 'Semua koin terbagi.' : `Sisa ${sisa} koin.`}
+            </span>{' '}
+            Satu koin sama dengan 10%.
+          </p>
+          <div className="space-y-2.5">
+            {pilihan.map((nama) => {
+              const jumlah = koin[nama] ?? 0;
+              return (
+                <div
+                  key={nama}
+                  className="rounded-2xl border-[1.5px] border-edge bg-surface p-3 shadow-[0_3px_0_var(--edge)]"
+                >
+                  <div className="flex items-center gap-3">
+                    <CategoryTile kategori={nama} gaya="cap" />
+                    <b className="min-w-0 flex-1 text-[14px] font-semibold">
+                      <NamaStabilo nama={nama} />
+                    </b>
+                    <button
+                      type="button"
+                      aria-label={`Kurangi koin ${nama}`}
+                      data-kurang={nama}
+                      onClick={() => setKoin((lama) => ubahKoin(lama, nama, -1))}
+                      className="grid size-9 place-items-center rounded-lg border border-border text-lg font-semibold active:scale-[0.94]"
+                    >
+                      −
+                    </button>
+                    <b className="w-6 text-center text-[17px] tabular-nums">{jumlah}</b>
+                    <button
+                      type="button"
+                      aria-label={`Tambah koin ${nama}`}
+                      data-tambah={nama}
+                      onClick={() => setKoin((lama) => ubahKoin(lama, nama, 1))}
+                      className="grid size-9 place-items-center rounded-lg border border-border text-lg font-semibold active:scale-[0.94]"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <div aria-hidden="true" className="mt-2.5 flex gap-1">
+                    {Array.from({ length: JUMLAH_KOIN }, (_, i) => (
+                      <i
+                        key={i}
+                        className={cn(
+                          'h-2.5 flex-1 rounded-full transition-colors duration-150',
+                          i < jumlah ? 'bg-hijau-terang' : 'bg-track',
+                        )}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </Panggung>
   );
 }
