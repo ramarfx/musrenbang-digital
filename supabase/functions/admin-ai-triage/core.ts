@@ -1,3 +1,5 @@
+import { redact } from '../_shared/pii.ts';
+
 export type Review = { flags: string[]; reason: string; model: string };
 type Job = { review_id: number; token: string; judul: string; deskripsi: string; kategori: string };
 type Dependencies = {
@@ -28,12 +30,7 @@ function safeCode(error: unknown): string {
   return /^[a-z0-9_=:.-]{1,60}$/.test(message) ? message : 'unknown';
 }
 
-export function redact(text: string): string {
-  return text
-    .replace(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi, '[email disamarkan]')
-    .replace(/(?:\+62|62|0)8[\d\s.-]{7,16}\d/g, '[telepon disamarkan]')
-    .replace(/\b\d{16}\b/g, '[nomor identitas disamarkan]');
-}
+export { redact };
 
 export const ALLOWED_FLAGS = ['spam', 'promotion', 'irrelevant', 'needs_review'];
 
