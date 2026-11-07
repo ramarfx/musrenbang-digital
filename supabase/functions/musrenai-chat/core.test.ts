@@ -138,6 +138,8 @@ test('validasi output memberi kode aturan tetap dan mencatatnya tanpa isi', asyn
     [{ answer: 'lihat https://evil.test', route_ids: [] }, 'answer_unsafe'],
     [{ answer: 'email a@b.com', route_ids: [] }, 'answer_sensitive'],
     [{ answer: 'APBD Rp 100 juta', route_ids: [] }, 'answer_apbd_number'],
+    [{ answer: 'Porsi APBD pendidikan 32% dari total.', route_ids: [] }, 'answer_apbd_number'],
+    [{ answer: 'Porsi APBD pendidikan 32,5%', route_ids: [] }, 'answer_apbd_number'],
     [{ answer: 'ok', route_ids: 'apbd' }, 'routes_type'],
     [{ answer: 'ok', route_ids: ['apbd', 'usulan', 'login', 'simulator'] }, 'routes_count'],
     [{ answer: 'ok', route_ids: ['admin'] }, 'routes_value'],

@@ -29,7 +29,8 @@ const unsafeOutput =
   /<[^>]*>|https?:\/\/|\bwww\.|javascript:|\b(?:judul|deskripsi)\s*(?:usulan)?\s*:/i;
 const asksDraft =
   /\b(?:buat|tulis|susun|isikan|isi|kirim|ajukan|submit)\w*\s+(?:(?:judul|deskripsi|formulir|form|usulan)\b)/i;
-const apbdNumber = /(?:\b\d[\d.,]*\s*(?:rupiah|rp|persen|%|triliun|miliar|juta)\b|\brp\s*\d)/i;
+// `%` bukan huruf, jadi tidak boleh diikuti `\b`; batas kata hanya untuk satuan berupa kata.
+const apbdNumber = /(?:\b\d[\d.,]*\s*(?:(?:rupiah|rp|persen|triliun|miliar|juta)\b|%)|\brp\s*\d)/i;
 const isRecord = (x: unknown): x is Record<string, unknown> =>
   !!x && typeof x === 'object' && !Array.isArray(x);
 
