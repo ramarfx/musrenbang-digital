@@ -64,7 +64,8 @@ React + Vite; trust the repo config and code when they conflict with PRD prose.
 - Root `.env`: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `KOTA`, `TAHUN_ANGGARAN`, `VIRTUAL_BUDGET_PER_WARGA` — seed only.
 - `web/.env`: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are required. `VITE_MUSRENAI_ENABLED=true` is an optional build-time flag that shows the citizen assistant. Never expose the service-role key to Vite.
 - Vite env is read at build time; `web/src/lib/env.ts` throws on missing or invalid values.
-- `bun run seed` deletes all `apbd_items`, then deletes only proposals with `pengusul_id IS NULL` and reloads 20 samples. It preserves real user proposals. Never run it against data you cannot reset.
+- `bun run seed` deletes all `apbd_items`, then deletes only proposals with `pengusul_id IS NULL` and reloads 20 samples. It preserves real user proposals. Never run it against data you cannot reset. Do not run it against the development project now: it would delete the APBD 2025 rows (Perda DKI No. 9/2024) loaded on 2026-11-05 and overwrite `config.tahun_anggaran` (now 2025) with the 2026 sample data.
+- `bun run demo:accounts` creates 20 confirmed demo citizens (names end in D1 to D20, emails `name.dN@demo.test`) from root `.env` (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `DEMO_PASSWORD`). It skips existing emails and never prints the password. Demo proposals, comments, votes, allocations, and rankings for the competition are linked to these accounts, so deleting the accounts removes all demo data.
 
 ## Conventions
 
