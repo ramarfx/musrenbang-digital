@@ -133,6 +133,18 @@ export type Database = {
           updated_at: string | null;
         }[]
       >;
+      get_similar_proposals: FunctionDefinition<
+        { p_proposal_id: number; p_limit?: number },
+        {
+          id: number;
+          judul: string;
+          kategori: string;
+          moderasi: string;
+          status: string;
+          kemiripan: number;
+          jarak_m: number | null;
+        }[]
+      >;
       moderate_proposal: FunctionDefinition<
         { p_proposal_id: number; p_moderasi: string; p_catatan?: string | null },
         undefined
