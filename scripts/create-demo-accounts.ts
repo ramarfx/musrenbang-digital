@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 
 /**
- * Membuat 20 akun warga dummy untuk demo lomba. Nama berakhiran D1 sampai D20 dan email
+ * Membuat 40 akun warga dummy untuk demo lomba. Nama berakhiran D1 sampai D40 dan email
  * memakai domain `.test`, yang dicadangkan dan tidak pernah bisa menerima email. Akun langsung
  * terkonfirmasi, jadi tidak ada email yang dikirim. Profil dibuat otomatis oleh trigger
  * `auth.users` dari metadata `nama`, dengan peran `warga`.
@@ -30,6 +30,26 @@ const DEMO_ACCOUNTS = [
   { nama: 'Kayla Puspita Sari D18', email: 'kayla.d18@demo.test' },
   { nama: 'Arjuna Mahardika D19', email: 'arjuna.d19@demo.test' },
   { nama: 'Shafira Dewi Anjani D20', email: 'shafira.d20@demo.test' },
+  { nama: 'Naufal Pramudya D21', email: 'naufal.d21@demo.test' },
+  { nama: 'Anindita Rahayu D22', email: 'anindita.d22@demo.test' },
+  { nama: 'Reyhan Mahesa Putra D23', email: 'reyhan.d23@demo.test' },
+  { nama: 'Calista Nirmala D24', email: 'calista.d24@demo.test' },
+  { nama: 'Fathir Alamsyah D25', email: 'fathir.d25@demo.test' },
+  { nama: 'Embun Prameswari D26', email: 'embun.d26@demo.test' },
+  { nama: 'Gibran Satya Wardhana D27', email: 'gibran.d27@demo.test' },
+  { nama: 'Laksmi Paramitha D28', email: 'laksmi.d28@demo.test' },
+  { nama: 'Yudhistira Kencana D29', email: 'yudhistira.d29@demo.test' },
+  { nama: 'Nadira Khairunnisa D30', email: 'nadira.d30@demo.test' },
+  { nama: 'Bagas Dwi Prakoso D31', email: 'bagas.d31@demo.test' },
+  { nama: 'Kenanga Ayu Lestari D32', email: 'kenanga.d32@demo.test' },
+  { nama: 'Satria Nugraha D33', email: 'satria.d33@demo.test' },
+  { nama: 'Safira Indah Permata D34', email: 'safira.d34@demo.test' },
+  { nama: 'Wisnu Aji Pangestu D35', email: 'wisnu.d35@demo.test' },
+  { nama: 'Anggun Cahyani D36', email: 'anggun.d36@demo.test' },
+  { nama: 'Tirta Samudera D37', email: 'tirta.d37@demo.test' },
+  { nama: 'Melati Kusumawardani D38', email: 'melati.d38@demo.test' },
+  { nama: 'Rangga Dirgantara D39', email: 'rangga.d39@demo.test' },
+  { nama: 'Cahaya Putri Maharani D40', email: 'cahaya.d40@demo.test' },
 ];
 
 const parsed = z
