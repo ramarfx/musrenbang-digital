@@ -14,6 +14,7 @@
     "deploy": "bun run build && bunx wrangler pages deploy web/dist --project-name musrenbang-digital",
     "seed": "bun run scripts/seed.ts",
     "demo:accounts": "bun run scripts/create-demo-accounts.ts",
+    "predemo": "bun --env-file=web/.env.local scripts/predemo-check.ts",
     "load:test": "bun --env-file=web/.env.local scripts/load-test.ts",
     "typecheck": "bun run --cwd packages/shared typecheck && bun run --cwd web typecheck && tsc --noEmit -p tsconfig.json",
     "lint": "oxlint .",
