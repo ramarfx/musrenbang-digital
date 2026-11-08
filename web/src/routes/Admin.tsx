@@ -231,7 +231,6 @@ export default function Admin() {
               onPilih={setTerpilihId}
               sedangDiproses={sedangDiproses}
               onSetujui={setujui}
-              onTolak={bukaTolak}
             />
             <RincianUsulan
               proposal={proposals.find((proposal) => proposal.id === terpilihId) ?? null}

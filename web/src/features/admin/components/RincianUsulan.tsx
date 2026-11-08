@@ -9,19 +9,10 @@ import { StatusBadge } from '@/features/proposals/components/StatusBadge';
 import { formatAngka, formatRupiahRingkas, formatTanggal } from '@/lib/format';
 import { AnalisisAi } from './AnalisisAi';
 
-/** Satu kotak angka bercap kecil di kartu rincian. */
-function Kotak({ label, nilai }: { label: string; nilai: string }) {
-  return (
-    <div className="min-w-0 rounded-xl border-[1.5px] border-edge bg-surface px-3 py-2">
-      <dt className="text-[12px] text-muted">{label}</dt>
-      <dd className="truncate text-sm font-bold">{nilai}</dd>
-    </div>
-  );
-}
-
 /**
  * Rincian usulan terpilih di kolom kanan halaman admin: pita berwarna kategori di atas, lalu
- * deskripsi, empat kotak angka, lalu hasil MusrenAI tepat di atas tombol keputusan. Tinggi kartu
+ * deskripsi dan satu baris fakta (biaya, suara, lokasi, tanggal), lalu hasil MusrenAI tepat di
+ * atas tombol keputusan. Tinggi kartu
  * mengikuti isinya (kartu antrean di sebelahnya yang menyesuaikan), jadi tidak ada area yang harus digulir di dalam kartu: yang menggulir halaman.
  */
 export function RincianUsulan({
@@ -90,16 +81,15 @@ export function RincianUsulan({
               )}
             </div>
 
-            <dl className="mt-3 grid grid-cols-2 gap-2.5">
-              <Kotak label="Estimasi" nilai={formatRupiahRingkas(proposal.estimasi_biaya)} />
-              <Kotak label="Suara" nilai={formatAngka(proposal.jumlah_suara)} />
-              <Kotak label="Lokasi" nilai={proposal.lokasi || 'Tanpa lokasi'} />
-              <Kotak label="Diajukan" nilai={formatTanggal(proposal.dibuat_pada)} />
-            </dl>
+            <p className="mt-2.5 text-[13px] text-muted [overflow-wrap:anywhere]">
+              {formatRupiahRingkas(proposal.estimasi_biaya)} · {formatAngka(proposal.jumlah_suara)}{' '}
+              suara · {proposal.lokasi || 'Tanpa lokasi'} · diajukan{' '}
+              {formatTanggal(proposal.dibuat_pada)}
+            </p>
 
             <AnalisisAi proposalId={proposal.id} />
 
-            <div className="mt-auto flex flex-wrap gap-2.5 pt-4">
+            <div className="flex flex-wrap gap-2.5 pt-3">
               {proposal.moderasi !== 'Disetujui' && (
                 <Button
                   type="button"
