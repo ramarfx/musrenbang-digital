@@ -69,7 +69,7 @@ function umurHari(dibuatPada: string): number {
 /**
  * Antrean tinjau di kolom kiri halaman admin: usulan yang menunggu paling lama di atas. Memilih
  * baris menampilkan rinciannya di kolom kanan; menyetujui bisa langsung dari baris, menolak
- * lewat pop-up yang mewajibkan alasan.
+ * hanya dari kartu rincian karena wajib menulis alasan.
  */
 export function AntreanTinjau({
   proposals,
@@ -77,7 +77,6 @@ export function AntreanTinjau({
   onPilih,
   sedangDiproses,
   onSetujui,
-  onTolak,
 }: {
   proposals: Proposal[];
   terpilihId: number | null;
@@ -85,7 +84,6 @@ export function AntreanTinjau({
   /** Id usulan yang sedang diproses, supaya tombolnya bisa dikunci. */
   sedangDiproses: number | null;
   onSetujui: (proposal: Proposal) => void;
-  onTolak: (proposal: Proposal) => void;
 }) {
   const [saring, setSaring] = useState<Saring>('Menunggu');
   const [urutan, setUrutan] = useState<Urutan>('terlama');
@@ -256,7 +254,7 @@ export function AntreanTinjau({
       </div>
 
       {diperiksa.length > 0 && (
-        <div className="mt-3 rounded-xl bg-active px-3 py-2.5">
+        <div className="mt-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="min-w-0 text-[13px] text-ink">
               <b>MusrenAI</b>
@@ -285,7 +283,8 @@ export function AntreanTinjau({
           </div>
           {!aiTakTersedia && (
             <p className="mt-0.5 text-[12px] text-muted">
-              Memeriksa spam, promosi, dan isi yang tidak jelas. Hasilnya muncul di tiap baris.
+              MusrenAI memeriksa spam, promosi, dan isi yang tidak jelas. Hasilnya muncul di tiap
+              baris.
             </p>
           )}
           {proses && (
@@ -393,17 +392,6 @@ export function AntreanTinjau({
                           onClick={() => onSetujui(proposal)}
                         >
                           Setujui
-                        </Button>
-                      )}
-                      {proposal.moderasi !== 'Ditolak' && (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          disabled={sedangDiproses !== null}
-                          onClick={() => onTolak(proposal)}
-                        >
-                          Tolak
                         </Button>
                       )}
                     </div>
