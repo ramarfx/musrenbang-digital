@@ -35,7 +35,12 @@ function KalimatTemuan({ row }: { row: GapRow }) {
     </>
   ) : (
     <>
-      APBD memberi {apbd} untuk {row.kategori}, padahal warga hanya ingin {warga}.
+      APBD memberi {apbd} untuk {row.kategori}, padahal{' '}
+      {row.persen_warga < 0.5 ? (
+        'belum ada warga yang memilihnya.'
+      ) : (
+        <>warga hanya ingin {warga}.</>
+      )}
     </>
   );
 }
@@ -74,7 +79,7 @@ export function GapLead({ ringkasan }: { ringkasan: GapRingkasan }) {
           to="/simulator"
           className={`${buttonClass('outline', 'md', 'mt-5 border-transparent')} w-fit`}
         >
-          Urutkan prioritasmu
+          Isi simulatormu
         </Link>
       </HeroCard>
     );
@@ -91,6 +96,8 @@ export function GapLead({ ringkasan }: { ringkasan: GapRingkasan }) {
         Selisih {formatSelisih(sorotan.gap_poin_persen).replace(/^[+−]/, '')} poin, setara kira-kira{' '}
         {formatBesarPanjang(setaraRupiah(sorotan, totalApbd))} dari APBD terpetakan{' '}
         {formatBesarPanjang(totalApbd)}.
+        {sorotan.gap_poin_persen < 0 &&
+          ' Bidang yang tidak dipilih warga dihitung 0%. Itu artinya belum jadi prioritas, bukan berarti anggarannya harus dikurangi.'}
       </p>
       {lainnya.length > 0 && (
         <ol className="mt-5 border-t border-rule">
@@ -122,7 +129,7 @@ export function GapLead({ ringkasan }: { ringkasan: GapRingkasan }) {
           <p className="text-[13px] text-muted">
             warga menjadi dasar angka ini.{' '}
             <Link to="/simulator" className="font-semibold text-warga underline">
-              Urutkan punyamu
+              Isi punyamu
             </Link>
             .
           </p>

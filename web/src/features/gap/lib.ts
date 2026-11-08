@@ -17,7 +17,7 @@ export type GapRingkasan = {
   adaWarga: boolean;
   /** Selisih absolut terbesar, untuk skala bar (minimal 1). */
   maks: number;
-  /** Jumlah warga yang sudah menyimpan urutan. Kosong bila server belum menyediakannya. */
+  /** Jumlah warga yang sudah mengisi simulator. Kosong bila server belum menyediakannya. */
   jumlahPartisipan: number | undefined;
   /**
    * Apakah server membuktikan status verifikasi APBD. Pada database enam migration kolom
@@ -152,6 +152,8 @@ export type ArahSelisih = { kunci: keyof typeof WARNA_ARAH; label: string; warna
 export function arahSelisih(selisihPoin: number): ArahSelisih {
   const dibulatkan = Math.round(selisihPoin * 10) / 10;
   const kunci = Math.abs(dibulatkan) < AMBANG_PAS ? 'pas' : dibulatkan > 0 ? 'tambah' : 'kurang';
-  const label = { tambah: 'Perlu ditambah', pas: 'Hampir pas', kurang: 'Terlalu besar' }[kunci];
+  const label = { tambah: 'Perlu ditambah', pas: 'Hampir pas', kurang: 'Kurang jadi prioritas' }[
+    kunci
+  ];
   return { kunci, label, warna: WARNA_ARAH[kunci] };
 }
