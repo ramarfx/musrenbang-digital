@@ -1,10 +1,10 @@
 import type { Proposal } from '@musrenbang/shared';
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { buttonClass } from '@/components/ui/Button';
-import { Card, HeroCard } from '@/components/ui/Card';
+import { Card } from '@/components/ui/Card';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
-import { cn } from '@/lib/cn';
+import { getCategoryInfo } from '@/features/categories/info';
 import { formatRupiahRingkas } from '@/lib/format';
 import { UpvoteButton } from './UpvoteButton';
 import { StatusBadge } from './StatusBadge';
@@ -26,24 +26,11 @@ const KARTU = 3;
 const LANGKAH = 5;
 const MAKS = 20;
 
-function Peringkat({ nomor, terang = false }: { nomor: number; terang?: boolean }) {
-  return (
-    <span
-      className={cn(
-        'grid size-9 flex-none place-items-center rounded-full text-[15px] font-bold',
-        terang ? 'bg-hijau-terang text-hitam' : 'bg-ink text-on-ink',
-      )}
-      aria-label={`Peringkat ${nomor}`}
-    >
-      {nomor}
-    </span>
-  );
-}
-
 /**
- * Bagian "Usulan terpopuler": peringkat 1 berkartu hijau, peringkat 2 dan 3 berkartu putih
- * dengan nomor tinta. Isi tiap kartu sejajar dari atas, dan tombol dukung selalu di kiri bawah.
- * Hanya tampil kalau sudah ada usulan yang mendapat suara.
+ * Bagian "Usulan terpopuler": tiga kartu putih bercap yang setara. Tiap kartu membawa ikon
+ * bidang, status, nomor peringkat besar yang samar di sudut, dan nama bidang bertanda stabilo.
+ * Isi sejajar dari atas, tombol dukung selalu di kiri bawah. Hanya tampil kalau sudah ada
+ * usulan yang mendapat suara.
  */
 export function TopProposals({ proposals }: { proposals: readonly Proposal[] }) {
   const semua = pilihTeratas(proposals, MAKS);
@@ -62,50 +49,46 @@ export function TopProposals({ proposals }: { proposals: readonly Proposal[] }) 
         <p className="text-sm text-muted">Paling banyak didukung warga.</p>
       </div>
       <div className="stagger grid gap-4 md:grid-cols-3">
-        {teratas.map((proposal, index) => {
-          const juara = index === 0;
-          const isi = (
-            <div className="relative flex h-full flex-col">
-              <div className="flex items-start justify-between gap-3">
-                <Peringkat nomor={index + 1} terang={juara} />
-                <StatusBadge status={proposal.status} />
-              </div>
-              <h3 className="mt-4 text-lg leading-snug font-bold tracking-[-0.01em]">
-                <Link
-                  to={`/usulan/${proposal.id}`}
-                  className="after:absolute after:-inset-5 after:content-[''] focus-visible:outline-none sm:after:-inset-6"
-                >
-                  {proposal.judul}
-                </Link>
-              </h3>
-              <p className={cn('mt-1 text-[13px]', juara ? 'text-white/75' : 'text-muted')}>
-                {proposal.kategori} · {formatRupiahRingkas(proposal.estimasi_biaya)}
-              </p>
-              <div className="relative z-10 mt-auto pt-5">
-                <UpvoteButton
-                  proposalId={proposal.id}
-                  jumlah={proposal.jumlah_suara}
-                  terang={juara}
-                />
-              </div>
+        {teratas.map((proposal, index) => (
+          <article
+            key={proposal.id}
+            className="kartu-cap relative flex flex-col overflow-hidden rounded-3xl bg-surface p-5 transition-[translate] duration-150 ease-out hover:-translate-y-0.5 sm:p-6"
+          >
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute -top-1 right-4 text-[84px] leading-none font-extrabold text-ink opacity-[0.07] select-none"
+            >
+              {index + 1}
+            </span>
+            <div className="relative flex items-center gap-3">
+              <CategoryTile kategori={proposal.kategori} gaya="cap" />
+              <StatusBadge status={proposal.status} />
             </div>
-          );
-          return juara ? (
-            <HeroCard
-              key={proposal.id}
-              className="transition-[translate] duration-150 ease-out hover:-translate-y-0.5"
-            >
-              {isi}
-            </HeroCard>
-          ) : (
-            <article
-              key={proposal.id}
-              className="relative rounded-3xl border border-border bg-surface p-5 transition-[translate,border-color] duration-150 ease-out hover:-translate-y-0.5 hover:border-ink/40 sm:p-6"
-            >
-              {isi}
-            </article>
-          );
-        })}
+            <h3 className="relative mt-4 text-lg leading-snug font-bold tracking-[-0.01em]">
+              <Link
+                to={`/usulan/${proposal.id}`}
+                className="after:absolute after:-inset-5 after:content-[''] focus-visible:outline-none sm:after:-inset-6"
+              >
+                {proposal.judul}
+              </Link>
+            </h3>
+            <p className="relative mt-1 text-[13px] text-muted">
+              <span
+                className="tanda-kategori"
+                style={
+                  { '--tanda': getCategoryInfo(proposal.kategori).warna.latar } as CSSProperties
+                }
+              >
+                {proposal.kategori}
+              </span>{' '}
+              · {formatRupiahRingkas(proposal.estimasi_biaya)}
+            </p>
+            <div className="relative z-10 mt-auto flex items-center justify-between gap-3 pt-5">
+              <UpvoteButton proposalId={proposal.id} jumlah={proposal.jumlah_suara} />
+              <span className="text-[12.5px] text-muted">Peringkat {index + 1}</span>
+            </div>
+          </article>
+        ))}
       </div>
 
       {lanjutan.length > 0 && (
