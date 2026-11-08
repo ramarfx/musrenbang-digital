@@ -4,7 +4,7 @@ import type { Comment, CommentRow, VoteRow } from '../schemas/comment';
 import type { ConfigRow } from '../schemas/config';
 import type { GapItem } from '../schemas/gap';
 import type { Profile } from '../schemas/profile';
-import type { AdminStats, PublicStats } from '../schemas/stats';
+import type { AdminStats, AspirationOverviewRow, PublicStats } from '../schemas/stats';
 import type {
   Proposal,
   ProposalRow,
@@ -120,6 +120,7 @@ export type Database = {
       v_comments: ViewDefinition<Comment>;
       v_proposal_status_history: ViewDefinition<StatusHistory>;
       v_public_stats: ViewDefinition<PublicStats>;
+      v_aspiration_overview: ViewDefinition<AspirationOverviewRow>;
       v_admin_stats: ViewDefinition<AdminStats>;
     };
     Functions: {
