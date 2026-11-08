@@ -34,5 +34,19 @@ export const adminStatsSchema = z.object({
   total_alokasi_warga: countSchema,
 });
 
+export const aspirationOverviewRowSchema = z.object({
+  kategori: z.string(),
+  jumlah_usulan: countSchema,
+  persen_usulan: z.coerce.number(),
+  peringkat_usulan: countSchema,
+  jumlah_suara: countSchema,
+  persen_suara: z.coerce.number(),
+  total_alokasi: countSchema,
+  persen_alokasi: z.coerce.number(),
+  total_usulan_disetujui: countSchema,
+  ringkasan: z.string(),
+});
+
 export type PublicStats = z.infer<typeof publicStatsSchema>;
 export type AdminStats = z.infer<typeof adminStatsSchema>;
+export type AspirationOverviewRow = z.infer<typeof aspirationOverviewRowSchema>;
