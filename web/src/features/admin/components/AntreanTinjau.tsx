@@ -1,19 +1,19 @@
 import {
   PROPOSAL_MODERATION_STATUSES,
-  PROPOSAL_STATUSES,
   type Proposal,
   type ProposalModeration,
 } from '@musrenbang/shared';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { useCommentCountsQuery } from '@/features/comments/queries';
 import { ModerationBadge } from '@/features/proposals/components/ModerationBadge';
 import { cn } from '@/lib/cn';
-import { formatTanggal } from '@/lib/format';
+import { formatRupiahRingkas } from '@/lib/format';
 import { analyzeProposal, getAiReview } from '../ai-api';
 import { LABEL_INDIKASI } from './labelIndikasi';
 
@@ -33,62 +33,127 @@ type Ulasan = Awaited<ReturnType<typeof getAiReview>> | undefined;
 /** Usulan yang diperiksa MusrenAI sekali jalan; sisanya menyusul pada putaran berikutnya. */
 const BATAS_ANALISIS = 20;
 
-/**
- * Label hasil MusrenAI di baris antrean. Muncul dengan gerak pendek saat hasilnya tiba, supaya
- * admin melihat hasil pemeriksaan di baris yang sama dengan usulannya.
- */
-function ChipAi({ ulasan, sedang = false }: { ulasan: Ulasan; sedang?: boolean }) {
-  if (sedang || ulasan?.state === 'pending' || ulasan?.state === 'processing')
-    return <span className="mt-1 block text-[12px] text-muted">MusrenAI: sedang memeriksa...</span>;
-  if (!ulasan || ulasan.state !== 'completed') return null;
-  return (
-    <span className="anim-chip mt-1 flex flex-wrap gap-1">
-      {ulasan.flags.length === 0 ? (
-        <span className="rounded-md bg-mint-pucat px-1.5 py-0.5 text-[11.5px] font-semibold text-mint-tua">
-          Tanpa indikasi
-        </span>
-      ) : (
-        ulasan.flags.map((flag) => (
-          <span
-            key={flag}
-            className="rounded-md bg-[#F5B9B0] px-1.5 py-0.5 text-[11.5px] font-semibold text-hitam"
-          >
-            {LABEL_INDIKASI[flag]}
-          </span>
-        ))
-      )}
-    </span>
-  );
-}
-
-/** Sudah berapa hari usulan menunggu; tiga hari atau lebih dianggap lama. */
+/** Sudah berapa hari usulan menunggu. */
 function umurHari(dibuatPada: string): number {
   return Math.max(0, Math.floor((Date.now() - new Date(dibuatPada).getTime()) / 86_400_000));
 }
 
+const aman = (ulasan: Ulasan) => ulasan?.state === 'completed' && ulasan.flags.length === 0;
+
+/** Label dan alasan MusrenAI di kartu usulan. */
+function HasilAi({ ulasan, sedang }: { ulasan: Ulasan; sedang: boolean }) {
+  if (sedang || ulasan?.state === 'pending' || ulasan?.state === 'processing')
+    return <p className="text-[12.5px] text-muted">MusrenAI sedang memeriksa...</p>;
+  if (!ulasan || ulasan.state !== 'completed')
+    return (
+      <span className="w-fit rounded-md bg-pasir px-1.5 py-0.5 text-[11.5px] font-semibold text-ink">
+        {ulasan?.state === 'stale' ? 'Isi berubah, periksa ulang' : 'Belum diperiksa'}
+      </span>
+    );
+  return (
+    <div className="anim-chip grid gap-1">
+      <span className="flex flex-wrap gap-1">
+        {ulasan.flags.length === 0 ? (
+          <span className="rounded-md bg-mint-pucat px-1.5 py-0.5 text-[11.5px] font-semibold text-mint-tua">
+            Tanpa indikasi
+          </span>
+        ) : (
+          ulasan.flags.map((flag) => (
+            <span
+              key={flag}
+              className="rounded-md bg-[#F5B9B0] px-1.5 py-0.5 text-[11.5px] font-semibold text-hitam"
+            >
+              {LABEL_INDIKASI[flag]}
+            </span>
+          ))
+        )}
+      </span>
+      {ulasan.flags.length > 0 && ulasan.reason && (
+        <p className="line-clamp-2 text-[12.5px] text-ink/80">{ulasan.reason}</p>
+      )}
+    </div>
+  );
+}
+
+function KartuUsulan({
+  proposal,
+  ulasan,
+  sedangAi,
+  komentar,
+  aksi,
+  onLihat,
+}: {
+  proposal: Proposal;
+  ulasan: Ulasan;
+  sedangAi: boolean;
+  komentar: number;
+  aksi: ReactNode;
+  onLihat: () => void;
+}) {
+  const hari = umurHari(proposal.dibuat_pada);
+  return (
+    <li className="grid gap-2 rounded-2xl bg-active/70 p-3">
+      <div className="flex items-start justify-between gap-2">
+        <button
+          type="button"
+          onClick={onLihat}
+          className="min-w-0 text-left text-sm font-bold hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
+        >
+          {proposal.judul}
+        </button>
+        {proposal.moderasi === 'Menunggu' ? (
+          <span
+            className={cn(
+              'flex-none rounded-lg px-2 py-0.5 text-[12px] font-semibold',
+              hari >= 3 ? 'bg-[#F5B9B0] text-hitam' : 'bg-pasir text-ink',
+            )}
+          >
+            {hari === 0 ? 'Hari ini' : `${hari} hari`}
+          </span>
+        ) : (
+          <ModerationBadge moderasi={proposal.moderasi} />
+        )}
+      </div>
+      <p className="truncate text-[12.5px] text-muted">
+        {proposal.kategori} · {formatRupiahRingkas(proposal.estimasi_biaya)} ·{' '}
+        {proposal.jumlah_suara} suara · {komentar} komentar
+      </p>
+      <HasilAi ulasan={ulasan} sedang={sedangAi} />
+      <div className="flex flex-wrap gap-2">
+        {aksi}
+        <Button type="button" size="sm" variant="outline" onClick={onLihat}>
+          Lihat
+        </Button>
+      </div>
+    </li>
+  );
+}
+
 /**
- * Antrean tinjau di kolom kiri halaman admin: usulan yang menunggu paling lama di atas. Memilih
- * baris menampilkan rinciannya di kolom kanan; menyetujui bisa langsung dari baris, menolak
- * hanya dari kartu rincian karena wajib menulis alasan.
+ * Antrean tinjau admin, dipilah MusrenAI menjadi dua tumpukan: "Aman" (tanpa indikasi, bisa
+ * disetujui sekaligus) dan "Perlu dicek" (ditandai atau belum diperiksa). Rincian lengkap tiap
+ * usulan dibuka lewat tombol Lihat.
  */
 export function AntreanTinjau({
   proposals,
-  terpilihId,
-  onPilih,
+  onLihat,
   sedangDiproses,
   onSetujui,
+  onSetujuiBanyak,
+  onTolak,
 }: {
   proposals: Proposal[];
-  terpilihId: number | null;
-  onPilih: (id: number | null) => void;
-  /** Id usulan yang sedang diproses, supaya tombolnya bisa dikunci. */
+  onLihat: (proposal: Proposal) => void;
+  /** Id usulan yang sedang diproses (-1 saat menyetujui sekaligus), supaya tombol dikunci. */
   sedangDiproses: number | null;
   onSetujui: (proposal: Proposal) => void;
+  onSetujuiBanyak: (proposals: Proposal[]) => Promise<void>;
+  onTolak: (proposal: Proposal) => void;
 }) {
   const [saring, setSaring] = useState<Saring>('Menunggu');
   const [urutan, setUrutan] = useState<Urutan>('terlama');
   const [kategori, setKategori] = useState('semua');
-  const [tahap, setTahap] = useState<Proposal['status'] | 'semua'>('semua');
+  const [konfirmasi, setKonfirmasi] = useState(false);
   const jumlahKomentar = useCommentCountsQuery().data ?? {};
   const daftarKategori = useMemo(
     () => [...new Set(proposals.map((proposal) => proposal.kategori))].sort(),
@@ -117,16 +182,13 @@ export function AntreanTinjau({
     return proposals
       .filter((proposal) => saring === 'semua' || proposal.moderasi === saring)
       .filter((proposal) => kategori === 'semua' || proposal.kategori === kategori)
-      .filter((proposal) => tahap === 'semua' || proposal.status === tahap)
       .sort(pembanding[urutan]);
-  }, [proposals, saring, kategori, tahap, urutan, jumlahKomentar]);
+  }, [proposals, saring, kategori, urutan, jumlahKomentar]);
 
   const queryClient = useQueryClient();
-  const [proses, setProses] = useState<{
-    sekarang: number;
-    total: number;
-    id: number;
-  } | null>(null);
+  const [proses, setProses] = useState<{ sekarang: number; total: number; id: number } | null>(
+    null,
+  );
   const [galat, setGalat] = useState<string | null>(null);
   const diperiksa = useMemo(() => tampil.slice(0, BATAS_ANALISIS), [tampil]);
   const ulasan = useQueries({
@@ -149,10 +211,10 @@ export function AntreanTinjau({
   const sudahDianalisis = diperiksa.filter(
     (proposal) => hasil.get(proposal.id)?.state === 'completed',
   ).length;
-  const ditandai = diperiksa.filter((proposal) => {
-    const item = hasil.get(proposal.id);
-    return item?.state === 'completed' && item.flags.length > 0;
-  }).length;
+
+  const tumpukanAman = tampil.filter((proposal) => aman(hasil.get(proposal.id)));
+  const tumpukanCek = tampil.filter((proposal) => !aman(hasil.get(proposal.id)));
+  const bisaDisetujui = tumpukanAman.filter((proposal) => proposal.moderasi !== 'Disetujui');
 
   // Satu per satu, karena tiap analisis memakai kuota penyedia AI bersama.
   const analisisSemua = async () => {
@@ -171,21 +233,86 @@ export function AntreanTinjau({
     setProses(null);
   };
 
-  // Rincian di kanan selalu menunjukkan usulan yang ada di daftar ini.
-  useEffect(() => {
-    if (tampil.length === 0) {
-      if (terpilihId !== null) onPilih(null);
-    } else if (!tampil.some((proposal) => proposal.id === terpilihId)) {
-      onPilih(tampil[0]!.id);
-    }
-  }, [tampil, terpilihId, onPilih]);
+  const kartu = (proposal: Proposal, aksi: ReactNode) => (
+    <KartuUsulan
+      key={proposal.id}
+      proposal={proposal}
+      ulasan={hasil.get(proposal.id)}
+      sedangAi={proses?.id === proposal.id}
+      komentar={jumlahKomentar[proposal.id] ?? 0}
+      aksi={aksi}
+      onLihat={() => onLihat(proposal)}
+    />
+  );
+
+  const tombolSetujui = (proposal: Proposal) =>
+    proposal.moderasi !== 'Disetujui' && (
+      <Button
+        type="button"
+        size="sm"
+        isLoading={sedangDiproses === proposal.id}
+        disabled={sedangDiproses !== null}
+        onClick={() => onSetujui(proposal)}
+      >
+        Setujui
+      </Button>
+    );
+
+  const tombolTolak = (proposal: Proposal) =>
+    proposal.moderasi !== 'Ditolak' && (
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        disabled={sedangDiproses !== null}
+        onClick={() => onTolak(proposal)}
+      >
+        Tolak
+      </Button>
+    );
 
   return (
-    <Card className="flex flex-col lg:min-h-[520px]">
-      <h2 className="text-lg font-bold">Antrean tinjau</h2>
-      <p className="mt-0.5 text-[13px] text-muted">
-        Usulan yang perlu kamu putuskan. Daftar menggulir kalau panjang.
-      </p>
+    <Card>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-lg font-bold">Antrean tinjau</h2>
+          <p className="mt-0.5 text-[13px] text-muted">
+            MusrenAI memilah usulan menjadi yang aman dan yang perlu kamu cek.
+          </p>
+        </div>
+        <div className="grid w-full grid-cols-2 gap-2 sm:w-auto">
+          <label className="min-w-0">
+            <span className="sr-only">Urutkan</span>
+            <Select
+              value={urutan}
+              onChange={(event) => setUrutan(event.target.value as Urutan)}
+              className="h-9 py-0 text-[13.5px]"
+            >
+              {PILIHAN_URUTAN.map((pilihan) => (
+                <option key={pilihan.nilai} value={pilihan.nilai}>
+                  {pilihan.label}
+                </option>
+              ))}
+            </Select>
+          </label>
+          <label className="min-w-0">
+            <span className="sr-only">Kategori</span>
+            <Select
+              value={kategori}
+              onChange={(event) => setKategori(event.target.value)}
+              className="h-9 py-0 text-[13.5px]"
+            >
+              <option value="semua">Semua kategori</option>
+              {daftarKategori.map((nama) => (
+                <option key={nama} value={nama}>
+                  {nama}
+                </option>
+              ))}
+            </Select>
+          </label>
+        </div>
+      </div>
+
       <div role="group" aria-label="Saring menurut moderasi" className="mt-3 flex flex-wrap gap-2">
         {(['Menunggu', 'Ditolak', 'Disetujui', 'semua'] as const).map((pilihan) => (
           <button
@@ -206,69 +333,21 @@ export function AntreanTinjau({
         ))}
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        <label className="col-span-2 min-w-0">
-          <span className="sr-only">Status</span>
-          <Select
-            value={tahap}
-            onChange={(event) => setTahap(event.target.value as Proposal['status'] | 'semua')}
-            className="h-9 py-0 text-[13.5px]"
-          >
-            <option value="semua">Semua status</option>
-            {PROPOSAL_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </Select>
-        </label>
-        <label className="min-w-0">
-          <span className="sr-only">Urutkan</span>
-          <Select
-            value={urutan}
-            onChange={(event) => setUrutan(event.target.value as Urutan)}
-            className="h-9 py-0 text-[13.5px]"
-          >
-            {PILIHAN_URUTAN.map((pilihan) => (
-              <option key={pilihan.nilai} value={pilihan.nilai}>
-                {pilihan.label}
-              </option>
-            ))}
-          </Select>
-        </label>
-        <label className="min-w-0">
-          <span className="sr-only">Kategori</span>
-          <Select
-            value={kategori}
-            onChange={(event) => setKategori(event.target.value)}
-            className="h-9 py-0 text-[13.5px]"
-          >
-            <option value="semua">Semua kategori</option>
-            {daftarKategori.map((nama) => (
-              <option key={nama} value={nama}>
-                {nama}
-              </option>
-            ))}
-          </Select>
-        </label>
-      </div>
-
       {diperiksa.length > 0 && (
-        <div className="mt-3">
+        <div className="mt-3 rounded-2xl bg-active px-3.5 py-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="min-w-0 text-[13px] text-ink">
+            <p className="min-w-0 text-[13.5px] text-ink">
               <b>MusrenAI</b>
               {aiTakTersedia
-                ? ' belum tersedia'
+                ? ' belum tersedia, semua usulan masuk Perlu dicek'
                 : proses
-                  ? ` · memeriksa ${proses.sekarang} dari ${proses.total}`
-                  : ` · ${sudahDianalisis} dari ${diperiksa.length} diperiksa${ditandai > 0 ? `, ${ditandai} perlu perhatian` : ''}`}
+                  ? ` sedang memeriksa ${proses.sekarang} dari ${proses.total}`
+                  : ` sudah memeriksa ${sudahDianalisis} dari ${diperiksa.length} usulan`}
             </p>
             {!aiTakTersedia && (
               <Button
                 type="button"
                 size="sm"
-                variant="outline"
                 isLoading={proses !== null}
                 disabled={proses !== null || memuatUlasan || perluAnalisis.length === 0}
                 onClick={() => void analisisSemua()}
@@ -281,12 +360,6 @@ export function AntreanTinjau({
               </Button>
             )}
           </div>
-          {!aiTakTersedia && (
-            <p className="mt-0.5 text-[12px] text-muted">
-              MusrenAI memeriksa spam, promosi, dan isi yang tidak jelas. Hasilnya muncul di tiap
-              baris.
-            </p>
-          )}
           {proses && (
             <div
               role="progressbar"
@@ -324,84 +397,96 @@ export function AntreanTinjau({
           />
         </div>
       ) : (
-        <div className="relative mt-3 min-h-0 flex-1 max-lg:max-h-[420px] max-lg:min-h-[240px]">
-          <ul
-            key={saring}
-            className="stagger space-y-2 overflow-y-auto pr-1 max-lg:h-full lg:absolute lg:inset-0"
-          >
-            {tampil.map((proposal) => {
-              const dipilih = proposal.id === terpilihId;
-              return (
-                <li
-                  key={proposal.id}
-                  onClick={() => onPilih(proposal.id)}
-                  className={cn(
-                    'cursor-pointer rounded-2xl border-[1.5px] p-2.5 transition-colors duration-150',
-                    dipilih
-                      ? 'border-edge bg-active'
-                      : 'border-border bg-surface hover:bg-active/60',
-                  )}
+        <div key={saring} className="stagger mt-4 grid gap-4 lg:grid-cols-2">
+          <section aria-labelledby="judul-tumpukan-aman" className="grid content-start gap-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 id="judul-tumpukan-aman" className="font-bold">
+                Aman <span className="text-muted tabular-nums">({tumpukanAman.length})</span>
+              </h3>
+              {bisaDisetujui.length > 1 && (
+                <Button
+                  type="button"
+                  size="sm"
+                  isLoading={sedangDiproses === -1}
+                  disabled={sedangDiproses !== null}
+                  onClick={() => setKonfirmasi(true)}
                 >
-                  <button
-                    type="button"
-                    aria-pressed={dipilih}
-                    onClick={() => onPilih(proposal.id)}
-                    className="block w-full rounded-xl p-0.5 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
-                  >
-                    <span className="flex items-start justify-between gap-2">
-                      <b className="min-w-0 truncate text-sm">{proposal.judul}</b>
-                      {proposal.moderasi === 'Menunggu' ? (
-                        <span
-                          className={cn(
-                            'flex-none rounded-lg px-2 py-0.5 text-[12px] font-semibold',
-                            umurHari(proposal.dibuat_pada) >= 3
-                              ? 'bg-[#F5B9B0] text-hitam'
-                              : 'bg-pasir text-ink',
-                          )}
-                        >
-                          {umurHari(proposal.dibuat_pada) === 0
-                            ? 'Hari ini'
-                            : `${umurHari(proposal.dibuat_pada)} hari`}
-                        </span>
-                      ) : (
-                        <ModerationBadge moderasi={proposal.moderasi} />
-                      )}
-                    </span>
-                    <span className="mt-0.5 block truncate text-[12.5px] text-muted">
-                      {proposal.pengusul_nama} · {proposal.kategori} ·{' '}
-                      {formatTanggal(proposal.dibuat_pada)}
-                    </span>
-                  </button>
-                  <div className="mt-1.5 flex items-end justify-between gap-2">
-                    <div className="min-w-0">
-                      <span className="block text-[12.5px] text-muted">
-                        {proposal.jumlah_suara} suara · {jumlahKomentar[proposal.id] ?? 0} komentar
-                      </span>
-                      <ChipAi ulasan={hasil.get(proposal.id)} sedang={proses?.id === proposal.id} />
-                    </div>
-                    <div
-                      className="flex flex-none gap-2"
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      {proposal.moderasi !== 'Disetujui' && (
-                        <Button
-                          type="button"
-                          size="sm"
-                          isLoading={sedangDiproses === proposal.id}
-                          disabled={sedangDiproses !== null}
-                          onClick={() => onSetujui(proposal)}
-                        >
-                          Setujui
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                  Setujui semua ({bisaDisetujui.length})
+                </Button>
+              )}
+            </div>
+            {tumpukanAman.length === 0 ? (
+              <p className="rounded-2xl bg-active/70 p-3 text-[13px] text-muted">
+                Belum ada usulan yang dinyatakan aman. Tekan Periksa supaya MusrenAI memilahnya.
+              </p>
+            ) : (
+              <ul className="grid gap-2.5">
+                {tumpukanAman.map((proposal) => kartu(proposal, tombolSetujui(proposal)))}
+              </ul>
+            )}
+          </section>
+
+          <section aria-labelledby="judul-tumpukan-cek" className="grid content-start gap-2.5">
+            <h3 id="judul-tumpukan-cek" className="flex min-h-8 items-center font-bold">
+              Perlu dicek{' '}
+              <span className="ml-1 text-muted tabular-nums">({tumpukanCek.length})</span>
+            </h3>
+            {tumpukanCek.length === 0 ? (
+              <p className="rounded-2xl bg-active/70 p-3 text-[13px] text-muted">
+                Tidak ada usulan yang perlu dicek.
+              </p>
+            ) : (
+              <ul className="grid gap-2.5">
+                {tumpukanCek.map((proposal) =>
+                  kartu(
+                    proposal,
+                    <>
+                      {tombolTolak(proposal)}
+                      {tombolSetujui(proposal)}
+                    </>,
+                  ),
+                )}
+              </ul>
+            )}
+          </section>
         </div>
       )}
+
+      <Modal
+        open={konfirmasi}
+        onClose={() => setKonfirmasi(false)}
+        labelledBy="judul-setujui-semua"
+        className="w-[min(440px,calc(100vw-24px))]"
+      >
+        <div className="p-6">
+          <h2 id="judul-setujui-semua" className="text-lg font-bold">
+            Setujui {bisaDisetujui.length} usulan sekaligus?
+          </h2>
+          <p className="mt-2 text-sm text-muted">
+            Semua usulan di tumpukan Aman akan tampil publik. MusrenAI hanya membantu memilah, jadi
+            pastikan judulnya sudah kamu lihat.
+          </p>
+          <ul className="mt-3 max-h-48 list-disc space-y-0.5 overflow-y-auto pl-5 text-sm">
+            {bisaDisetujui.map((proposal) => (
+              <li key={proposal.id}>{proposal.judul}</li>
+            ))}
+          </ul>
+          <div className="mt-5 flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => setKonfirmasi(false)}>
+              Batal
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setKonfirmasi(false);
+                void onSetujuiBanyak(bisaDisetujui);
+              }}
+            >
+              Setujui semua
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </Card>
   );
 }
