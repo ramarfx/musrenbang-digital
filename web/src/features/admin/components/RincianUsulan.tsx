@@ -20,9 +20,8 @@ function Kotak({ label, nilai }: { label: string; nilai: string }) {
 
 /**
  * Rincian usulan terpilih di kolom kanan halaman admin: pita berwarna kategori di atas, lalu
- * deskripsi dan analisis MusrenAI yang menggulir di dalam kartu, dan di bawahnya empat kotak
- * angka serta keputusan yang selalu terlihat. Tingginya sama dengan kartu antrean di sebelahnya,
- * jadi ukuran kartu tidak berubah walau teksnya panjang.
+ * deskripsi dan analisis MusrenAI, lalu empat kotak angka dan tombol keputusan. Kartu tumbuh
+ * mengikuti isinya, jadi tidak ada area yang harus digulir di dalam kartu: yang menggulir halaman.
  */
 export function RincianUsulan({
   proposal,
@@ -40,7 +39,7 @@ export function RincianUsulan({
   return (
     <section
       aria-label="Rincian usulan"
-      className="kartu-cap flex flex-col overflow-hidden rounded-3xl bg-surface lg:h-[480px]"
+      className="kartu-cap flex flex-col overflow-hidden rounded-3xl bg-surface lg:min-h-[480px]"
     >
       {proposal === null ? (
         <div className="p-5 sm:p-6">
@@ -77,7 +76,7 @@ export function RincianUsulan({
               <StatusBadge status={proposal.status} />
             </div>
 
-            <div className="mt-3 max-h-64 min-h-0 flex-1 overflow-y-auto pr-1 lg:max-h-none">
+            <div className="mt-3 flex-1">
               <p className="text-sm whitespace-pre-line text-ink/80 [overflow-wrap:anywhere]">
                 {proposal.deskripsi}
               </p>
