@@ -21,11 +21,13 @@ type AdminProposalTableProps = {
   proposals: Proposal[];
   /** Membuka pop-up ubah status; catatan wajib diisi di sana. */
   onUbahStatus: (proposal: Proposal) => void;
+  /** Membuka konfirmasi hapus; usulan hilang permanen. */
+  onHapus: (proposal: Proposal) => void;
 };
 
 const columnHelper = createColumnHelper<Proposal>();
 
-export function AdminProposalTable({ proposals, onUbahStatus }: AdminProposalTableProps) {
+export function AdminProposalTable({ proposals, onUbahStatus, onHapus }: AdminProposalTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'dibuat_pada', desc: true }]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [saringStatus, setSaringStatus] = useState<Proposal['status'] | 'semua'>('semua');
@@ -94,14 +96,24 @@ export function AdminProposalTable({ proposals, onUbahStatus }: AdminProposalTab
                 <StatusBadge status={info.getValue()} /> · tahap {tahap + 1} dari{' '}
                 {PROPOSAL_STATUSES.length}
               </p>
-              <button
-                type="button"
-                onClick={() => onUbahStatus(info.row.original)}
-                aria-label={`Ubah status ${info.row.original.judul}`}
-                className="block h-8 rounded-lg border border-border bg-surface px-3 text-[13px] font-semibold transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
-              >
-                Ubah status
-              </button>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => onUbahStatus(info.row.original)}
+                  aria-label={`Ubah status ${info.row.original.judul}`}
+                  className="block h-8 rounded-lg border border-border bg-surface px-3 text-[13px] font-semibold transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
+                >
+                  Ubah status
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onHapus(info.row.original)}
+                  aria-label={`Hapus usulan ${info.row.original.judul}`}
+                  className="block h-8 rounded-lg border border-border bg-surface px-3 text-[13px] font-semibold transition-[scale,background-color,color,border-color] duration-150 ease-out hover:border-red-300 hover:bg-red-50 hover:text-red-700 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
+                >
+                  Hapus
+                </button>
+              </div>
             </div>
           );
         },
@@ -111,7 +123,7 @@ export function AdminProposalTable({ proposals, onUbahStatus }: AdminProposalTab
         cell: (info) => formatTanggal(info.getValue()),
       }),
     ],
-    [onUbahStatus],
+    [onUbahStatus, onHapus],
   );
 
   const table = useReactTable({
