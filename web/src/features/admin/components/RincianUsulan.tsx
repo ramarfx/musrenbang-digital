@@ -1,6 +1,7 @@
 import type { Proposal } from '@musrenbang/shared';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
+import { Icon } from '@/components/ui/Icon';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
 import { getCategoryInfo } from '@/features/categories/info';
 import { ModerationBadge } from '@/features/proposals/components/ModerationBadge';
@@ -20,8 +21,8 @@ function Kotak({ label, nilai }: { label: string; nilai: string }) {
 
 /**
  * Rincian usulan terpilih di kolom kanan halaman admin: pita berwarna kategori di atas, lalu
- * deskripsi, empat kotak angka, lalu hasil MusrenAI tepat di atas tombol keputusan. Kartu tumbuh
- * mengikuti isinya, jadi tidak ada area yang harus digulir di dalam kartu: yang menggulir halaman.
+ * deskripsi, empat kotak angka, lalu hasil MusrenAI tepat di atas tombol keputusan. Tinggi kartu
+ * mengikuti isinya (kartu antrean di sebelahnya yang menyesuaikan), jadi tidak ada area yang harus digulir di dalam kartu: yang menggulir halaman.
  */
 export function RincianUsulan({
   proposal,
@@ -41,7 +42,7 @@ export function RincianUsulan({
   return (
     <section
       aria-label="Rincian usulan"
-      className="kartu-cap flex flex-col overflow-hidden rounded-3xl bg-surface lg:min-h-[600px]"
+      className="kartu-cap flex flex-col overflow-hidden rounded-3xl bg-surface"
     >
       {proposal === null ? (
         <div className="p-5 sm:p-6">
@@ -129,16 +130,16 @@ export function RincianUsulan({
               >
                 Ubah status
               </Button>
-              <Button
+              <button
                 type="button"
-                size="sm"
-                variant="outline"
+                aria-label="Hapus usulan"
+                title="Hapus usulan"
                 disabled={sedangDiproses !== null}
                 onClick={() => onHapus(proposal)}
-                className="ml-auto hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+                className="ml-auto inline-flex size-9 flex-none items-center justify-center rounded-xl border border-edge bg-surface text-ink transition-[scale,background-color,color,border-color] duration-150 ease-out hover:border-red-300 hover:bg-red-50 hover:text-red-700 active:scale-[0.92] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Hapus
-              </Button>
+                <Icon name="sampah" size={17} />
+              </button>
             </div>
           </div>
         </div>

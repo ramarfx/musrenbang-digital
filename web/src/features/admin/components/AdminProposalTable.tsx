@@ -11,6 +11,7 @@ import {
 } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Icon } from '@/components/ui/Icon';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { ModerationBadge } from '@/features/proposals/components/ModerationBadge';
@@ -109,9 +110,10 @@ export function AdminProposalTable({ proposals, onUbahStatus, onHapus }: AdminPr
                   type="button"
                   onClick={() => onHapus(info.row.original)}
                   aria-label={`Hapus usulan ${info.row.original.judul}`}
-                  className="block h-8 rounded-lg border border-border bg-surface px-3 text-[13px] font-semibold transition-[scale,background-color,color,border-color] duration-150 ease-out hover:border-red-300 hover:bg-red-50 hover:text-red-700 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
+                  title="Hapus usulan"
+                  className="inline-flex size-8 items-center justify-center rounded-lg border border-border bg-surface text-ink transition-[scale,background-color,color,border-color] duration-150 ease-out hover:border-red-300 hover:bg-red-50 hover:text-red-700 active:scale-[0.92] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
                 >
-                  Hapus
+                  <Icon name="sampah" size={16} />
                 </button>
               </div>
             </div>

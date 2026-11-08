@@ -183,7 +183,7 @@ export function AntreanTinjau({
   }, [tampil, terpilihId, onPilih]);
 
   return (
-    <Card className="flex flex-col lg:min-h-[600px]">
+    <Card className="flex flex-col lg:min-h-[520px]">
       <h2 className="text-lg font-bold">Antrean tinjau</h2>
       <p className="mt-0.5 text-[13px] text-muted">
         Usulan yang perlu kamu putuskan. Daftar menggulir kalau panjang.
