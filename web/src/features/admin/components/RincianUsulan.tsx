@@ -10,10 +10,9 @@ import { formatAngka, formatRupiahRingkas, formatTanggal } from '@/lib/format';
 import { AnalisisAi } from './AnalisisAi';
 
 /**
- * Rincian usulan terpilih di kolom kanan halaman admin: pita berwarna kategori di atas, lalu
- * deskripsi dan satu baris fakta (biaya, suara, lokasi, tanggal), lalu hasil MusrenAI tepat di
- * atas tombol keputusan. Tinggi kartu
- * mengikuti isinya (kartu antrean di sebelahnya yang menyesuaikan), jadi tidak ada area yang harus digulir di dalam kartu: yang menggulir halaman.
+ * Isi pop-up rincian usulan di halaman admin: pita berwarna kategori di atas, lalu deskripsi dan
+ * satu baris fakta (biaya, suara, lokasi, tanggal), lalu hasil MusrenAI tepat di atas tombol
+ * keputusan.
  */
 export function RincianUsulan({
   proposal,
@@ -31,10 +30,7 @@ export function RincianUsulan({
   onHapus: (proposal: Proposal) => void;
 }) {
   return (
-    <section
-      aria-label="Rincian usulan"
-      className="kartu-cap flex flex-col overflow-hidden rounded-3xl bg-surface"
-    >
+    <section aria-label="Rincian usulan" className="flex flex-col overflow-hidden bg-surface">
       {proposal === null ? (
         <div className="p-5 sm:p-6">
           <h2 className="text-lg font-bold">Rincian usulan</h2>
@@ -50,7 +46,7 @@ export function RincianUsulan({
           >
             <CategoryTile kategori={proposal.kategori} />
             <div className="min-w-0">
-              <h2 className="font-bold [overflow-wrap:anywhere]">
+              <h2 id="judul-rincian-usulan" className="font-bold [overflow-wrap:anywhere]">
                 <Link
                   to={`/usulan/${proposal.id}`}
                   className="hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-edge"

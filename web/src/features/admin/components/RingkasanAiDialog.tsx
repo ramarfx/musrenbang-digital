@@ -53,6 +53,69 @@ function DaftarBatang({ judul, data }: { judul: string; data: Batang[] }) {
 }
 
 /**
+ * Kartu ringkasan di paling atas halaman admin: kalimat ringkasan langsung terbaca, plus tiga
+ * bidang dengan usulan disetujui terbanyak. Rincian lengkap ada di pop-up.
+ */
+export function RingkasanAspirasiKartu({ onBuka }: { onBuka: () => void }) {
+  const ringkasan = useQuery({
+    queryKey: ['admin', 'ringkasan-aspirasi'] as const,
+    queryFn: getRingkasanAspirasi,
+    staleTime: 30_000,
+    retry: false,
+  });
+  const baris = ringkasan.data ?? [];
+  const kalimat = baris[0]?.ringkasan;
+  const totalUsulan = baris[0]?.total_usulan_disetujui ?? 0;
+  const teratas = [...baris]
+    .sort((a, b) => b.jumlah_usulan - a.jumlah_usulan || a.kategori.localeCompare(b.kategori))
+    .slice(0, 3);
+
+  return (
+    <section
+      aria-labelledby="judul-ringkasan-kartu"
+      className="kartu-cap grid gap-5 rounded-3xl bg-surface p-5 sm:p-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-center"
+    >
+      <div className="grid min-w-0 gap-3">
+        <h2 id="judul-ringkasan-kartu" className="text-lg font-bold">
+          Ringkasan aspirasi warga
+        </h2>
+        {ringkasan.isPending ? (
+          <p className="text-sm text-muted">Memuat ringkasan...</p>
+        ) : ringkasan.isError ? (
+          <p role="alert" className="text-sm text-muted">
+            Ringkasan belum bisa dimuat: {ringkasan.error.message}
+          </p>
+        ) : (
+          <p className="rounded-2xl bg-[#FFF6C9] px-4 py-3 text-[15.5px] leading-relaxed text-hitam">
+            {kalimat ?? 'Belum ada usulan disetujui untuk diringkas.'}
+          </p>
+        )}
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="button" size="sm" onClick={onBuka}>
+            Lihat rincian
+          </Button>
+          {ringkasan.isSuccess && (
+            <span className="text-[13px] text-muted">
+              Dari {formatAngka(totalUsulan)} usulan disetujui
+            </span>
+          )}
+        </div>
+      </div>
+      {teratas.length > 0 && totalUsulan > 0 && (
+        <DaftarBatang
+          judul="Usulan disetujui terbanyak"
+          data={teratas.map((item) => ({
+            nama: item.kategori,
+            nilai: item.jumlah_usulan,
+            label: formatAngka(item.jumlah_usulan),
+          }))}
+        />
+      )}
+    </section>
+  );
+}
+
+/**
  * Pop-up ringkasan aspirasi warga untuk admin. Semua angka dan kalimatnya dihitung database
  * (view `v_aspiration_overview`) dari usulan yang sudah disetujui, suaranya, dan pembagian
  * anggaran warga. Tanpa AI, jadi datanya langsung ada tanpa menunggu.

@@ -14,7 +14,10 @@ import { CatatanDialog } from '@/features/admin/components/CatatanDialog';
 import { AntreanTinjau } from '@/features/admin/components/AntreanTinjau';
 import { RankingWarga } from '@/features/admin/components/RankingWarga';
 import { RincianUsulan } from '@/features/admin/components/RincianUsulan';
-import { RingkasanAiDialog } from '@/features/admin/components/RingkasanAiDialog';
+import {
+  RingkasanAiDialog,
+  RingkasanAspirasiKartu,
+} from '@/features/admin/components/RingkasanAiDialog';
 import {
   useAdminStatsQuery,
   useModerateProposalMutation,
@@ -61,6 +64,7 @@ export default function Admin() {
   const hapusMutation = useDeleteProposalMutation();
   const [sedangDiproses, setSedangDiproses] = useState<number | null>(null);
 
+  const terpilihProposal = proposals.find((proposal) => proposal.id === terpilihId) ?? null;
   const stats = statsQuery.data ?? null;
   // Cadangan kalau view statistik belum ada di server: hitung dari daftar usulan yang terbaca.
   const hitungStatus = (status: ProposalStatus) =>
@@ -104,6 +108,31 @@ export default function Admin() {
     );
   };
 
+  // Satu per satu supaya tiap persetujuan tercatat sendiri di riwayat.
+  const setujuiBanyak = async (daftar: Proposal[]) => {
+    setSedangDiproses(-1);
+    let berhasil = 0;
+    try {
+      for (const proposal of daftar) {
+        await moderasiMutation.mutateAsync({ proposalId: proposal.id, moderasi: 'Disetujui' });
+        berhasil += 1;
+      }
+      toast.success(`${berhasil} usulan disetujui dan tampil publik.`);
+    } catch (error) {
+      toast.error(
+        `${berhasil} dari ${daftar.length} usulan disetujui. ${error instanceof Error ? error.message : ''}`,
+      );
+    } finally {
+      setSedangDiproses(null);
+    }
+  };
+
+  // Dialog lain dibuka setelah pop-up rincian ditutup, supaya tidak ada dua pop-up bertumpuk.
+  const dariRincian = (aksi: (proposal: Proposal) => void) => (proposal: Proposal) => {
+    setTerpilihId(null);
+    aksi(proposal);
+  };
+
   const bukaTolak = (proposal: Proposal) => {
     moderasiMutation.reset();
     setTolak(proposal);
@@ -127,12 +156,8 @@ export default function Admin() {
       <PageHeader
         title="Admin: kelola usulan"
         description="Setujui atau tolak usulan baru, lalu perbarui status kemajuannya. Setiap perubahan status wajib memakai catatan dan tercatat di riwayat."
-        actions={
-          <Button type="button" variant="outline" onClick={() => setRingkasanBuka(true)}>
-            Ringkasan aspirasi
-          </Button>
-        }
       />
+      <RingkasanAspirasiKartu onBuka={() => setRingkasanBuka(true)} />
       <RingkasanAiDialog open={ringkasanBuka} onClose={() => setRingkasanBuka(false)} />
 
       <section aria-label="Ringkasan" className="space-y-3">
@@ -224,23 +249,31 @@ export default function Admin() {
 
       {proposals.length > 0 && (
         <>
-          <div className="stagger grid items-stretch gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-            <AntreanTinjau
-              proposals={proposals}
-              terpilihId={terpilihId}
-              onPilih={setTerpilihId}
-              sedangDiproses={sedangDiproses}
-              onSetujui={setujui}
-            />
-            <RincianUsulan
-              proposal={proposals.find((proposal) => proposal.id === terpilihId) ?? null}
-              sedangDiproses={sedangDiproses}
-              onSetujui={setujui}
-              onTolak={bukaTolak}
-              onUbahStatus={bukaUbahStatus}
-              onHapus={setHapus}
-            />
-          </div>
+          <AntreanTinjau
+            proposals={proposals}
+            onLihat={(proposal) => setTerpilihId(proposal.id)}
+            sedangDiproses={sedangDiproses}
+            onSetujui={setujui}
+            onSetujuiBanyak={setujuiBanyak}
+            onTolak={bukaTolak}
+          />
+          <Modal
+            open={terpilihProposal !== null}
+            onClose={() => setTerpilihId(null)}
+            labelledBy="judul-rincian-usulan"
+            className="w-[min(620px,calc(100vw-24px))]"
+          >
+            {terpilihProposal && (
+              <RincianUsulan
+                proposal={terpilihProposal}
+                sedangDiproses={sedangDiproses}
+                onSetujui={setujui}
+                onTolak={dariRincian(bukaTolak)}
+                onUbahStatus={dariRincian(bukaUbahStatus)}
+                onHapus={dariRincian(setHapus)}
+              />
+            )}
+          </Modal>
 
           <section aria-labelledby="judul-semua-usulan" className="space-y-3">
             <h2 id="judul-semua-usulan" className="text-lg font-bold">
