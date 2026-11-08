@@ -47,12 +47,6 @@ export function AnalisisAi({ proposalId }: { proposalId: number }) {
                   : 'Tidak ditemukan'}
               </p>
               <p>Alasan: {review.data.reason}</p>
-              <p className="text-muted">
-                Model: {review.data.model ?? '-'} ·{' '}
-                {review.data.updated_at
-                  ? new Date(review.data.updated_at).toLocaleString('id-ID')
-                  : '-'}
-              </p>
             </>
           )}
         </>
