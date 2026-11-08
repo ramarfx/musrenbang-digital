@@ -257,16 +257,16 @@ export function AntreanTinjau({
                 ? ' belum tersedia'
                 : ` · ${sudahDianalisis} dari ${diperiksa.length} dianalisis${ditandai > 0 ? `, ${ditandai} perlu perhatian` : ''}`}
             </p>
-            {!aiTakTersedia && (
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setRingkasanBuka(true)}
-                >
-                  Ringkasan
-                </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setRingkasanBuka(true)}
+              >
+                Ringkasan
+              </Button>
+              {!aiTakTersedia && (
                 <Button
                   type="button"
                   size="sm"
@@ -277,8 +277,8 @@ export function AntreanTinjau({
                 >
                   {proses ? `Menganalisis ${proses.sekarang}/${proses.total}` : 'Analisis AI'}
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
           {galat && (
             <p role="alert" className="mt-1.5 text-[13px] text-red-700">

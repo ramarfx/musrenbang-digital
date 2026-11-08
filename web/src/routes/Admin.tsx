@@ -1,9 +1,11 @@
 import { PROPOSAL_STATUSES, type Proposal, type ProposalStatus } from '@musrenbang/shared';
 import { useState, type CSSProperties } from 'react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { Modal } from '@/components/ui/Modal';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { PageLoader } from '@/components/ui/PageLoader';
 import { Select } from '@/components/ui/Select';
@@ -18,7 +20,7 @@ import {
   useUpdateProposalStatusMutation,
 } from '@/features/admin/queries';
 import { StatusBadge } from '@/features/proposals/components/StatusBadge';
-import { useProposalsQuery } from '@/features/proposals/queries';
+import { useDeleteProposalMutation, useProposalsQuery } from '@/features/proposals/queries';
 import { cn } from '@/lib/cn';
 import { formatAngka } from '@/lib/format';
 
@@ -53,6 +55,8 @@ export default function Admin() {
   const [ubahStatus, setUbahStatus] = useState<Proposal | null>(null);
   const [statusBaru, setStatusBaru] = useState<ProposalStatus>('Diverifikasi');
   const [tolak, setTolak] = useState<Proposal | null>(null);
+  const [hapus, setHapus] = useState<Proposal | null>(null);
+  const hapusMutation = useDeleteProposalMutation();
   const [sedangDiproses, setSedangDiproses] = useState<number | null>(null);
 
   const stats = statsQuery.data ?? null;
@@ -227,6 +231,7 @@ export default function Admin() {
               onSetujui={setujui}
               onTolak={bukaTolak}
               onUbahStatus={bukaUbahStatus}
+              onHapus={setHapus}
             />
           </div>
 
@@ -234,10 +239,57 @@ export default function Admin() {
             <h2 id="judul-semua-usulan" className="text-lg font-bold">
               Semua usulan
             </h2>
-            <AdminProposalTable proposals={proposals} onUbahStatus={bukaUbahStatus} />
+            <AdminProposalTable
+              proposals={proposals}
+              onUbahStatus={bukaUbahStatus}
+              onHapus={setHapus}
+            />
           </section>
         </>
       )}
+
+      <Modal
+        open={hapus !== null}
+        onClose={() => setHapus(null)}
+        labelledBy="judul-hapus-admin"
+        className="w-[min(440px,calc(100vw-24px))]"
+      >
+        {hapus && (
+          <div className="p-6">
+            <span className="grid size-11 place-items-center rounded-full bg-red-50 text-red-700">
+              <Icon name="sampah" size={20} />
+            </span>
+            <h2 id="judul-hapus-admin" className="mt-4 text-lg font-bold">
+              Hapus usulan ini?
+            </h2>
+            <p className="mt-1 line-clamp-2 text-sm font-semibold [overflow-wrap:anywhere]">
+              {hapus.judul}
+            </p>
+            <p className="mt-2 text-sm text-muted">
+              Usulan beserta {formatAngka(hapus.jumlah_suara)} suara, komentar, dan riwayat
+              statusnya hilang permanen dan tidak bisa dikembalikan.
+            </p>
+            {hapusMutation.isError && (
+              <p role="alert" className="mt-3 text-sm text-red-700">
+                {hapusMutation.error.message}
+              </p>
+            )}
+            <div className="mt-5 flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setHapus(null)}>
+                Batal
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                isLoading={hapusMutation.isPending}
+                onClick={() => hapusMutation.mutate(hapus.id, { onSuccess: () => setHapus(null) })}
+              >
+                Hapus
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       <CatatanDialog
         open={ubahStatus !== null}

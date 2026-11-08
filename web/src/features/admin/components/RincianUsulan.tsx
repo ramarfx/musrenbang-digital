@@ -29,12 +29,14 @@ export function RincianUsulan({
   onSetujui,
   onTolak,
   onUbahStatus,
+  onHapus,
 }: {
   proposal: Proposal | null;
   sedangDiproses: number | null;
   onSetujui: (proposal: Proposal) => void;
   onTolak: (proposal: Proposal) => void;
   onUbahStatus: (proposal: Proposal) => void;
+  onHapus: (proposal: Proposal) => void;
 }) {
   return (
     <section
@@ -125,6 +127,16 @@ export function RincianUsulan({
                 onClick={() => onUbahStatus(proposal)}
               >
                 Ubah status
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={sedangDiproses !== null}
+                onClick={() => onHapus(proposal)}
+                className="ml-auto hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+              >
+                Hapus
               </Button>
             </div>
           </div>
