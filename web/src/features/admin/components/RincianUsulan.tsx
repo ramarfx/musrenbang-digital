@@ -78,7 +78,7 @@ export function RincianUsulan({
               <StatusBadge status={proposal.status} />
             </div>
 
-            <div className="mt-3 flex-1">
+            <div className="mt-3">
               <p className="text-sm whitespace-pre-line text-ink/80 [overflow-wrap:anywhere]">
                 {proposal.deskripsi}
               </p>
@@ -98,7 +98,7 @@ export function RincianUsulan({
 
             <AnalisisAi proposalId={proposal.id} />
 
-            <div className="flex flex-wrap gap-2.5 pt-4">
+            <div className="mt-auto flex flex-wrap gap-2.5 pt-4">
               {proposal.moderasi !== 'Disetujui' && (
                 <Button
                   type="button"
