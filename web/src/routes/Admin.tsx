@@ -1,5 +1,5 @@
 import { PROPOSAL_STATUSES, type Proposal, type ProposalStatus } from '@musrenbang/shared';
-import { useState, type CSSProperties } from 'react';
+import { useCallback, useState, type CSSProperties } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -56,6 +56,7 @@ export default function Admin() {
   const proposals = proposalsQuery.data ?? [];
 
   const [terpilihId, setTerpilihId] = useState<number | null>(null);
+  const [asalY, setAsalY] = useState<number | null>(null);
   const [ubahStatus, setUbahStatus] = useState<Proposal | null>(null);
   const [statusBaru, setStatusBaru] = useState<ProposalStatus>('Diverifikasi');
   const [tolak, setTolak] = useState<Proposal | null>(null);
@@ -127,11 +128,10 @@ export default function Admin() {
     }
   };
 
-  // Dialog lain dibuka setelah pop-up rincian ditutup, supaya tidak ada dua pop-up bertumpuk.
-  const dariRincian = (aksi: (proposal: Proposal) => void) => (proposal: Proposal) => {
-    setTerpilihId(null);
-    aksi(proposal);
-  };
+  const pilih = useCallback((id: number | null, y?: number) => {
+    setTerpilihId(id);
+    setAsalY(y ?? null);
+  }, []);
 
   const bukaTolak = (proposal: Proposal) => {
     moderasiMutation.reset();
@@ -249,31 +249,24 @@ export default function Admin() {
 
       {proposals.length > 0 && (
         <>
-          <AntreanTinjau
-            proposals={proposals}
-            onLihat={(proposal) => setTerpilihId(proposal.id)}
-            sedangDiproses={sedangDiproses}
-            onSetujui={setujui}
-            onSetujuiBanyak={setujuiBanyak}
-            onTolak={bukaTolak}
-          />
-          <Modal
-            open={terpilihProposal !== null}
-            onClose={() => setTerpilihId(null)}
-            labelledBy="judul-rincian-usulan"
-            className="w-[min(620px,calc(100vw-24px))]"
-          >
-            {terpilihProposal && (
-              <RincianUsulan
-                proposal={terpilihProposal}
-                sedangDiproses={sedangDiproses}
-                onSetujui={setujui}
-                onTolak={dariRincian(bukaTolak)}
-                onUbahStatus={dariRincian(bukaUbahStatus)}
-                onHapus={dariRincian(setHapus)}
-              />
-            )}
-          </Modal>
+          <div className="grid gap-6 lg:h-[600px] lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+            <AntreanTinjau
+              proposals={proposals}
+              terpilihId={terpilihId}
+              onPilih={pilih}
+              sedangDiproses={sedangDiproses}
+              onSetujuiBanyak={setujuiBanyak}
+            />
+            <RincianUsulan
+              proposal={terpilihProposal}
+              asalY={asalY}
+              sedangDiproses={sedangDiproses}
+              onSetujui={setujui}
+              onTolak={bukaTolak}
+              onUbahStatus={bukaUbahStatus}
+              onHapus={setHapus}
+            />
+          </div>
 
           <section aria-labelledby="judul-semua-usulan" className="space-y-3">
             <h2 id="judul-semua-usulan" className="text-lg font-bold">
