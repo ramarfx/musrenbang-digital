@@ -171,7 +171,7 @@ export function AntreanTinjau({
   }, [tampil, terpilihId, onPilih]);
 
   return (
-    <Card className="flex flex-col lg:h-[480px]">
+    <Card className="flex flex-col lg:min-h-[480px]">
       <h2 className="text-lg font-bold">Antrean tinjau</h2>
       <p className="mt-0.5 text-[13px] text-muted">
         Usulan yang perlu kamu putuskan. Daftar menggulir kalau panjang.
@@ -274,7 +274,7 @@ export function AntreanTinjau({
       ) : (
         <ul
           key={saring}
-          className="stagger mt-3 max-h-[420px] min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 lg:max-h-none"
+          className="stagger mt-3 max-h-[420px] min-h-0 flex-1 space-y-2 overflow-y-auto pr-1"
         >
           {tampil.map((proposal) => {
             const dipilih = proposal.id === terpilihId;
