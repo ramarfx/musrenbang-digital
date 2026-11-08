@@ -1,5 +1,6 @@
 import {
   PROPOSAL_MODERATION_STATUSES,
+  PROPOSAL_STATUSES,
   type Proposal,
   type ProposalModeration,
 } from '@musrenbang/shared';
@@ -85,6 +86,7 @@ export function AntreanTinjau({
   const [saring, setSaring] = useState<Saring>('Menunggu');
   const [urutan, setUrutan] = useState<Urutan>('terlama');
   const [kategori, setKategori] = useState('semua');
+  const [tahap, setTahap] = useState<Proposal['status'] | 'semua'>('semua');
   const [ringkasanBuka, setRingkasanBuka] = useState(false);
   const jumlahKomentar = useCommentCountsQuery().data ?? {};
   const daftarKategori = useMemo(
@@ -114,8 +116,9 @@ export function AntreanTinjau({
     return proposals
       .filter((proposal) => saring === 'semua' || proposal.moderasi === saring)
       .filter((proposal) => kategori === 'semua' || proposal.kategori === kategori)
+      .filter((proposal) => tahap === 'semua' || proposal.status === tahap)
       .sort(pembanding[urutan]);
-  }, [proposals, saring, kategori, urutan, jumlahKomentar]);
+  }, [proposals, saring, kategori, tahap, urutan, jumlahKomentar]);
 
   const queryClient = useQueryClient();
   const [proses, setProses] = useState<{ sekarang: number; total: number } | null>(null);
@@ -199,6 +202,21 @@ export function AntreanTinjau({
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-2">
+        <label className="col-span-2 min-w-0">
+          <span className="sr-only">Status</span>
+          <Select
+            value={tahap}
+            onChange={(event) => setTahap(event.target.value as Proposal['status'] | 'semua')}
+            className="h-9 py-0 text-[13.5px]"
+          >
+            <option value="semua">Semua status</option>
+            {PROPOSAL_STATUSES.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </Select>
+        </label>
         <label className="min-w-0">
           <span className="sr-only">Urutkan</span>
           <Select

@@ -12,6 +12,7 @@ import {
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { ModerationBadge } from '@/features/proposals/components/ModerationBadge';
 import { formatAngka, formatRupiah, formatTanggal } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -27,6 +28,19 @@ const columnHelper = createColumnHelper<Proposal>();
 export function AdminProposalTable({ proposals, onUbahStatus }: AdminProposalTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'dibuat_pada', desc: true }]);
   const [globalFilter, setGlobalFilter] = useState('');
+  const [saringStatus, setSaringStatus] = useState<Proposal['status'] | 'semua'>('semua');
+  const jumlahStatus = useMemo(() => {
+    const hasil: Record<string, number> = {};
+    for (const proposal of proposals) hasil[proposal.status] = (hasil[proposal.status] ?? 0) + 1;
+    return hasil;
+  }, [proposals]);
+  const data = useMemo(
+    () =>
+      saringStatus === 'semua'
+        ? proposals
+        : proposals.filter((proposal) => proposal.status === saringStatus),
+    [proposals, saringStatus],
+  );
 
   const columns = useMemo(
     () => [
@@ -101,7 +115,7 @@ export function AdminProposalTable({ proposals, onUbahStatus }: AdminProposalTab
   );
 
   const table = useReactTable({
-    data: proposals,
+    data,
     columns,
     state: { sorting, globalFilter },
     onSortingChange: setSorting,
@@ -113,17 +127,38 @@ export function AdminProposalTable({ proposals, onUbahStatus }: AdminProposalTab
 
   return (
     <div className="space-y-3">
-      <div className="max-w-sm">
-        <label htmlFor="cari-admin" className="mb-1 block text-sm font-medium text-stone-700">
-          Cari usulan
-        </label>
-        <Input
-          id="cari-admin"
-          type="search"
-          value={globalFilter}
-          onChange={(event) => setGlobalFilter(event.target.value)}
-          placeholder="Cari judul, kategori, atau pengusul..."
-        />
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="w-full max-w-sm">
+          <label htmlFor="cari-admin" className="mb-1 block text-sm font-medium text-stone-700">
+            Cari usulan
+          </label>
+          <Input
+            id="cari-admin"
+            type="search"
+            value={globalFilter}
+            onChange={(event) => setGlobalFilter(event.target.value)}
+            placeholder="Cari judul, kategori, atau pengusul..."
+          />
+        </div>
+        <div className="w-full max-w-[220px]">
+          <label htmlFor="saring-status" className="mb-1 block text-sm font-medium text-stone-700">
+            Status
+          </label>
+          <Select
+            id="saring-status"
+            value={saringStatus}
+            onChange={(event) =>
+              setSaringStatus(event.target.value as Proposal['status'] | 'semua')
+            }
+          >
+            <option value="semua">Semua status ({proposals.length})</option>
+            {PROPOSAL_STATUSES.map((status) => (
+              <option key={status} value={status}>
+                {status} ({jumlahStatus[status] ?? 0})
+              </option>
+            ))}
+          </Select>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-3xl border border-border bg-surface">
@@ -174,8 +209,8 @@ export function AdminProposalTable({ proposals, onUbahStatus }: AdminProposalTab
       </div>
 
       <p className="text-xs text-stone-500">
-        Menampilkan {table.getRowModel().rows.length} dari {proposals.length} usulan. Setiap
-        perubahan status memakai catatan dan tercatat di riwayat.
+        Menampilkan {table.getRowModel().rows.length} dari {data.length} usulan. Setiap perubahan
+        status memakai catatan dan tercatat di riwayat.
       </p>
     </div>
   );
