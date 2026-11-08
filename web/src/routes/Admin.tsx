@@ -14,6 +14,7 @@ import { CatatanDialog } from '@/features/admin/components/CatatanDialog';
 import { AntreanTinjau } from '@/features/admin/components/AntreanTinjau';
 import { RankingWarga } from '@/features/admin/components/RankingWarga';
 import { RincianUsulan } from '@/features/admin/components/RincianUsulan';
+import { RingkasanAiDialog } from '@/features/admin/components/RingkasanAiDialog';
 import {
   useAdminStatsQuery,
   useModerateProposalMutation,
@@ -56,6 +57,7 @@ export default function Admin() {
   const [statusBaru, setStatusBaru] = useState<ProposalStatus>('Diverifikasi');
   const [tolak, setTolak] = useState<Proposal | null>(null);
   const [hapus, setHapus] = useState<Proposal | null>(null);
+  const [ringkasanBuka, setRingkasanBuka] = useState(false);
   const hapusMutation = useDeleteProposalMutation();
   const [sedangDiproses, setSedangDiproses] = useState<number | null>(null);
 
@@ -125,7 +127,13 @@ export default function Admin() {
       <PageHeader
         title="Admin: kelola usulan"
         description="Setujui atau tolak usulan baru, lalu perbarui status kemajuannya. Setiap perubahan status wajib memakai catatan dan tercatat di riwayat."
+        actions={
+          <Button type="button" variant="outline" onClick={() => setRingkasanBuka(true)}>
+            Ringkasan aspirasi
+          </Button>
+        }
       />
+      <RingkasanAiDialog open={ringkasanBuka} onClose={() => setRingkasanBuka(false)} />
 
       <section aria-label="Ringkasan" className="space-y-3">
         <div className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

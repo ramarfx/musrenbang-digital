@@ -20,7 +20,7 @@ function Kotak({ label, nilai }: { label: string; nilai: string }) {
 
 /**
  * Rincian usulan terpilih di kolom kanan halaman admin: pita berwarna kategori di atas, lalu
- * deskripsi dan analisis MusrenAI, lalu empat kotak angka dan tombol keputusan. Kartu tumbuh
+ * deskripsi, empat kotak angka, lalu hasil MusrenAI tepat di atas tombol keputusan. Kartu tumbuh
  * mengikuti isinya, jadi tidak ada area yang harus digulir di dalam kartu: yang menggulir halaman.
  */
 export function RincianUsulan({
@@ -87,7 +87,6 @@ export function RincianUsulan({
                   <b>Alasan penolakan:</b> {proposal.catatan_moderasi}
                 </p>
               )}
-              <AnalisisAi proposalId={proposal.id} />
             </div>
 
             <dl className="mt-3 grid grid-cols-2 gap-2.5">
@@ -96,6 +95,8 @@ export function RincianUsulan({
               <Kotak label="Lokasi" nilai={proposal.lokasi || 'Tanpa lokasi'} />
               <Kotak label="Diajukan" nilai={formatTanggal(proposal.dibuat_pada)} />
             </dl>
+
+            <AnalisisAi proposalId={proposal.id} />
 
             <div className="flex flex-wrap gap-2.5 pt-4">
               {proposal.moderasi !== 'Disetujui' && (
