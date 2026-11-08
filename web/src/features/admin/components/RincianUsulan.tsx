@@ -39,7 +39,7 @@ export function RincianUsulan({
   return (
     <section
       aria-label="Rincian usulan"
-      className="kartu-cap flex flex-col overflow-hidden rounded-3xl bg-surface lg:min-h-[480px]"
+      className="kartu-cap flex flex-col overflow-hidden rounded-3xl bg-surface lg:min-h-[600px]"
     >
       {proposal === null ? (
         <div className="p-5 sm:p-6">

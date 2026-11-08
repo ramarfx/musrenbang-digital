@@ -171,7 +171,7 @@ export function AntreanTinjau({
   }, [tampil, terpilihId, onPilih]);
 
   return (
-    <Card className="flex flex-col lg:min-h-[480px]">
+    <Card className="flex flex-col lg:min-h-[600px]">
       <h2 className="text-lg font-bold">Antrean tinjau</h2>
       <p className="mt-0.5 text-[13px] text-muted">
         Usulan yang perlu kamu putuskan. Daftar menggulir kalau panjang.
@@ -272,90 +272,94 @@ export function AntreanTinjau({
           />
         </div>
       ) : (
-        <ul
-          key={saring}
-          className="stagger mt-3 max-h-[420px] min-h-0 flex-1 space-y-2 overflow-y-auto pr-1"
-        >
-          {tampil.map((proposal) => {
-            const dipilih = proposal.id === terpilihId;
-            return (
-              <li
-                key={proposal.id}
-                onClick={() => onPilih(proposal.id)}
-                className={cn(
-                  'cursor-pointer rounded-2xl border-[1.5px] p-2.5 transition-colors duration-150',
-                  dipilih ? 'border-edge bg-active' : 'border-border bg-surface hover:bg-active/60',
-                )}
-              >
-                <button
-                  type="button"
-                  aria-pressed={dipilih}
+        <div className="relative mt-3 min-h-0 flex-1 max-lg:max-h-[420px] max-lg:min-h-[240px]">
+          <ul
+            key={saring}
+            className="stagger space-y-2 overflow-y-auto pr-1 max-lg:h-full lg:absolute lg:inset-0"
+          >
+            {tampil.map((proposal) => {
+              const dipilih = proposal.id === terpilihId;
+              return (
+                <li
+                  key={proposal.id}
                   onClick={() => onPilih(proposal.id)}
-                  className="block w-full rounded-xl p-0.5 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
+                  className={cn(
+                    'cursor-pointer rounded-2xl border-[1.5px] p-2.5 transition-colors duration-150',
+                    dipilih
+                      ? 'border-edge bg-active'
+                      : 'border-border bg-surface hover:bg-active/60',
+                  )}
                 >
-                  <span className="flex items-start justify-between gap-2">
-                    <b className="min-w-0 truncate text-sm">{proposal.judul}</b>
-                    {proposal.moderasi === 'Menunggu' ? (
-                      <span
-                        className={cn(
-                          'flex-none rounded-lg px-2 py-0.5 text-[12px] font-semibold',
-                          umurHari(proposal.dibuat_pada) >= 3
-                            ? 'bg-[#F5B9B0] text-hitam'
-                            : 'bg-pasir text-ink',
-                        )}
-                      >
-                        {umurHari(proposal.dibuat_pada) === 0
-                          ? 'Hari ini'
-                          : `${umurHari(proposal.dibuat_pada)} hari`}
-                      </span>
-                    ) : (
-                      <ModerationBadge moderasi={proposal.moderasi} />
-                    )}
-                  </span>
-                  <span className="mt-0.5 block truncate text-[12.5px] text-muted">
-                    {proposal.pengusul_nama} · {proposal.kategori} ·{' '}
-                    {formatTanggal(proposal.dibuat_pada)}
-                  </span>
-                </button>
-                <div className="mt-1.5 flex items-end justify-between gap-2">
-                  <div className="min-w-0">
-                    <span className="block text-[12.5px] text-muted">
-                      {proposal.jumlah_suara} suara · {jumlahKomentar[proposal.id] ?? 0} komentar
-                    </span>
-                    <ChipAi ulasan={hasil.get(proposal.id)} />
-                  </div>
-                  <div
-                    className="flex flex-none gap-2"
-                    onClick={(event) => event.stopPropagation()}
+                  <button
+                    type="button"
+                    aria-pressed={dipilih}
+                    onClick={() => onPilih(proposal.id)}
+                    className="block w-full rounded-xl p-0.5 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
                   >
-                    {proposal.moderasi !== 'Disetujui' && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        isLoading={sedangDiproses === proposal.id}
-                        disabled={sedangDiproses !== null}
-                        onClick={() => onSetujui(proposal)}
-                      >
-                        Setujui
-                      </Button>
-                    )}
-                    {proposal.moderasi !== 'Ditolak' && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={sedangDiproses !== null}
-                        onClick={() => onTolak(proposal)}
-                      >
-                        Tolak
-                      </Button>
-                    )}
+                    <span className="flex items-start justify-between gap-2">
+                      <b className="min-w-0 truncate text-sm">{proposal.judul}</b>
+                      {proposal.moderasi === 'Menunggu' ? (
+                        <span
+                          className={cn(
+                            'flex-none rounded-lg px-2 py-0.5 text-[12px] font-semibold',
+                            umurHari(proposal.dibuat_pada) >= 3
+                              ? 'bg-[#F5B9B0] text-hitam'
+                              : 'bg-pasir text-ink',
+                          )}
+                        >
+                          {umurHari(proposal.dibuat_pada) === 0
+                            ? 'Hari ini'
+                            : `${umurHari(proposal.dibuat_pada)} hari`}
+                        </span>
+                      ) : (
+                        <ModerationBadge moderasi={proposal.moderasi} />
+                      )}
+                    </span>
+                    <span className="mt-0.5 block truncate text-[12.5px] text-muted">
+                      {proposal.pengusul_nama} · {proposal.kategori} ·{' '}
+                      {formatTanggal(proposal.dibuat_pada)}
+                    </span>
+                  </button>
+                  <div className="mt-1.5 flex items-end justify-between gap-2">
+                    <div className="min-w-0">
+                      <span className="block text-[12.5px] text-muted">
+                        {proposal.jumlah_suara} suara · {jumlahKomentar[proposal.id] ?? 0} komentar
+                      </span>
+                      <ChipAi ulasan={hasil.get(proposal.id)} />
+                    </div>
+                    <div
+                      className="flex flex-none gap-2"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      {proposal.moderasi !== 'Disetujui' && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          isLoading={sedangDiproses === proposal.id}
+                          disabled={sedangDiproses !== null}
+                          onClick={() => onSetujui(proposal)}
+                        >
+                          Setujui
+                        </Button>
+                      )}
+                      {proposal.moderasi !== 'Ditolak' && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={sedangDiproses !== null}
+                          onClick={() => onTolak(proposal)}
+                        >
+                          Tolak
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       )}
     </Card>
   );
