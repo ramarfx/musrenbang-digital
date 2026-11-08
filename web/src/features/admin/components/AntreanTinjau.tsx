@@ -15,6 +15,7 @@ import { cn } from '@/lib/cn';
 import { formatTanggal } from '@/lib/format';
 import { analyzeProposal, getAiReview } from '../ai-api';
 import { LABEL_INDIKASI } from './labelIndikasi';
+import { RingkasanAiDialog } from './RingkasanAiDialog';
 
 type Saring = ProposalModeration | 'semua';
 type Urutan = 'terlama' | 'terbaru' | 'ramai' | 'suara' | 'komentar';
@@ -84,6 +85,7 @@ export function AntreanTinjau({
   const [saring, setSaring] = useState<Saring>('Menunggu');
   const [urutan, setUrutan] = useState<Urutan>('terlama');
   const [kategori, setKategori] = useState('semua');
+  const [ringkasanBuka, setRingkasanBuka] = useState(false);
   const jumlahKomentar = useCommentCountsQuery().data ?? {};
   const daftarKategori = useMemo(
     () => [...new Set(proposals.map((proposal) => proposal.kategori))].sort(),
@@ -238,16 +240,26 @@ export function AntreanTinjau({
                 : ` · ${sudahDianalisis} dari ${diperiksa.length} dianalisis${ditandai > 0 ? `, ${ditandai} perlu perhatian` : ''}`}
             </p>
             {!aiTakTersedia && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                isLoading={proses !== null}
-                disabled={memuatUlasan || perluAnalisis.length === 0}
-                onClick={() => void analisisSemua()}
-              >
-                {proses ? `Menganalisis ${proses.sekarang}/${proses.total}` : 'Analisis AI'}
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setRingkasanBuka(true)}
+                >
+                  Ringkasan
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  isLoading={proses !== null}
+                  disabled={memuatUlasan || perluAnalisis.length === 0}
+                  onClick={() => void analisisSemua()}
+                >
+                  {proses ? `Menganalisis ${proses.sekarang}/${proses.total}` : 'Analisis AI'}
+                </Button>
+              </div>
             )}
           </div>
           {galat && (
@@ -361,6 +373,7 @@ export function AntreanTinjau({
           </ul>
         </div>
       )}
+      <RingkasanAiDialog open={ringkasanBuka} onClose={() => setRingkasanBuka(false)} />
     </Card>
   );
 }
