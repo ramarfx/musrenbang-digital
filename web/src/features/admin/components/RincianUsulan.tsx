@@ -1,4 +1,5 @@
 import type { Proposal } from '@musrenbang/shared';
+import { useLayoutEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
@@ -10,12 +11,14 @@ import { formatAngka, formatRupiahRingkas, formatTanggal } from '@/lib/format';
 import { AnalisisAi } from './AnalisisAi';
 
 /**
- * Isi pop-up rincian usulan di halaman admin: pita berwarna kategori di atas, lalu deskripsi dan
- * satu baris fakta (biaya, suara, lokasi, tanggal), lalu hasil MusrenAI tepat di atas tombol
- * keputusan.
+ * Rincian usulan terpilih di kartu kanan halaman admin. Kepalanya berwarna kategori, sama
+ * dengan baris yang dipilih di antrean. Saat baris diklik, isinya tumbuh dari titik setinggi
+ * baris itu, supaya terlihat bahwa kartu ini adalah isi baris tersebut. Hasil MusrenAI ada di
+ * atas, tombol keputusan menempel di dasar kartu.
  */
 export function RincianUsulan({
   proposal,
+  asalY,
   sedangDiproses,
   onSetujui,
   onTolak,
@@ -23,14 +26,44 @@ export function RincianUsulan({
   onHapus,
 }: {
   proposal: Proposal | null;
+  /** Posisi tengah baris yang diklik di layar; kosong saat dipilih otomatis. */
+  asalY: number | null;
   sedangDiproses: number | null;
   onSetujui: (proposal: Proposal) => void;
   onTolak: (proposal: Proposal) => void;
   onUbahStatus: (proposal: Proposal) => void;
   onHapus: (proposal: Proposal) => void;
 }) {
+  const isiRef = useRef<HTMLDivElement>(null);
+  const id = proposal?.id;
+
+  useLayoutEffect(() => {
+    const isi = isiRef.current;
+    if (!isi || asalY === null) return;
+    const kurangi = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Tumbuh dari baris hanya saat antrean dan rincian berdampingan (layar lebar).
+    const berdampingan = window.matchMedia('(min-width: 1024px)').matches;
+    if (kurangi || !berdampingan) {
+      isi.animate([{ opacity: 0.4 }, { opacity: 1 }], { duration: 180, easing: 'ease-out' });
+      return;
+    }
+    const kotak = isi.getBoundingClientRect();
+    const y = Math.min(Math.max(asalY - kotak.top, 0), kotak.height);
+    isi.style.transformOrigin = `0 ${y}px`;
+    isi.animate(
+      [
+        { transform: 'scale(0.92)', opacity: 0.2 },
+        { transform: 'none', opacity: 1 },
+      ],
+      { duration: 320, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' },
+    );
+  }, [id, asalY]);
+
   return (
-    <section aria-label="Rincian usulan" className="flex flex-col overflow-hidden bg-surface">
+    <section
+      aria-label="Rincian usulan"
+      className="kartu-cap flex min-h-0 flex-col overflow-hidden rounded-3xl bg-surface"
+    >
       {proposal === null ? (
         <div className="p-5 sm:p-6">
           <h2 className="text-lg font-bold">Rincian usulan</h2>
@@ -39,14 +72,14 @@ export function RincianUsulan({
           </p>
         </div>
       ) : (
-        <div key={proposal.id} className="anim-page flex min-h-0 flex-1 flex-col">
+        <div ref={isiRef} className="flex min-h-0 flex-1 flex-col">
           <div
             className="flex items-center gap-3 border-b-[1.5px] border-edge px-5 py-3.5 sm:px-6"
             style={{ backgroundColor: getCategoryInfo(proposal.kategori).warna.latar }}
           >
             <CategoryTile kategori={proposal.kategori} />
             <div className="min-w-0">
-              <h2 id="judul-rincian-usulan" className="font-bold [overflow-wrap:anywhere]">
+              <h2 className="font-bold [overflow-wrap:anywhere]">
                 <Link
                   to={`/usulan/${proposal.id}`}
                   className="hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-edge"
@@ -60,73 +93,69 @@ export function RincianUsulan({
             </div>
           </div>
 
-          <div className="flex min-h-0 flex-1 flex-col px-5 pt-4 pb-5 sm:px-6">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-1 pb-4 sm:px-6">
+            <AnalisisAi proposalId={proposal.id} />
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               <ModerationBadge moderasi={proposal.moderasi} />
               <StatusBadge status={proposal.status} />
             </div>
-
-            <div className="mt-3">
-              <p className="text-sm whitespace-pre-line text-ink/80 [overflow-wrap:anywhere]">
-                {proposal.deskripsi}
-              </p>
-              {proposal.moderasi === 'Ditolak' && proposal.catatan_moderasi && (
-                <p className="mt-4 rounded-xl bg-active px-3.5 py-2.5 text-[13px] text-ink [overflow-wrap:anywhere]">
-                  <b>Alasan penolakan:</b> {proposal.catatan_moderasi}
-                </p>
-              )}
-            </div>
-
-            <p className="mt-2.5 text-[13px] text-muted [overflow-wrap:anywhere]">
-              {formatRupiahRingkas(proposal.estimasi_biaya)} · {formatAngka(proposal.jumlah_suara)}{' '}
-              suara · {proposal.lokasi || 'Tanpa lokasi'} · diajukan{' '}
-              {formatTanggal(proposal.dibuat_pada)}
+            <p className="mt-3 text-sm whitespace-pre-line text-ink/80 [overflow-wrap:anywhere]">
+              {proposal.deskripsi}
             </p>
+            {proposal.moderasi === 'Ditolak' && proposal.catatan_moderasi && (
+              <p className="mt-3 rounded-xl bg-active px-3.5 py-2.5 text-[13px] text-ink [overflow-wrap:anywhere]">
+                <b>Alasan penolakan:</b> {proposal.catatan_moderasi}
+              </p>
+            )}
+            <p className="mt-2.5 text-[13px] text-muted [overflow-wrap:anywhere]">
+              <b className="text-ink">{formatRupiahRingkas(proposal.estimasi_biaya)}</b> ·{' '}
+              {formatAngka(proposal.jumlah_suara)} suara · {proposal.lokasi || 'Tanpa lokasi'} ·
+              diajukan {formatTanggal(proposal.dibuat_pada)}
+            </p>
+          </div>
 
-            <AnalisisAi proposalId={proposal.id} />
-
-            <div className="flex flex-wrap gap-2.5 pt-3">
-              {proposal.moderasi !== 'Disetujui' && (
-                <Button
-                  type="button"
-                  size="sm"
-                  isLoading={sedangDiproses === proposal.id}
-                  disabled={sedangDiproses !== null}
-                  onClick={() => onSetujui(proposal)}
-                >
-                  Setujui
-                </Button>
-              )}
-              {proposal.moderasi !== 'Ditolak' && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={sedangDiproses !== null}
-                  onClick={() => onTolak(proposal)}
-                >
-                  Tolak
-                </Button>
-              )}
+          <div className="flex flex-wrap gap-2.5 border-t-[1.5px] border-border px-5 py-3.5 sm:px-6">
+            {proposal.moderasi !== 'Disetujui' && (
+              <Button
+                type="button"
+                size="sm"
+                isLoading={sedangDiproses === proposal.id}
+                disabled={sedangDiproses !== null}
+                onClick={() => onSetujui(proposal)}
+              >
+                Setujui
+              </Button>
+            )}
+            {proposal.moderasi !== 'Ditolak' && (
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
-                onClick={() => onUbahStatus(proposal)}
-              >
-                Ubah status
-              </Button>
-              <button
-                type="button"
-                aria-label="Hapus usulan"
-                title="Hapus usulan"
                 disabled={sedangDiproses !== null}
-                onClick={() => onHapus(proposal)}
-                className="ml-auto inline-flex size-9 flex-none items-center justify-center rounded-xl border border-edge bg-surface text-ink transition-[scale,background-color,color,border-color] duration-150 ease-out hover:border-red-300 hover:bg-red-50 hover:text-red-700 active:scale-[0.92] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => onTolak(proposal)}
               >
-                <Icon name="sampah" size={17} />
-              </button>
-            </div>
+                Tolak
+              </Button>
+            )}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="ml-auto"
+              onClick={() => onUbahStatus(proposal)}
+            >
+              Ubah status
+            </Button>
+            <button
+              type="button"
+              aria-label="Hapus usulan"
+              title="Hapus usulan"
+              disabled={sedangDiproses !== null}
+              onClick={() => onHapus(proposal)}
+              className="inline-flex size-9 flex-none items-center justify-center rounded-xl border border-edge bg-surface text-ink transition-[scale,background-color,color,border-color] duration-150 ease-out hover:border-red-300 hover:bg-red-50 hover:text-red-700 active:scale-[0.92] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Icon name="sampah" size={17} />
+            </button>
           </div>
         </div>
       )}
