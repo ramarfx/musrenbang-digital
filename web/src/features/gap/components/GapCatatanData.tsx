@@ -23,8 +23,8 @@ export function GapCatatanData({ ringkasan }: { ringkasan: GapRingkasan }) {
       {(jumlahPartisipan === undefined || jumlahPartisipan === 0) && (
         <p>
           {jumlahPartisipan === undefined
-            ? 'Jumlah warga yang sudah mengurutkan belum tersedia dari server.'
-            : 'Belum ada warga yang menyimpan urutan prioritas.'}
+            ? 'Jumlah warga yang sudah mengisi simulator belum tersedia dari server.'
+            : 'Belum ada warga yang mengisi simulator.'}
         </p>
       )}
       {tanpaApbd && (
