@@ -16,7 +16,6 @@ import { cn } from '@/lib/cn';
 import { formatTanggal } from '@/lib/format';
 import { analyzeProposal, getAiReview } from '../ai-api';
 import { LABEL_INDIKASI } from './labelIndikasi';
-import { RingkasanAiDialog } from './RingkasanAiDialog';
 
 type Saring = ProposalModeration | 'semua';
 type Urutan = 'terlama' | 'terbaru' | 'ramai' | 'suara' | 'komentar';
@@ -34,15 +33,20 @@ type Ulasan = Awaited<ReturnType<typeof getAiReview>> | undefined;
 /** Usulan yang diperiksa MusrenAI sekali jalan; sisanya menyusul pada putaran berikutnya. */
 const BATAS_ANALISIS = 20;
 
-function ChipAi({ ulasan }: { ulasan: Ulasan }) {
-  if (!ulasan || ulasan.state === 'not_analyzed') return null;
-  if (ulasan.state === 'pending' || ulasan.state === 'processing')
-    return <span className="mt-1 block text-[12px] text-muted">MusrenAI: sedang dianalisis</span>;
-  if (ulasan.state !== 'completed') return null;
+/**
+ * Label hasil MusrenAI di baris antrean. Muncul dengan gerak pendek saat hasilnya tiba, supaya
+ * admin melihat hasil pemeriksaan di baris yang sama dengan usulannya.
+ */
+function ChipAi({ ulasan, sedang = false }: { ulasan: Ulasan; sedang?: boolean }) {
+  if (sedang || ulasan?.state === 'pending' || ulasan?.state === 'processing')
+    return <span className="mt-1 block text-[12px] text-muted">MusrenAI: sedang memeriksa...</span>;
+  if (!ulasan || ulasan.state !== 'completed') return null;
   return (
-    <span className="mt-1 flex flex-wrap gap-1">
+    <span className="anim-chip mt-1 flex flex-wrap gap-1">
       {ulasan.flags.length === 0 ? (
-        <span className="text-[12px] text-muted">MusrenAI: tanpa indikasi</span>
+        <span className="rounded-md bg-mint-pucat px-1.5 py-0.5 text-[11.5px] font-semibold text-mint-tua">
+          Tanpa indikasi
+        </span>
       ) : (
         ulasan.flags.map((flag) => (
           <span
@@ -87,7 +91,6 @@ export function AntreanTinjau({
   const [urutan, setUrutan] = useState<Urutan>('terlama');
   const [kategori, setKategori] = useState('semua');
   const [tahap, setTahap] = useState<Proposal['status'] | 'semua'>('semua');
-  const [ringkasanBuka, setRingkasanBuka] = useState(false);
   const jumlahKomentar = useCommentCountsQuery().data ?? {};
   const daftarKategori = useMemo(
     () => [...new Set(proposals.map((proposal) => proposal.kategori))].sort(),
@@ -121,7 +124,11 @@ export function AntreanTinjau({
   }, [proposals, saring, kategori, tahap, urutan, jumlahKomentar]);
 
   const queryClient = useQueryClient();
-  const [proses, setProses] = useState<{ sekarang: number; total: number } | null>(null);
+  const [proses, setProses] = useState<{
+    sekarang: number;
+    total: number;
+    id: number;
+  } | null>(null);
   const [galat, setGalat] = useState<string | null>(null);
   const diperiksa = useMemo(() => tampil.slice(0, BATAS_ANALISIS), [tampil]);
   const ulasan = useQueries({
@@ -154,7 +161,7 @@ export function AntreanTinjau({
     const daftar = perluAnalisis;
     setGalat(null);
     for (let i = 0; i < daftar.length; i += 1) {
-      setProses({ sekarang: i + 1, total: daftar.length });
+      setProses({ sekarang: i + 1, total: daftar.length, id: daftar[i]!.id });
       try {
         await analyzeProposal(daftar[i]!.id);
         await queryClient.invalidateQueries({ queryKey: ['admin', 'ai-review', daftar[i]!.id] });
@@ -249,37 +256,53 @@ export function AntreanTinjau({
       </div>
 
       {diperiksa.length > 0 && (
-        <div className="mt-3">
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-active px-3 py-2">
+        <div className="mt-3 rounded-xl bg-active px-3 py-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="min-w-0 text-[13px] text-ink">
               <b>MusrenAI</b>
               {aiTakTersedia
                 ? ' belum tersedia'
-                : ` · ${sudahDianalisis} dari ${diperiksa.length} dianalisis${ditandai > 0 ? `, ${ditandai} perlu perhatian` : ''}`}
+                : proses
+                  ? ` · memeriksa ${proses.sekarang} dari ${proses.total}`
+                  : ` · ${sudahDianalisis} dari ${diperiksa.length} diperiksa${ditandai > 0 ? `, ${ditandai} perlu perhatian` : ''}`}
             </p>
-            <div className="flex flex-wrap gap-2">
+            {!aiTakTersedia && (
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
-                onClick={() => setRingkasanBuka(true)}
+                isLoading={proses !== null}
+                disabled={proses !== null || memuatUlasan || perluAnalisis.length === 0}
+                onClick={() => void analisisSemua()}
               >
-                Ringkasan
+                {proses
+                  ? 'Memeriksa...'
+                  : perluAnalisis.length > 0
+                    ? `Periksa ${perluAnalisis.length} usulan`
+                    : 'Semua sudah diperiksa'}
               </Button>
-              {!aiTakTersedia && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  isLoading={proses !== null}
-                  disabled={memuatUlasan || perluAnalisis.length === 0}
-                  onClick={() => void analisisSemua()}
-                >
-                  {proses ? `Menganalisis ${proses.sekarang}/${proses.total}` : 'Analisis AI'}
-                </Button>
-              )}
-            </div>
+            )}
           </div>
+          {!aiTakTersedia && (
+            <p className="mt-0.5 text-[12px] text-muted">
+              Memeriksa spam, promosi, dan isi yang tidak jelas. Hasilnya muncul di tiap baris.
+            </p>
+          )}
+          {proses && (
+            <div
+              role="progressbar"
+              aria-label="Kemajuan pemeriksaan MusrenAI"
+              aria-valuemin={0}
+              aria-valuemax={proses.total}
+              aria-valuenow={proses.sekarang - 1}
+              className="mt-2 h-1.5 overflow-hidden rounded-full bg-track"
+            >
+              <i
+                className="block h-full origin-left rounded-full bg-hijau-terang transition-transform duration-300 ease-out"
+                style={{ transform: `scaleX(${(proses.sekarang - 1) / proses.total})` }}
+              />
+            </div>
+          )}
           {galat && (
             <p role="alert" className="mt-1.5 text-[13px] text-red-700">
               {galat}
@@ -355,7 +378,7 @@ export function AntreanTinjau({
                       <span className="block text-[12.5px] text-muted">
                         {proposal.jumlah_suara} suara · {jumlahKomentar[proposal.id] ?? 0} komentar
                       </span>
-                      <ChipAi ulasan={hasil.get(proposal.id)} />
+                      <ChipAi ulasan={hasil.get(proposal.id)} sedang={proses?.id === proposal.id} />
                     </div>
                     <div
                       className="flex flex-none gap-2"
@@ -391,7 +414,6 @@ export function AntreanTinjau({
           </ul>
         </div>
       )}
-      <RingkasanAiDialog open={ringkasanBuka} onClose={() => setRingkasanBuka(false)} />
     </Card>
   );
 }

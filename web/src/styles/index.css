@@ -1498,3 +1498,33 @@ html::-webkit-scrollbar,
     animation: none;
   }
 }
+
+/*
+ * Panel admin: label hasil MusrenAI muncul di baris antrean saat hasilnya tiba, dan kotak hasil
+ * di kartu rincian menyala sebentar bila hasil baru masuk. Sekali jalan, tanpa loop.
+ */
+.anim-chip {
+  animation: chip-muncul 320ms var(--ease-out) both;
+}
+@keyframes chip-muncul {
+  from {
+    opacity: 0;
+    transform: translateX(-6px) scale(0.96);
+  }
+}
+.anim-sorot {
+  animation: sorot-hasil 1400ms var(--ease-out);
+}
+@keyframes sorot-hasil {
+  20% {
+    background-color: var(--mint-pucat);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .anim-chip {
+    animation: none;
+  }
+  .anim-sorot {
+    animation-duration: 600ms;
+  }
+}
