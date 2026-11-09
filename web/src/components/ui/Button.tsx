@@ -2,7 +2,13 @@ import { forwardRef, type ButtonHTMLAttributes } from 'react';
 import { cn } from '@/lib/cn';
 import { Spinner } from './Spinner';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+export type ButtonVariant =
+  | 'primary'
+  | 'secondary'
+  | 'outline'
+  | 'ghost'
+  | 'danger'
+  | 'danger-outline';
 export type ButtonSize = 'sm' | 'md';
 
 // Desain 2: aksi utama memakai tinta; tombol garis bertepi tinta seperti kartu.
@@ -14,6 +20,8 @@ const variants: Record<ButtonVariant, string> = {
   outline: 'border border-edge bg-surface text-ink hover:bg-active',
   ghost: 'text-ink hover:bg-active',
   danger: 'bg-[#b42318] text-white hover:bg-[#8a1c13] focus-visible:outline-[#b42318]',
+  'danger-outline':
+    'border border-red-700 bg-surface text-red-700 hover:bg-red-50 focus-visible:outline-red-700',
 };
 
 const base =

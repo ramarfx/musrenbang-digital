@@ -1,164 +1,223 @@
-import type { Proposal } from '@musrenbang/shared';
-import { useLayoutEffect, useRef } from 'react';
+import type { Proposal, StatusHistory } from '@musrenbang/shared';
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/Button';
-import { Icon } from '@/components/ui/Icon';
+import { Button, buttonClass } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
 import { getCategoryInfo } from '@/features/categories/info';
 import { ModerationBadge } from '@/features/proposals/components/ModerationBadge';
 import { StatusBadge } from '@/features/proposals/components/StatusBadge';
-import { formatAngka, formatRupiahRingkas, formatTanggal } from '@/lib/format';
+import { formatAngka, formatRupiah, formatTanggal, formatTanggalWaktu } from '@/lib/format';
 import { AnalisisAi } from './AnalisisAi';
+import { KemajuanTahap } from './KemajuanTahap';
+import { umurHari } from './umurHari';
+
+type RincianUsulanProps = {
+  proposal: Proposal;
+  history: StatusHistory[];
+  historyMemuat: boolean;
+  historyGalat: boolean;
+  onMuatUlangRiwayat: () => void;
+  onSetujui: () => void;
+  onTolak: () => void;
+  onUbahStatus: () => void;
+  onHapus: () => void;
+};
 
 /**
- * Rincian usulan terpilih di kartu kanan halaman admin. Kepalanya berwarna kategori, sama
- * dengan baris yang dipilih di antrean. Saat baris diklik, isinya tumbuh dari titik setinggi
- * baris itu, supaya terlihat bahwa kartu ini adalah isi baris tersebut. Hasil MusrenAI ada di
- * atas, tombol keputusan menempel di dasar kartu.
+ * Isi halaman rincian admin. Semua yang dibutuhkan untuk memutuskan ada di sini: judul, isi
+ * usulan, status, riwayat bercatatan, dan hasil MusrenAI. Tombol keputusan berada di panel
+ * samping supaya tetap terlihat saat isi usulan dibaca.
  */
 export function RincianUsulan({
   proposal,
-  asalY,
-  sedangDiproses,
+  history,
+  historyMemuat,
+  historyGalat,
+  onMuatUlangRiwayat,
   onSetujui,
   onTolak,
   onUbahStatus,
   onHapus,
-}: {
-  proposal: Proposal | null;
-  /** Posisi tengah baris yang diklik di layar; kosong saat dipilih otomatis. */
-  asalY: number | null;
-  sedangDiproses: number | null;
-  onSetujui: (proposal: Proposal) => void;
-  onTolak: (proposal: Proposal) => void;
-  onUbahStatus: (proposal: Proposal) => void;
-  onHapus: (proposal: Proposal) => void;
-}) {
-  const isiRef = useRef<HTMLDivElement>(null);
-  const id = proposal?.id;
-
-  useLayoutEffect(() => {
-    const isi = isiRef.current;
-    if (!isi || asalY === null) return;
-    const kurangi = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    // Tumbuh dari baris hanya saat antrean dan rincian berdampingan (layar lebar).
-    const berdampingan = window.matchMedia('(min-width: 1024px)').matches;
-    if (kurangi || !berdampingan) {
-      isi.animate([{ opacity: 0.4 }, { opacity: 1 }], { duration: 180, easing: 'ease-out' });
-      return;
-    }
-    const kotak = isi.getBoundingClientRect();
-    const y = Math.min(Math.max(asalY - kotak.top, 0), kotak.height);
-    isi.style.transformOrigin = `0 ${y}px`;
-    isi.animate(
-      [
-        { transform: 'scale(0.92)', opacity: 0.2 },
-        { transform: 'none', opacity: 1 },
-      ],
-      { duration: 320, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' },
-    );
-  }, [id, asalY]);
+}: RincianUsulanProps) {
+  const hari = umurHari(proposal.dibuat_pada);
 
   return (
-    <section
-      aria-label="Rincian usulan"
-      className="kartu-cap flex min-h-0 flex-col overflow-hidden rounded-3xl bg-surface"
-    >
-      {proposal === null ? (
-        <div className="p-5 sm:p-6">
-          <h2 className="text-lg font-bold">Rincian usulan</h2>
-          <p className="mt-3 text-sm text-muted">
-            Pilih usulan di antrean untuk melihat rinciannya.
-          </p>
-        </div>
-      ) : (
-        <div ref={isiRef} className="flex min-h-0 flex-1 flex-col">
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] lg:items-start">
+      <div className="min-w-0 space-y-5">
+        <Card className="overflow-hidden p-0">
           <div
-            className="flex items-center gap-3 border-b-[1.5px] border-edge px-5 py-3.5 sm:px-6"
+            className="border-b-[1.5px] border-edge px-5 py-4 text-hitam sm:px-6"
             style={{ backgroundColor: getCategoryInfo(proposal.kategori).warna.latar }}
           >
-            <CategoryTile kategori={proposal.kategori} />
-            <div className="min-w-0">
-              <h2 className="font-bold [overflow-wrap:anywhere]">
-                <Link
-                  to={`/usulan/${proposal.id}`}
-                  className="hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-edge"
-                >
+            <div className="flex items-start gap-3">
+              <CategoryTile kategori={proposal.kategori} gaya="cap" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">{proposal.kategori}</p>
+                <h1 className="mt-0.5 text-[22px] leading-snug font-bold tracking-[-0.02em] [overflow-wrap:anywhere] sm:text-[26px]">
                   {proposal.judul}
-                </Link>
-              </h2>
-              <p className="text-[13px] text-ink/75">
-                {proposal.kategori} · oleh {proposal.pengusul_nama}
-              </p>
+                </h1>
+              </div>
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-1 pb-4 sm:px-6">
-            <AnalisisAi proposalId={proposal.id} />
-            <div className="mt-3 flex flex-wrap items-center gap-2">
+          <div className="px-5 py-4 sm:px-6">
+            <div className="flex flex-wrap items-center gap-2">
               <ModerationBadge moderasi={proposal.moderasi} />
               <StatusBadge status={proposal.status} />
             </div>
-            <p className="mt-3 text-sm whitespace-pre-line text-ink/80 [overflow-wrap:anywhere]">
-              {proposal.deskripsi}
-            </p>
-            {proposal.moderasi === 'Ditolak' && proposal.catatan_moderasi && (
-              <p className="mt-3 rounded-xl bg-active px-3.5 py-2.5 text-[13px] text-ink [overflow-wrap:anywhere]">
-                <b>Alasan penolakan:</b> {proposal.catatan_moderasi}
+            <KemajuanTahap status={proposal.status} className="mt-3" />
+
+            <dl className="mt-5 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+              <div>
+                <dt className="text-muted">Pengusul</dt>
+                <dd className="font-semibold text-ink [overflow-wrap:anywhere]">
+                  {proposal.pengusul_nama}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted">Diajukan</dt>
+                <dd className="font-semibold text-ink">
+                  {formatTanggal(proposal.dibuat_pada)}
+                  {hari === 0 ? ', hari ini' : `, ${hari} hari lalu`}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted">Estimasi biaya</dt>
+                <dd className="font-semibold text-ink">{formatRupiah(proposal.estimasi_biaya)}</dd>
+              </div>
+              <div>
+                <dt className="text-muted">Dukungan warga</dt>
+                <dd className="font-semibold text-ink">
+                  {formatAngka(proposal.jumlah_suara)} suara
+                </dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-muted">Lokasi</dt>
+                <dd className="font-semibold text-ink [overflow-wrap:anywhere]">
+                  {proposal.lokasi || 'Tidak dicantumkan'}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className="text-lg font-bold">Isi usulan</h2>
+          <p className="mt-2 text-[15px] leading-relaxed whitespace-pre-line text-ink/85 [overflow-wrap:anywhere]">
+            {proposal.deskripsi}
+          </p>
+          {proposal.catatan_moderasi && (
+            <div className="mt-4 rounded-xl bg-active px-3.5 py-3 text-sm text-ink">
+              <p className="font-bold">
+                {proposal.moderasi === 'Ditolak' ? 'Alasan penolakan' : 'Catatan persetujuan'}
               </p>
-            )}
-            <p className="mt-2.5 text-[13px] text-muted [overflow-wrap:anywhere]">
-              <b className="text-ink">{formatRupiahRingkas(proposal.estimasi_biaya)}</b> ·{' '}
-              {formatAngka(proposal.jumlah_suara)} suara · {proposal.lokasi || 'Tanpa lokasi'} ·
-              diajukan {formatTanggal(proposal.dibuat_pada)}
+              <p className="mt-1 [overflow-wrap:anywhere]">{proposal.catatan_moderasi}</p>
+            </div>
+          )}
+        </Card>
+
+        <Card>
+          <h2 className="text-lg font-bold">Riwayat tahap</h2>
+          <p className="mt-1 text-sm text-muted">
+            Setiap perubahan tahap tercatat dengan catatan admin.
+          </p>
+
+          {historyMemuat && <p className="mt-3 text-sm text-muted">Memuat riwayat...</p>}
+
+          {historyGalat && (
+            <div className="mt-3">
+              <p className="text-sm text-muted">Riwayat belum bisa dimuat.</p>
+              <Button type="button" variant="outline" className="mt-2" onClick={onMuatUlangRiwayat}>
+                Coba lagi
+              </Button>
+            </div>
+          )}
+
+          {!historyMemuat && !historyGalat && history.length === 0 && (
+            <p className="mt-3 text-sm text-muted">
+              Belum ada perubahan tahap. Usulan masih di tahap {proposal.status}.
             </p>
+          )}
+
+          {!historyMemuat && !historyGalat && history.length > 0 && (
+            <ol className="mt-4 space-y-4">
+              {history.map((item, index) => (
+                <li key={item.id} className="relative pl-7">
+                  {index < history.length - 1 && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute top-4 left-[5px] h-[calc(100%+8px)] w-0.5 bg-track"
+                    />
+                  )}
+                  <span
+                    aria-hidden="true"
+                    className="absolute top-1.5 left-0 size-3 rounded-full border-2 border-surface bg-hijau-terang"
+                  />
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                    <p className="font-semibold">{item.status_baru}</p>
+                    <p className="text-[13px] text-muted">{formatTanggalWaktu(item.diubah_pada)}</p>
+                  </div>
+                  <p className="text-[13px] text-muted">
+                    oleh {item.diubah_oleh_nama ?? 'Sistem'}
+                    {item.status_lama ? `, dari ${item.status_lama}` : ''}
+                  </p>
+                  {item.catatan && (
+                    <p className="mt-1.5 rounded-xl bg-active px-3 py-2 text-[13.5px] text-ink [overflow-wrap:anywhere]">
+                      {item.catatan}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ol>
+          )}
+        </Card>
+      </div>
+
+      <aside className="space-y-5">
+        <AnalisisAi proposalId={proposal.id} />
+
+        <Card className="lg:sticky lg:top-6">
+          <h2 className="text-lg font-bold">Keputusan admin</h2>
+          <p className="mt-1 text-sm text-muted">Status persetujuan saat ini:</p>
+          <div className="mt-2">
+            <ModerationBadge moderasi={proposal.moderasi} />
           </div>
 
-          <div className="flex flex-wrap gap-2.5 border-t-[1.5px] border-border px-5 py-3.5 sm:px-6">
+          <div className="mt-4 grid gap-2.5">
             {proposal.moderasi !== 'Disetujui' && (
-              <Button
-                type="button"
-                size="sm"
-                isLoading={sedangDiproses === proposal.id}
-                disabled={sedangDiproses !== null}
-                onClick={() => onSetujui(proposal)}
-              >
-                Setujui
+              <Button type="button" onClick={onSetujui}>
+                Setujui usulan
               </Button>
             )}
             {proposal.moderasi !== 'Ditolak' && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={sedangDiproses !== null}
-                onClick={() => onTolak(proposal)}
-              >
-                Tolak
+              <Button type="button" variant="outline" onClick={onTolak}>
+                Tolak usulan
               </Button>
             )}
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="ml-auto"
-              onClick={() => onUbahStatus(proposal)}
-            >
-              Ubah status
+            <Button type="button" variant="outline" onClick={onUbahStatus}>
+              Ubah tahap
             </Button>
-            <button
-              type="button"
-              aria-label="Hapus usulan"
-              title="Hapus usulan"
-              disabled={sedangDiproses !== null}
-              onClick={() => onHapus(proposal)}
-              className="inline-flex size-9 flex-none items-center justify-center rounded-xl border border-edge bg-surface text-ink transition-[scale,background-color,color,border-color] duration-150 ease-out hover:border-red-300 hover:bg-red-50 hover:text-red-700 active:scale-[0.92] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Icon name="sampah" size={17} />
-            </button>
+            <Link to={`/usulan/${proposal.id}`} className={buttonClass('ghost', 'md')}>
+              Lihat tampilan publik
+            </Link>
           </div>
-        </div>
-      )}
-    </section>
+
+          <p className="mt-3 text-[13px] text-muted">
+            Penolakan wajib memakai alasan. Perubahan tahap wajib memakai catatan yang masuk ke
+            riwayat publik.
+          </p>
+        </Card>
+
+        <Card>
+          <h2 className="text-base font-bold">Hapus usulan</h2>
+          <p className="mt-1 text-sm text-muted">
+            Usulan beserta dukungan, komentar, dan riwayat tahapnya hilang permanen.
+          </p>
+          <Button type="button" variant="danger-outline" className="mt-3" onClick={onHapus}>
+            Hapus usulan
+          </Button>
+        </Card>
+      </aside>
+    </div>
   );
 }

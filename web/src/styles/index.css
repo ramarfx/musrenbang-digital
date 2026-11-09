@@ -205,8 +205,21 @@ body {
   outline-offset: 2px;
 }
 
-button {
+a[href],
+button,
+summary,
+select,
+label[for],
+input[type='checkbox'],
+input[type='radio'] {
   cursor: pointer;
+}
+
+button:disabled,
+select:disabled,
+input:disabled,
+textarea:disabled {
+  cursor: not-allowed;
 }
 
 .leaflet-container {
@@ -862,6 +875,59 @@ html::-webkit-scrollbar,
     opacity: 0;
   }
 }
+
+/*
+ * Bintang kilau di Summary AI (AntreanTinjau): satu bintang empat titik. Diam secara bawaan;
+ * berputar hanya saat baris pendampingnya di-hover atau saat MusrenAI benar-benar bekerja
+ * (kelas ai-bintang-jalan). Hanya transform, dan dipusatkan pada tengah bintang.
+ */
+.ai-bintang {
+  transform-origin: 50% 50%;
+}
+.ai-putar:hover .ai-bintang,
+.ai-bintang-jalan {
+  animation: ai-bintang 2.4s linear infinite;
+}
+@keyframes ai-bintang {
+  0% {
+    transform: rotate(0deg) scale(0.9);
+  }
+  50% {
+    transform: rotate(180deg) scale(1);
+  }
+  100% {
+    transform: rotate(360deg) scale(0.9);
+  }
+}
+
+/*
+ * Teks pemuat di Summary AI: sapuan cahaya berulang pada teks, supaya terlihat hidup
+ * sebelum datanya datang. Efek ini dekoratif; arti teksnya tetap bisa dibaca tanpa animasi.
+ */
+.teks-muat {
+  background: linear-gradient(100deg, var(--ink) 35%, var(--zamrud) 50%, var(--ink) 65%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: teks-muat-sapu 2.2s linear infinite;
+}
+@keyframes teks-muat-sapu {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-bintang,
+  .teks-muat {
+    animation: none;
+    background: none;
+    color: var(--ink);
+  }
+}
 @keyframes anim-rise {
   from {
     opacity: 0;
@@ -1413,7 +1479,6 @@ html::-webkit-scrollbar,
     animation: none;
   }
 }
-
 
 /* Asisten MusrenAI melayang: panel tumbuh dari pojok tombolnya, pesan baru naik sedikit. */
 .asisten-panel {

@@ -14,6 +14,8 @@ const LABEL: Record<ProposalModeration, string> = {
   Ditolak: 'Ditolak',
 };
 
+export const LABEL_MODERASI = LABEL;
+
 export function ModerationBadge({ moderasi }: { moderasi: ProposalModeration }) {
   return <Badge tone={TONE[moderasi]}>{LABEL[moderasi]}</Badge>;
 }

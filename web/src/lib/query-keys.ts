@@ -21,5 +21,6 @@ export const queryKeys = {
   gap: ['gap'] as const,
   publicStats: ['stats', 'public'] as const,
   adminStats: ['stats', 'admin'] as const,
+  adminAspiration: ['admin', 'ringkasan-aspirasi'] as const,
   apbd: ['apbd'] as const,
 };
