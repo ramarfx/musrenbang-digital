@@ -152,47 +152,57 @@ export function RingkasanAspirasiKartu({ onBuka }: { onBuka: () => void }) {
   const kalimat = baris[0]?.ringkasan;
   const totalUsulan = baris[0]?.total_usulan_disetujui ?? 0;
   const totalSuara = baris.reduce((jumlah, item) => jumlah + item.jumlah_suara, 0);
+  const danaTerbesar = [...baris].sort((x, y) => y.persen_alokasi - x.persen_alokasi)[0];
 
   return (
     <section
       aria-labelledby="judul-ringkasan-kartu"
-      className="kartu-cap flex flex-wrap items-center gap-x-6 gap-y-3 rounded-3xl bg-surface px-5 py-4 sm:px-6"
+      className="kartu-cap rounded-3xl bg-surface px-5 py-5 sm:px-6"
     >
-      <div className="min-w-[240px] flex-1">
-        <h2 id="judul-ringkasan-kartu" className="text-[13px] text-muted">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 id="judul-ringkasan-kartu" className="text-lg font-bold">
           Ringkasan aspirasi warga
         </h2>
-        {ringkasan.isPending ? (
-          <p className="text-sm text-muted">Memuat ringkasan...</p>
-        ) : ringkasan.isError ? (
-          <p role="alert" className="text-sm text-muted">
-            Ringkasan belum bisa dimuat: {ringkasan.error.message}
-          </p>
-        ) : (
-          <p className="line-clamp-2 text-[15px] leading-relaxed font-semibold text-hitam">
+        <Button type="button" size="sm" onClick={onBuka}>
+          Lihat rincian
+        </Button>
+      </div>
+
+      {ringkasan.isPending ? (
+        <p className="mt-3 text-sm text-muted">Memuat ringkasan...</p>
+      ) : ringkasan.isError ? (
+        <p role="alert" className="mt-3 text-sm text-muted">
+          Ringkasan belum bisa dimuat: {ringkasan.error.message}
+        </p>
+      ) : (
+        <>
+          <dl className="mt-4 grid gap-y-3 sm:grid-cols-3">
+            <div className="flex flex-col-reverse sm:pr-5">
+              <dt className="text-[13px] text-muted">usulan disetujui</dt>
+              <dd className="text-[34px] leading-tight font-extrabold tracking-[-0.03em] tabular-nums">
+                {formatAngka(totalUsulan)}
+              </dd>
+            </div>
+            <div className="flex flex-col-reverse border-t border-rule pt-3 sm:border-t-0 sm:border-l-[1.5px] sm:border-edge sm:px-5 sm:pt-0">
+              <dt className="text-[13px] text-muted">suara pada usulan itu</dt>
+              <dd className="text-[34px] leading-tight font-extrabold tracking-[-0.03em] tabular-nums">
+                {formatAngka(totalSuara)}
+              </dd>
+            </div>
+            <div className="flex flex-col-reverse border-t border-rule pt-3 sm:border-t-0 sm:border-l-[1.5px] sm:border-edge sm:pt-0 sm:pl-5">
+              <dt className="text-[13px] text-muted">
+                dana terbesar{danaTerbesar ? `, ${danaTerbesar.kategori}` : ''}
+              </dt>
+              <dd className="text-[34px] leading-tight font-extrabold tracking-[-0.03em] text-mint-tua tabular-nums">
+                {danaTerbesar ? formatPersen(danaTerbesar.persen_alokasi) : '-'}
+              </dd>
+            </div>
+          </dl>
+          <p className="mt-4 border-t border-rule pt-4 text-[15.5px] leading-relaxed">
             {kalimat ?? 'Belum ada usulan disetujui untuk diringkas.'}
           </p>
-        )}
-      </div>
-      {ringkasan.isSuccess && (
-        <dl className="flex gap-6">
-          <div className="flex flex-col-reverse">
-            <dt className="text-[13px] text-muted">usulan</dt>
-            <dd className="text-[26px] leading-tight font-extrabold tabular-nums">
-              {formatAngka(totalUsulan)}
-            </dd>
-          </div>
-          <div className="flex flex-col-reverse">
-            <dt className="text-[13px] text-muted">suara</dt>
-            <dd className="text-[26px] leading-tight font-extrabold tabular-nums">
-              {formatAngka(totalSuara)}
-            </dd>
-          </div>
-        </dl>
+        </>
       )}
-      <Button type="button" size="sm" onClick={onBuka}>
-        Lihat rincian
-      </Button>
     </section>
   );
 }
