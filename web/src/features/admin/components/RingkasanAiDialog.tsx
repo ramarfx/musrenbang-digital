@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { type ReactNode, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { PageLoader } from '@/components/ui/PageLoader';
@@ -52,6 +53,90 @@ function DaftarBatang({ judul, data }: { judul: string; data: Batang[] }) {
   );
 }
 
+type Halaman = { judul: string; isi: ReactNode };
+
+/**
+ * Isi pop-up dibagi per halaman yang digeser kiri-kanan, jadi tidak perlu scroll. Panah, tab
+ * nama halaman, dan tombol panah keyboard sama-sama bisa dipakai.
+ */
+function GeserHalaman({ halaman }: { halaman: Halaman[] }) {
+  const [aktif, setAktif] = useState(0);
+  const terakhir = halaman.length - 1;
+  const ke = (i: number) => setAktif(Math.min(terakhir, Math.max(0, i)));
+
+  return (
+    <div
+      onKeyDown={(e) => {
+        if (e.key === 'ArrowRight') ke(aktif + 1);
+        if (e.key === 'ArrowLeft') ke(aktif - 1);
+      }}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div role="tablist" aria-label="Bagian ringkasan" className="flex flex-wrap gap-1.5">
+          {halaman.map((h, i) => (
+            <button
+              key={h.judul}
+              type="button"
+              role="tab"
+              aria-selected={i === aktif}
+              onClick={() => ke(i)}
+              className={`rounded-full border-[1.5px] px-3 py-1 text-[13px] font-semibold transition-colors ${
+                i === aktif
+                  ? 'border-edge bg-hitam text-surface'
+                  : 'border-transparent text-muted hover:text-ink'
+              }`}
+            >
+              {h.judul}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-none items-center gap-2">
+          <span className="text-[13px] text-muted tabular-nums">
+            {aktif + 1}/{halaman.length}
+          </span>
+          <button
+            type="button"
+            aria-label="Halaman sebelumnya"
+            disabled={aktif === 0}
+            onClick={() => ke(aktif - 1)}
+            className="grid size-9 place-items-center rounded-full border-[1.5px] border-edge bg-surface text-lg font-bold disabled:opacity-35"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            aria-label="Halaman berikutnya"
+            disabled={aktif === terakhir}
+            onClick={() => ke(aktif + 1)}
+            className="grid size-9 place-items-center rounded-full border-[1.5px] border-edge bg-surface text-lg font-bold disabled:opacity-35"
+          >
+            ›
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-5 overflow-hidden">
+        <div
+          className="flex transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
+          style={{ transform: `translateX(-${aktif * 100}%)` }}
+        >
+          {halaman.map((h, i) => (
+            <div
+              key={h.judul}
+              role="tabpanel"
+              aria-label={h.judul}
+              inert={i !== aktif}
+              className="w-full flex-none px-0.5"
+            >
+              {h.isi}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Kartu ringkasan di paling atas halaman admin: kalimat ringkasan langsung terbaca, plus tiga
  * bidang dengan usulan disetujui terbanyak. Rincian lengkap ada di pop-up.
@@ -66,17 +151,15 @@ export function RingkasanAspirasiKartu({ onBuka }: { onBuka: () => void }) {
   const baris = ringkasan.data ?? [];
   const kalimat = baris[0]?.ringkasan;
   const totalUsulan = baris[0]?.total_usulan_disetujui ?? 0;
-  const teratas = [...baris]
-    .sort((a, b) => b.jumlah_usulan - a.jumlah_usulan || a.kategori.localeCompare(b.kategori))
-    .slice(0, 3);
+  const totalSuara = baris.reduce((jumlah, item) => jumlah + item.jumlah_suara, 0);
 
   return (
     <section
       aria-labelledby="judul-ringkasan-kartu"
-      className="kartu-cap grid gap-5 rounded-3xl bg-surface p-5 sm:p-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-center"
+      className="kartu-cap flex flex-wrap items-center gap-x-6 gap-y-3 rounded-3xl bg-surface px-5 py-4 sm:px-6"
     >
-      <div className="grid min-w-0 gap-3">
-        <h2 id="judul-ringkasan-kartu" className="text-lg font-bold">
+      <div className="min-w-[240px] flex-1">
+        <h2 id="judul-ringkasan-kartu" className="text-[13px] text-muted">
           Ringkasan aspirasi warga
         </h2>
         {ringkasan.isPending ? (
@@ -86,31 +169,30 @@ export function RingkasanAspirasiKartu({ onBuka }: { onBuka: () => void }) {
             Ringkasan belum bisa dimuat: {ringkasan.error.message}
           </p>
         ) : (
-          <p className="rounded-2xl bg-[#FFF6C9] px-4 py-3 text-[15.5px] leading-relaxed text-hitam">
+          <p className="line-clamp-2 text-[15px] leading-relaxed font-semibold text-hitam">
             {kalimat ?? 'Belum ada usulan disetujui untuk diringkas.'}
           </p>
         )}
-        <div className="flex flex-wrap items-center gap-3">
-          <Button type="button" size="sm" onClick={onBuka}>
-            Lihat rincian
-          </Button>
-          {ringkasan.isSuccess && (
-            <span className="text-[13px] text-muted">
-              Dari {formatAngka(totalUsulan)} usulan disetujui
-            </span>
-          )}
-        </div>
       </div>
-      {teratas.length > 0 && totalUsulan > 0 && (
-        <DaftarBatang
-          judul="Usulan disetujui terbanyak"
-          data={teratas.map((item) => ({
-            nama: item.kategori,
-            nilai: item.jumlah_usulan,
-            label: formatAngka(item.jumlah_usulan),
-          }))}
-        />
+      {ringkasan.isSuccess && (
+        <dl className="flex gap-6">
+          <div className="flex flex-col-reverse">
+            <dt className="text-[13px] text-muted">usulan</dt>
+            <dd className="text-[26px] leading-tight font-extrabold tabular-nums">
+              {formatAngka(totalUsulan)}
+            </dd>
+          </div>
+          <div className="flex flex-col-reverse">
+            <dt className="text-[13px] text-muted">suara</dt>
+            <dd className="text-[26px] leading-tight font-extrabold tabular-nums">
+              {formatAngka(totalSuara)}
+            </dd>
+          </div>
+        </dl>
       )}
+      <Button type="button" size="sm" onClick={onBuka}>
+        Lihat rincian
+      </Button>
     </section>
   );
 }
@@ -174,51 +256,72 @@ export function RingkasanAiDialog({ open, onClose }: { open: boolean; onClose: (
         )}
 
         {ringkasan.isSuccess && baris.length > 0 && (
-          <>
-            {kalimat && (
-              <p className="rounded-2xl border-[1.5px] border-edge bg-mint-pucat px-4 py-3.5 text-[15px] leading-relaxed text-mint-tua">
-                {kalimat}
-              </p>
-            )}
-
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-              <Angka nilai={formatAngka(totalUsulan)} label="usulan disetujui" />
-              <Angka nilai={formatAngka(totalSuara)} label="suara pada usulan itu" />
-              <Angka
-                nilai={totalUsulan > 0 && teratas ? teratas.kategori : '-'}
-                label="bidang dengan usulan terbanyak"
-              />
-            </div>
-
-            <DaftarBatang
-              judul="Usulan disetujui per bidang"
-              data={urut((item) => item.jumlah_usulan).map((item) => ({
-                nama: item.kategori,
-                nilai: item.jumlah_usulan,
-                label: formatAngka(item.jumlah_usulan),
-              }))}
-            />
-            <DaftarBatang
-              judul="Suara per bidang"
-              data={urut((item) => item.jumlah_suara).map((item) => ({
-                nama: item.kategori,
-                nilai: item.jumlah_suara,
-                label: formatAngka(item.jumlah_suara),
-              }))}
-            />
-            <DaftarBatang
-              judul="Porsi anggaran menurut warga"
-              data={urut((item) => item.persen_alokasi).map((item) => ({
-                nama: item.kategori,
-                nilai: item.persen_alokasi,
-                label: formatPersen(item.persen_alokasi),
-              }))}
-            />
-
-            <p className="text-[13px] text-muted">
-              Hanya agregat per bidang yang ditampilkan, tanpa nama warga atau judul usulan.
-            </p>
-          </>
+          <GeserHalaman
+            halaman={[
+              {
+                judul: 'Ringkasan',
+                isi: (
+                  <div className="space-y-4">
+                    {kalimat && (
+                      <p className="rounded-2xl border-[1.5px] border-edge bg-mint-pucat px-4 py-3.5 text-[15px] leading-relaxed text-mint-tua">
+                        {kalimat}
+                      </p>
+                    )}
+                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                      <Angka nilai={formatAngka(totalUsulan)} label="usulan disetujui" />
+                      <Angka nilai={formatAngka(totalSuara)} label="suara pada usulan itu" />
+                      <Angka
+                        nilai={totalUsulan > 0 && teratas ? teratas.kategori : '-'}
+                        label="bidang dengan usulan terbanyak"
+                      />
+                    </div>
+                    <p className="text-[13px] text-muted">
+                      Hanya agregat per bidang yang ditampilkan, tanpa nama warga atau judul usulan.
+                    </p>
+                  </div>
+                ),
+              },
+              {
+                judul: 'Usulan',
+                isi: (
+                  <DaftarBatang
+                    judul="Usulan disetujui per bidang"
+                    data={urut((item) => item.jumlah_usulan).map((item) => ({
+                      nama: item.kategori,
+                      nilai: item.jumlah_usulan,
+                      label: formatAngka(item.jumlah_usulan),
+                    }))}
+                  />
+                ),
+              },
+              {
+                judul: 'Suara',
+                isi: (
+                  <DaftarBatang
+                    judul="Suara per bidang"
+                    data={urut((item) => item.jumlah_suara).map((item) => ({
+                      nama: item.kategori,
+                      nilai: item.jumlah_suara,
+                      label: formatAngka(item.jumlah_suara),
+                    }))}
+                  />
+                ),
+              },
+              {
+                judul: 'Anggaran',
+                isi: (
+                  <DaftarBatang
+                    judul="Porsi anggaran menurut warga"
+                    data={urut((item) => item.persen_alokasi).map((item) => ({
+                      nama: item.kategori,
+                      nilai: item.persen_alokasi,
+                      label: formatPersen(item.persen_alokasi),
+                    }))}
+                  />
+                ),
+              },
+            ]}
+          />
         )}
       </div>
     </Modal>
