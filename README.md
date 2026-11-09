@@ -15,7 +15,7 @@ Dokumen rancangan lengkap ada di [`ARSITEKTUR.md`](./ARSITEKTUR.md).
 | Lapisan     | Teknologi                                                                     |
 | ----------- | ----------------------------------------------------------------------------- |
 | Frontend    | React 19, Vite 6, TypeScript, Tailwind CSS 4, React Router 7                  |
-| Data client | TanStack Query (server state), TanStack Table (tabel admin)                   |
+| Data client | TanStack Query (server state dan cache)                                       |
 | Form        | React Hook Form + `@hookform/resolvers` + Zod                                 |
 | Peta/grafik | Leaflet + React Leaflet, Recharts                                             |
 | Backend     | Supabase: Postgres, Auth, PostgREST, RLS, view, RPC                           |
@@ -180,20 +180,24 @@ Urutan sebelum commit: `bun run format`, lalu `bun run check`.
 
 ## Halaman
 
-| Route          | Isi                                                                         |
-| -------------- | --------------------------------------------------------------------------- |
-| `/`            | Landing: penjelasan singkat, empat langkah, dan aturan transparansi          |
-| `/beranda`     | Peta usulan + daftar usulan yang disetujui, filter kategori/status          |
-| `/bandingkan`  | Perbandingan pilihan warga dan APBD; hanya data APBD terverifikasi dihitung |
-| `/apbd`        | APBD per kategori: terverifikasi, belum terverifikasi, atau belum ada       |
-| `/simulator`   | Urutkan prioritas program dan lihat alokasi anggaran virtual (butuh login)  |
-| `/usulan/baru` | Form usulan dengan pilih titik di peta (butuh login)                        |
-| `/usulan-saya` | Usulan milikmu, termasuk yang menunggu atau ditolak (butuh login)           |
-| `/usulan/:id`  | Detail usulan, upvote, komentar, linimasa status bercatatan                 |
-| `/profil`      | Identitas akun, ubah nama, ringkasan usulan, keluar (butuh login)           |
-| `/metodologi`  | Cara perbandingan dihitung dan batas datanya                                |
-| `/login`       | Masuk / daftar (email atau Google)                                          |
-| `/admin`       | Antrean moderasi (setujui/tolak) dan ubah status dengan catatan (admin)     |
+| Route                    | Isi                                                                           |
+| ------------------------ | ----------------------------------------------------------------------------- |
+| `/`                      | Landing: penjelasan singkat, empat langkah, dan aturan transparansi           |
+| `/beranda`               | Peta usulan + daftar usulan yang disetujui, filter kategori/status            |
+| `/bandingkan`            | Perbandingan pilihan warga dan APBD; hanya data APBD terverifikasi dihitung   |
+| `/apbd`                  | APBD per kategori: terverifikasi, belum terverifikasi, atau belum ada         |
+| `/simulator`             | Urutkan prioritas program dan lihat alokasi anggaran virtual (butuh login)    |
+| `/usulan/baru`           | Form usulan dengan pilih titik di peta (butuh login)                          |
+| `/usulan-saya`           | Usulan milikmu, termasuk yang menunggu atau ditolak (butuh login)             |
+| `/usulan/:id`            | Detail usulan, upvote, komentar, linimasa status bercatatan                   |
+| `/profil`                | Identitas akun, ubah nama, ringkasan usulan, keluar (butuh login)             |
+| `/metodologi`            | Cara perbandingan dihitung dan batas datanya                                  |
+| `/login`                 | Masuk / daftar (email atau Google)                                            |
+| `/admin`                 | Ringkasan pekerjaan admin: angka utama, usulan menunggu, tahap usulan (admin) |
+| `/admin/perlu-diperiksa` | Antrean usulan baru untuk disetujui atau ditolak (admin)                      |
+| `/admin/usulan`          | Daftar seluruh usulan dengan pencarian dan penyaring (admin)                  |
+| `/admin/usulan/:id`      | Rincian usulan, riwayat tahap, keputusan, dan hapus (admin)                   |
+| `/admin/laporan`         | Ringkasan aspirasi warga dan urutan prioritas (admin)                         |
 
 Landing tidak memakai sidebar. Halaman lain memakai sidebar di layar lebar, dan bar atas dengan menu layar penuh di HP. Tombol tema (terang/gelap) ada di landing, sidebar, dan bar atas HP; pilihannya disimpan di browser.
 

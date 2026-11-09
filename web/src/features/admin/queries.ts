@@ -31,6 +31,7 @@ export function useModerateProposalMutation() {
         queryClient.invalidateQueries({ queryKey: queryKeys.proposal(variables.proposalId) }),
         queryClient.invalidateQueries({ queryKey: queryKeys.publicStats }),
         queryClient.invalidateQueries({ queryKey: queryKeys.adminStats }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.adminAspiration }),
       ]);
     },
   });

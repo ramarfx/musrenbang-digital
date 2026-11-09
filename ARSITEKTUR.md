@@ -15,7 +15,6 @@ feature-oriented.
 | Otorisasi       | Row Level Security + RPC                       | Aturan data tinggal di database, bukan hanya di UI          |
 | Kontrak domain  | `@musrenbang/shared` (Zod + tipe)              | Satu sumber kebenaran untuk frontend, seed, dan dokumen     |
 | Server state    | TanStack Query                                 | Cache, invalidasi, loading/error state yang konsisten       |
-| Tabel admin     | TanStack Table                                 | Sorting/filtering tanpa menulis ulang logika tabel          |
 | Form            | React Hook Form + resolvers Zod                | Validasi client dan tipe yang sama dengan kontrak shared    |
 | Peta/grafik     | Leaflet + React Leaflet, Recharts              | Sesuai kebutuhan peta usulan dan grafik gap                 |
 | Styling         | Tailwind CSS 4 + `clsx` + `tailwind-merge`     | Utility-first, komponen kecil, tanpa design system berat    |
@@ -95,7 +94,7 @@ pernah dikirim ke browser.
 │   │   │   ├── map/               # ProposalMap, LocationPicker
 │   │   │   └── ui/                # Button, Card, Field, Input, Select, dll.
 │   │   ├── features/
-│   │   │   ├── admin/             # antrean moderasi, dialog catatan, mutasi
+│   │   │   ├── admin/             # antrean, rincian, laporan aspirasi, mutasi
 │   │   │   ├── allocations/       # simulator prioritas + RPC save_allocations
 │   │   │   ├── apbd/              # tabel APBD
 │   │   │   ├── auth/              # provider, form, guard
@@ -203,7 +202,7 @@ Route memakai `createBrowserRouter` dan `React.lazy` per halaman, dengan
 `Suspense` + `PageLoader`. Guard:
 
 - `RequireAuth` membungkus `/usulan/baru`.
-- `RequireAdmin` membungkus `/admin`.
+- `RequireAdmin` membungkus route `/admin` dan semua turunannya.
 
 Guard hanya untuk pengalaman UI. Penegakan sebenarnya tetap RLS/RPC di database.
 
@@ -223,8 +222,8 @@ Guard hanya untuk pengalaman UI. Penegakan sebenarnya tetap RLS/RPC di database.
   `EmptyState`, `ErrorState`, `Skeleton`, `Spinner`, `PageLoader`, `PageHeader`.
 - `cn()` menggabungkan `clsx` + `tailwind-merge`.
 - Status usulan ditampilkan lewat `StatusBadge`; linimasa lewat `StatusTimeline`.
-- Tabel admin memakai TanStack Table: sorting, pencarian global, dan select status
-  per baris.
+- Daftar admin memakai kartu baris yang bisa dibaca, bukan tabel padat: pencarian,
+  penyaring persetujuan/tahap, dan satu tombol menuju rincian per usulan.
 - Peta memakai Leaflet dengan tile OpenStreetMap dan ikon yang dikonfigurasi di
   `lib/leaflet.ts`.
 - Grafik gap memakai Recharts (bar chart), dilengkapi sorotan kategori terbesar dan

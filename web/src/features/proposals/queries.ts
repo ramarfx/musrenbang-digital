@@ -77,9 +77,16 @@ export function useDeleteProposalMutation() {
   return useMutation({
     mutationFn: (proposalId: number) => deleteProposal(proposalId),
     // Toast di sini, bukan di pemanggil: kartunya sudah hilang dari layar saat hapus selesai.
-    onSuccess: async () => {
+    onSuccess: async (_data, proposalId) => {
       toast.success('Usulan dihapus.');
-      await queryClient.invalidateQueries({ queryKey: queryKeys.proposals });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.proposals }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.proposal(proposalId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.proposalHistory(proposalId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.publicStats }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.adminStats }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.adminAspiration }),
+      ]);
     },
   });
 }

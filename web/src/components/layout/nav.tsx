@@ -15,10 +15,23 @@ type NavGroup = { title?: string; items: NavItem[] };
 /**
  * Menu mengikuti urutan langkah warga di Beranda. APBD dan Metodologi tidak di menu karena
  * sudah ditautkan dari halaman Warga vs APBD dan dari footer; Buat usulan ada di Usulan warga.
+ * Admin mendapat kelompok sendiri tepat di bawah Beranda, karena pekerjaan admin adalah
+ * tujuan utamanya saat masuk.
  */
 export function buildNav(isAdmin: boolean, sudahMasuk = false): NavGroup[] {
-  const groups: NavGroup[] = [
-    { items: [{ to: '/beranda', label: 'Beranda', icon: 'beranda' }] },
+  const groups: NavGroup[] = [{ items: [{ to: '/beranda', label: 'Beranda', icon: 'beranda' }] }];
+  if (isAdmin) {
+    groups.push({
+      title: 'Admin',
+      items: [
+        { to: '/admin', label: 'Ringkasan', icon: 'beranda', end: true },
+        { to: '/admin/perlu-diperiksa', label: 'Perlu diperiksa', icon: 'lonceng' },
+        { to: '/admin/usulan', label: 'Semua usulan', icon: 'daftar' },
+        { to: '/admin/laporan', label: 'Laporan', icon: 'bandingkan' },
+      ],
+    });
+  }
+  groups.push(
     {
       title: 'Langkahmu',
       items: [
@@ -35,15 +48,9 @@ export function buildNav(isAdmin: boolean, sudahMasuk = false): NavGroup[] {
       title: 'Hasil',
       items: [{ to: '/bandingkan', label: 'Warga vs APBD', icon: 'bandingkan' }],
     },
-  ];
+  );
   if (sudahMasuk) {
     groups.push({ title: 'Akun', items: [{ to: '/profil', label: 'Profil', icon: 'profil' }] });
-  }
-  if (isAdmin) {
-    groups.push({
-      title: 'Admin',
-      items: [{ to: '/admin', label: 'Kelola usulan', icon: 'admin' }],
-    });
   }
   return groups;
 }

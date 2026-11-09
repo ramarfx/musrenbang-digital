@@ -15,7 +15,12 @@ const Simulator = lazy(() => import('@/routes/Simulator'));
 const BuatUsulan = lazy(() => import('@/routes/BuatUsulan'));
 const UsulanDetail = lazy(() => import('@/routes/UsulanDetail'));
 const Auth = lazy(() => import('@/routes/Auth'));
-const Admin = lazy(() => import('@/routes/Admin'));
+const AdminLayout = lazy(() => import('@/routes/admin/AdminLayout'));
+const AdminRingkasan = lazy(() => import('@/routes/admin/Ringkasan'));
+const AdminPerluDiperiksa = lazy(() => import('@/routes/admin/PerluDiperiksa'));
+const AdminUsulan = lazy(() => import('@/routes/admin/Usulan'));
+const AdminUsulanDetail = lazy(() => import('@/routes/admin/UsulanDetail'));
+const AdminLaporan = lazy(() => import('@/routes/admin/Laporan'));
 const Metodologi = lazy(() => import('@/routes/Metodologi'));
 const UsulanSaya = lazy(() => import('@/routes/UsulanSaya'));
 const Profil = lazy(() => import('@/routes/Profil'));
@@ -82,9 +87,16 @@ export const router = createBrowserRouter([
             path: 'admin',
             element: page(
               <RequireAdmin>
-                <Admin />
+                <AdminLayout />
               </RequireAdmin>,
             ),
+            children: [
+              { index: true, element: page(<AdminRingkasan />) },
+              { path: 'perlu-diperiksa', element: page(<AdminPerluDiperiksa />) },
+              { path: 'usulan', element: page(<AdminUsulan />) },
+              { path: 'usulan/:id', element: page(<AdminUsulanDetail />) },
+              { path: 'laporan', element: page(<AdminLaporan />) },
+            ],
           },
           { path: '*', element: page(<NotFound />) },
         ],
