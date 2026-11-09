@@ -8,6 +8,9 @@ describe('bagiRata', () => {
     expect(bagiRata(['A', 'B', 'C'])).toEqual({ A: 4, B: 3, C: 3 });
     expect(totalKoin(bagiRata(['A', 'B']))).toBe(10);
   });
+  test('lebih dari tiga bidang juga dibagi rata', () => {
+    expect(bagiRata(['A', 'B', 'C', 'D'])).toEqual({ A: 3, B: 3, C: 2, D: 2 });
+  });
   test('tanpa pilihan tidak membagi apa pun', () => {
     expect(bagiRata([])).toEqual({});
   });
@@ -54,9 +57,11 @@ describe('muatDariAlokasi', () => {
     expect(hasil?.pilihan).toEqual(['A', 'B', 'C']);
     expect(hasil?.koin).toEqual({ A: 5, B: 3, C: 2 });
   });
-  test('alokasi lama yang menyebar ke lebih dari tiga bidang dimulai dari awal', () => {
+  test('alokasi empat bidang dimuat seperti tiga bidang', () => {
     const banyak = semua.slice(0, 4).map((kategori) => ({ kategori, jumlah: 1_000_000 }));
-    expect(muatDariAlokasi(banyak, semua)).toBeNull();
+    const hasil = muatDariAlokasi(banyak, semua);
+    expect(hasil?.pilihan).toEqual(['A', 'B', 'C', 'D']);
+    expect(totalKoin(hasil?.koin ?? {})).toBe(10);
   });
   test('tanpa alokasi tersimpan tidak ada yang dimuat', () => {
     expect(muatDariAlokasi([], semua)).toBeNull();

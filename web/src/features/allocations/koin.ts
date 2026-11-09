@@ -3,8 +3,10 @@ import { allocateByWeights } from './lib';
 /** Jumlah koin yang dibagi warga, dan berapa persen pilihan tiap koin. */
 export const JUMLAH_KOIN = 10;
 export const PERSEN_PER_KOIN = 100 / JUMLAH_KOIN;
-/** Berapa bidang yang dipilih warga sebagai prioritas. */
+/** Jumlah minimal bidang yang dipilih warga sebagai prioritas. */
 export const BATAS_PILIHAN = 3;
+/** Jumlah terbesar bidang yang boleh dipilih; warga boleh menambah lebih dari minimal. */
+export const BATAS_MAKS_PILIHAN = 10;
 
 export type Koin = Record<string, number>;
 
@@ -53,8 +55,8 @@ export function koinKeAlokasi(
 }
 
 /**
- * Membaca alokasi tersimpan menjadi pilihan dan koin. Hanya alokasi yang berisi paling banyak
- * tiga bidang yang bisa dibaca; alokasi lama yang menyebar ke banyak bidang dimulai dari awal.
+ * Membaca alokasi tersimpan menjadi pilihan dan koin. Semua alokasi yang berisi
+ * sampai sepuluh bidang bisa dibaca, termasuk yang lebih dari tiga bidang.
  */
 export function muatDariAlokasi(
   tersimpan: readonly { kategori: string; jumlah: number }[],
@@ -63,7 +65,7 @@ export function muatDariAlokasi(
   const berisi = tersimpan
     .filter((baris) => baris.jumlah > 0 && semuaKategori.includes(baris.kategori))
     .sort((a, b) => b.jumlah - a.jumlah || a.kategori.localeCompare(b.kategori));
-  if (berisi.length === 0 || berisi.length > BATAS_PILIHAN) return null;
+  if (berisi.length === 0 || berisi.length > BATAS_MAKS_PILIHAN) return null;
   const nama = berisi.map((baris) => baris.kategori);
   const koin = allocateByWeights(
     nama,

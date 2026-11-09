@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { RuasTahap } from '@/components/layout/NotificationBell';
 import {
+  BATAS_MAKS_PILIHAN,
   BATAS_PILIHAN,
   JUMLAH_KOIN,
   bagiRata,
@@ -227,10 +228,10 @@ export function DemoUrutkan({ onUlang }: { onUlang: () => void }) {
   const demo = useDemoOtomatis(async (p) => {
     const tambahPilihan = (nama: string) => () =>
       setPilihan((lama) =>
-        lama.includes(nama) || lama.length >= BATAS_PILIHAN ? lama : [...lama, nama],
+        lama.includes(nama) || lama.length >= BATAS_MAKS_PILIHAN ? lama : [...lama, nama],
       );
     await p.tunggu(500);
-    p.caption('1. Ketuk 3 bidang yang paling penting');
+    p.caption('1. Ketuk minimal 3 bidang yang paling penting');
     await p.klik('[data-bidang="Kesehatan"]', tambahPilihan('Kesehatan'));
     await p.klik('[data-bidang="Pendidikan"]', tambahPilihan('Pendidikan'));
     await p.klik(
@@ -258,7 +259,7 @@ export function DemoUrutkan({ onUlang }: { onUlang: () => void }) {
   const ketuk = (nama: string) =>
     setPilihan((lama) => {
       if (lama.includes(nama)) return lama.filter((lain) => lain !== nama);
-      return lama.length >= BATAS_PILIHAN ? lama : [...lama, nama];
+      return lama.length >= BATAS_MAKS_PILIHAN ? lama : [...lama, nama];
     });
   const sisa = sisaKoin(koin);
 
@@ -268,11 +269,15 @@ export function DemoUrutkan({ onUlang }: { onUlang: () => void }) {
         <div>
           <p className="mb-3 text-sm text-muted">
             <span className="font-semibold text-ink">
-              Sudah dipilih: {pilihan.length} dari {BATAS_PILIHAN}.
+              Sudah dipilih: {pilihan.length} (minimal {BATAS_PILIHAN}).
             </span>{' '}
             Contoh dengan enam bidang.
           </p>
-          <div role="group" aria-label="Pilih 3 bidang" className="grid grid-cols-2 gap-2.5">
+          <div
+            role="group"
+            aria-label="Pilih minimal 3 bidang"
+            className="grid grid-cols-2 gap-2.5"
+          >
             {BIDANG.map((nama) => {
               const urutan = pilihan.indexOf(nama);
               const aktif = urutan >= 0;

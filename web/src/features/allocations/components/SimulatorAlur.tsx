@@ -21,6 +21,7 @@ import { cn } from '@/lib/cn';
 import { formatPersen } from '@/lib/format';
 import { formatSelisih } from '@/lib/selisih';
 import {
+  BATAS_MAKS_PILIHAN,
   BATAS_PILIHAN,
   JUMLAH_KOIN,
   PERSEN_PER_KOIN,
@@ -35,7 +36,7 @@ import { useSaveAllocationsMutation, useUserAllocationsQuery } from '../queries'
 
 type Langkah = 0 | 1 | 2;
 
-const NAMA_LANGKAH = ['Pilih 3 prioritas', 'Bagi koin', 'Lihat hasil'] as const;
+const NAMA_LANGKAH = ['Pilih prioritas', 'Bagi koin', 'Lihat hasil'] as const;
 
 /** Tiga langkah: yang sudah lewat bertinta, yang sedang berjalan distabilo. */
 function PetaLangkah({ langkah }: { langkah: Langkah }) {
@@ -148,9 +149,9 @@ function DeretKoin({ isi, total = JUMLAH_KOIN }: { isi: number; total?: number }
 }
 
 /**
- * Simulator dalam tiga langkah: pilih 3 bidang yang paling penting, bagi 10 koin di antaranya
+ * Simulator dalam tiga langkah: pilih minimal 3 bidang, bagi 10 koin di antaranya
  * (satu koin 10%), lalu lihat bedanya dengan APBD. Disimpan ke tabel alokasi yang sama dengan
- * sebelumnya: tiga bidang berisi anggaran virtual terbagi sesuai koin, bidang lain nol.
+ * sebelumnya: bidang pilihan berisi anggaran virtual terbagi sesuai koin, bidang lain nol.
  */
 export function SimulatorAlur() {
   const { user } = useAuth();
@@ -204,8 +205,8 @@ export function SimulatorAlur() {
       setKoin(({ [kategori]: _dibuang, ...sisanya }) => sisanya);
       return;
     }
-    if (pilihan.length >= BATAS_PILIHAN) {
-      setPesan(`Sudah ${BATAS_PILIHAN} bidang. Lepas salah satu dulu kalau mau menggantinya.`);
+    if (pilihan.length >= BATAS_MAKS_PILIHAN) {
+      setPesan('Semua bidang sudah dipilih.');
       return;
     }
     setPilihan((lama) => [...lama, kategori]);
@@ -256,7 +257,7 @@ export function SimulatorAlur() {
     );
   }
 
-  const penuh = pilihan.length === BATAS_PILIHAN;
+  const cukup = pilihan.length >= BATAS_PILIHAN;
   const hasil = pilihan.map((kategori) => {
     const row = baris.get(kategori);
     const kamu = (koin[kategori] ?? 0) * PERSEN_PER_KOIN;
@@ -276,19 +277,20 @@ export function SimulatorAlur() {
         <Card className="space-y-5">
           <div>
             <h2 className="text-xl font-bold tracking-[-0.01em] sm:text-2xl">
-              Dari semua ini, mana 3 yang paling penting?
+              Dari semua ini, mana yang paling penting?
             </h2>
             <p className="mt-1.5 max-w-[60ch] text-[15px] text-muted">
-              Ketuk untuk memilih. Cukup {BATAS_PILIHAN} saja, yang menurutmu paling mendesak di
-              lingkunganmu. Nomornya mengikuti urutan ketukanmu.
+              Ketuk untuk memilih. Pilih minimal {BATAS_PILIHAN} bidang yang paling mendesak di
+              lingkunganmu. Boleh lebih dari {BATAS_PILIHAN} sampai semua bidang terpilih. Nomornya
+              mengikuti urutan ketukanmu.
             </p>
           </div>
 
           <div className="flex items-center justify-between gap-3 rounded-xl bg-active px-4 py-3">
             <b className="text-[15px]">
-              Sudah dipilih: {pilihan.length} dari {BATAS_PILIHAN}
+              Sudah dipilih: {pilihan.length} (minimal {BATAS_PILIHAN})
             </b>
-            <DeretKoin isi={pilihan.length} total={BATAS_PILIHAN} />
+            <DeretKoin isi={pilihan.length} total={BATAS_MAKS_PILIHAN} />
           </div>
 
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -305,7 +307,7 @@ export function SimulatorAlur() {
                     className={cn(
                       'relative flex min-h-[148px] w-full flex-col gap-3 rounded-2xl border-[1.5px] border-edge p-3.5 text-left shadow-[0_3px_0_var(--edge)] transition-[translate,box-shadow,background-color,opacity] duration-150 ease-out motion-reduce:transition-none active:translate-y-0.5 active:shadow-[0_1px_0_var(--edge)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga',
                       dipilih ? 'bg-mint-pucat' : 'bg-surface hover:bg-active',
-                      !dipilih && penuh && 'opacity-60',
+                      !dipilih && pilihan.length >= BATAS_MAKS_PILIHAN && 'opacity-60',
                     )}
                   >
                     <span className="flex items-start justify-between gap-2">
@@ -335,14 +337,14 @@ export function SimulatorAlur() {
 
           <p className="min-h-5 text-[13px] text-muted" role="status" aria-live="polite">
             {pesan ||
-              (penuh
-                ? 'Siap. Lanjut untuk membagi koinmu.'
+              (cukup
+                ? 'Sudah cukup. Lanjut untuk membagi koinmu.'
                 : `Pilih ${BATAS_PILIHAN - pilihan.length} bidang lagi.`)}
           </p>
           <Button
             type="button"
             className="h-[52px] w-full text-[15px]"
-            disabled={!penuh}
+            disabled={!cukup}
             onClick={keLangkahKoin}
           >
             Lanjut: bagi koin
@@ -497,7 +499,7 @@ export function SimulatorAlur() {
           </ul>
 
           <p className="text-xs text-muted">
-            Porsimu dihitung dari 10 koin di tiga bidang pilihanmu, bidang lain nol. Porsi APBD
+            Porsimu dihitung dari 10 koin di bidang-bidang pilihamu, bidang lain nol. Porsi APBD
             hanya dari kategori yang terverifikasi.{' '}
             <Link to="/metodologi" className="font-semibold text-warga underline">
               Lihat metodologi

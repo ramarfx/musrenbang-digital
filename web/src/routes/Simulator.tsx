@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { SimulatorAlur } from '@/features/allocations/components/SimulatorAlur';
 
 /**
- * Simulator tiga langkah: pilih 3 bidang yang paling penting, bagi 10 koin di antaranya, lalu
+ * Simulator tiga langkah: pilih minimal 3 bidang, bagi 10 koin di antaranya, lalu
  * lihat bedanya dengan APBD. Hasilnya disimpan ke tabel alokasi dan dipakai halaman Bandingkan.
  */
 export default function Simulator() {
@@ -12,7 +12,7 @@ export default function Simulator() {
     <div className="space-y-6">
       <PageHeader
         title="Simulator"
-        description="Pilih 3 bidang yang paling penting, bagi 10 koin di antaranya, lalu lihat bedanya dengan APBD. Sekitar 2 menit."
+        description="Pilih minimal 3 bidang, bagi 10 koin di antaranya, lalu lihat bedanya dengan APBD. Boleh lebih dari 3. Sekitar 2 menit."
         actions={
           <Link to="/apbd#dokumen-resmi" className={buttonClass('outline', 'sm')}>
             Asal angka APBD
