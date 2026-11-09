@@ -1,7 +1,18 @@
 import { describe, expect, test } from 'bun:test';
+import type { AiConfig } from '../_shared/ai';
+import { createChatProvider, type ChatInput } from './provider';
 import { ProviderTemporaryError, withBoundedRetries } from './retry';
-import { geminiProvider, type ChatInput } from './provider';
+
 const input: ChatInput = { message: 'synthetic', history: [] };
+const config: AiConfig = {
+  provider: 'gemini',
+  baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+  apiKey: 'synthetic-key',
+  model: 'synthetic-model',
+  structuredOutput: 'json_schema',
+  title: 'Musrenbang Digital',
+};
+
 describe('provider retries', () => {
   test('gangguan sementara mencoba maksimal dua kali dengan reservasi tambahan', async () => {
     let calls = 0,
@@ -25,7 +36,7 @@ describe('provider retries', () => {
   test('429 tidak diulang dan rahasia provider tidak bocor', async () => {
     let calls = 0,
       reservations = 0;
-    const provider = geminiProvider('synthetic-key', 'synthetic-model', async () => {
+    const provider = createChatProvider(config, async () => {
       calls++;
       return new Response('secret', { status: 429 });
     });
@@ -61,12 +72,15 @@ describe('provider retries', () => {
   test('respons 503 dari adapter diulang dengan kuota tambahan', async () => {
     let requests = 0,
       reservations = 0;
-    const provider = geminiProvider('synthetic-key', 'synthetic-model', async () => {
+    const provider = createChatProvider(config, async () => {
       requests++;
       if (requests === 1) return new Response('unavailable', { status: 503 });
       return Response.json({
-        candidates: [
-          { content: { parts: [{ text: '{"answer":"Halo","route_ids":[],"disclaimer":null}' }] } },
+        choices: [
+          {
+            finish_reason: 'stop',
+            message: { content: '{"answer":"Halo","route_ids":[],"disclaimer":null}' },
+          },
         ],
       });
     });

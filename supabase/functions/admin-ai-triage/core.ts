@@ -1,3 +1,4 @@
+import { AiTemporaryError } from '../_shared/ai.ts';
 import { redact } from '../_shared/pii.ts';
 
 export type Review = { flags: string[]; reason: string; model: string };
@@ -18,7 +19,7 @@ const defaultWait = (ms: number) => new Promise<void>((resolve) => setTimeout(re
 
 // Hanya gangguan sesaat: 5xx penyedia atau kegagalan jaringan. Bukan 429, 4xx, atau respons rusak.
 function retryable(error: unknown): boolean {
-  if (error instanceof TypeError) return true;
+  if (error instanceof TypeError || error instanceof AiTemporaryError) return true;
   const message = error instanceof Error ? error.message : '';
   return /^provider_status=(500|502|503|504)$/.test(message);
 }

@@ -181,23 +181,33 @@ test('validasi output memberi kode aturan tetap dan mencatatnya tanpa isi', asyn
   expect(logs).toEqual([['output', 'routes_value']]);
 });
 
-test('adapter Gemini mengirim skema terstruktur', async () => {
-  const { geminiProvider, responseSchema } = await import('./provider');
-  let body: { generationConfig?: { responseSchema?: unknown } } = {};
+test('adapter OpenAI-compatible mengirim skema terstruktur', async () => {
+  const { createChatProvider, responseSchema } = await import('./provider');
+  let body: { response_format?: { type?: string; json_schema?: { schema?: unknown } } } = {};
   const mockFetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
     body = JSON.parse(String(init?.body));
     return Response.json({
-      candidates: [
-        { content: { parts: [{ text: '{"answer":"ok","route_ids":[],"disclaimer":null}' }] } },
+      choices: [
+        {
+          finish_reason: 'stop',
+          message: { content: '{"answer":"ok","route_ids":[],"disclaimer":null}' },
+        },
       ],
     });
   }) as typeof fetch;
-  await geminiProvider(
-    'k',
-    'gemini-test',
+  await createChatProvider(
+    {
+      provider: 'gemini',
+      baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+      apiKey: 'k',
+      model: 'gemini-test',
+      structuredOutput: 'json_schema',
+      title: 'Musrenbang Digital',
+    },
     mockFetch,
   )({ message: 'halo', history: [] }, new AbortController().signal);
-  expect(body.generationConfig?.responseSchema).toEqual(responseSchema);
+  expect(body.response_format?.type).toBe('json_schema');
+  expect(body.response_format?.json_schema?.schema).toEqual(responseSchema);
 });
 
 test('provider timeout mengembalikan 504 tanpa membocorkan error', async () => {
@@ -239,38 +249,42 @@ test('kuota global dan provider gagal tetap tertutup', async () => {
   expect(unavailable.status).toBe(503);
 });
 
-test('adapter Gemini menggunakan key di header dan mengirim data sintetis saja', async () => {
-  const { geminiProvider } = await import('./provider');
+test('adapter OpenAI-compatible memakai bearer key dan mengirim data sintetis saja', async () => {
+  const { createChatProvider } = await import('./provider');
   let observedUrl = '';
   let observedHeaders: HeadersInit | undefined;
   const mockFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     observedUrl = String(input);
     observedHeaders = init?.headers;
     return Response.json({
-      candidates: [
+      choices: [
         {
-          content: {
-            parts: [
-              {
-                text: JSON.stringify({
-                  answer: 'Usulan dapat ditinjau admin.',
-                  route_ids: ['usulan'],
-                  disclaimer: null,
-                }),
-              },
-            ],
+          finish_reason: 'stop',
+          message: {
+            content: JSON.stringify({
+              answer: 'Usulan dapat ditinjau admin.',
+              route_ids: ['usulan'],
+              disclaimer: null,
+            }),
           },
         },
       ],
     });
   }) as typeof fetch;
-  const result = await geminiProvider(
-    'synthetic-key',
-    'gemini-test',
+  const result = await createChatProvider(
+    {
+      provider: 'gemini',
+      baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+      apiKey: 'synthetic-key',
+      model: 'gemini-test',
+      structuredOutput: 'json_schema',
+      title: 'Musrenbang Digital',
+    },
     mockFetch,
   )({ message: 'Apa itu usulan?', history: [] }, new AbortController().signal);
   expect(observedUrl).not.toContain('synthetic-key');
-  expect(new Headers(observedHeaders).get('x-goog-api-key')).toBe('synthetic-key');
+  expect(observedUrl.endsWith('/chat/completions')).toBe(true);
+  expect(new Headers(observedHeaders).get('authorization')).toBe('Bearer synthetic-key');
   expect((result as { route_ids: string[] }).route_ids).toEqual(['usulan']);
 });
 

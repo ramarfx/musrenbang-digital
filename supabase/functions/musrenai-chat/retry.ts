@@ -1,4 +1,7 @@
+import { AiTemporaryError } from '../_shared/ai.ts';
 import type { Provider } from './provider.ts';
+
+export { AiTemporaryError as ProviderTemporaryError };
 
 // One message reservation happens in the handler; each additional provider attempt
 // obtains a fresh shared provider reservation before any network request.
@@ -34,7 +37,7 @@ export function withBoundedRetries(
       try {
         return await provider(input, signal);
       } catch (error) {
-        const retryable = error instanceof ProviderTemporaryError || error instanceof TypeError;
+        const retryable = error instanceof AiTemporaryError || error instanceof TypeError;
         if (!retryable || attempt === 1 || signal.aborted) throw new Error('provider unavailable');
         await wait(200 + Math.floor(random() * 200), signal);
       }
@@ -42,4 +45,3 @@ export function withBoundedRetries(
     throw new Error('provider unavailable');
   };
 }
-export class ProviderTemporaryError extends Error {}

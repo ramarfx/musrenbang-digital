@@ -1,15 +1,18 @@
+import { resolveAiConfig } from '../_shared/ai.ts';
 import { createHandler } from './core.ts';
-import { geminiProvider } from './provider.ts';
+import { createChatProvider } from './provider.ts';
 import { withBoundedRetries } from './retry.ts';
 
 const url = Deno.env.get('SUPABASE_URL') ?? '';
 const publicKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-const key = Deno.env.get('GEMINI_API_KEY') ?? '';
-const model = Deno.env.get('GEMINI_MODEL') ?? '';
 const origin = Deno.env.get('MUSRENAI_ALLOWED_ORIGIN') ?? '';
 const approved = Deno.env.get('MUSRENAI_FAQ_APPROVED') === 'true';
-const enabled = Deno.env.get('MUSRENAI_GEMINI_ENABLED') === 'true';
+// Nama baru lebih netral; nama lama tetap dibaca agar deployment lama tidak rusak.
+const enabled =
+  Deno.env.get('MUSRENAI_AI_ENABLED') === 'true' ||
+  Deno.env.get('MUSRENAI_GEMINI_ENABLED') === 'true';
+const config = resolveAiConfig((name) => Deno.env.get(name), 'chat');
 const reserve = async () => {
   if (!url || !serviceKey) throw new Error('provider quota unavailable');
   const response = await fetch(`${url}/rest/v1/rpc/reserve_musrenai_provider_attempt`, {
@@ -26,8 +29,8 @@ const reserve = async () => {
   return (await response.json()) === true;
 };
 const provider =
-  enabled && key && model
-    ? withBoundedRetries(geminiProvider(key, model), reserve)
+  enabled && config
+    ? withBoundedRetries(createChatProvider(config), reserve)
     : async () => {
         throw new Error('not configured');
       };
@@ -35,7 +38,7 @@ Deno.serve(
   createHandler({
     origin,
     log: (stage, code) => console.error('musrenai-chat gagal', stage, code),
-    faqApproved: approved && enabled && !!key && !!model,
+    faqApproved: approved && enabled && !!config,
     provider,
     reserveProvider: reserve,
     authenticate: async (token) => {

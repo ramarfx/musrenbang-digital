@@ -38,8 +38,10 @@ data pribadi; filter teknis bukan jaminan penghapusan seluruh data pribadi.
 
 - Kandidat utama: `gemini-3.5-flash-lite` pada Free tier. Tim telah
   memverifikasi batas proyek Google: 15 RPM, 250.000 input TPM dan 500 RPD.
-  Simpan satu key sebagai secret backend `GEMINI_API_KEY`; tetapkan
-  `GEMINI_MODEL` saat aktivasi yang disetujui.
+  Simpan satu key sebagai secret backend `AI_API_KEY`; tetapkan `AI_PROVIDER`
+  dan `AI_MODEL` saat aktivasi yang disetujui. Nama lama `GEMINI_API_KEY` dan
+  `GEMINI_MODEL` tetap dibaca untuk preset Gemini. Penyedia lain mengikuti
+  `supabase/functions/AI_PROVIDERS.md`.
 - Target aplikasi: maksimum 10 percobaan provider dalam 60 detik dan 300 per
   hari secara global, termasuk retry Warga dan Admin. Pembatas pesan warga
   terpisah dari pembatas percobaan provider.
@@ -68,12 +70,14 @@ data pribadi; filter teknis bukan jaminan penghapusan seluruh data pribadi.
 3. Deploy `musrenai-chat` dengan verifikasi JWT platform tetap aktif. Tetapkan
    `MUSRENAI_ALLOWED_ORIGIN=https://musrenbang-digital.pages.dev`. Jangan
    memakai `--no-verify-jwt`.
-4. Melalui mekanisme secret Supabase, atur `GEMINI_API_KEY`, `GEMINI_MODEL`
-   dan konfigurasi yang diperlukan. Jangan menempelkan key di chat atau commit.
+4. Melalui mekanisme secret Supabase, atur `AI_PROVIDER`, `AI_MODEL`,
+   `AI_API_KEY` (atau nama lama `GEMINI_API_KEY`/`GEMINI_MODEL`) dan
+   konfigurasi yang diperlukan. Jangan menempelkan key di chat atau commit.
    Pastikan pengaturan bawaan Supabase URL, anon key dan service role tersedia
    hanya di runtime backend.
 5. Setelah persetujuan FAQ, privasi dan biaya, atur
-   `MUSRENAI_FAQ_APPROVED=true` dan `MUSRENAI_GEMINI_ENABLED=true`.
+   `MUSRENAI_FAQ_APPROVED=true` dan `MUSRENAI_AI_ENABLED=true` (nama lama
+   `MUSRENAI_GEMINI_ENABLED`).
    Selesaikan blocker pembatas global yang dicatat di atas; batas 300 per hari adalah
    batas demo, bukan jaminan batas tagihan provider.
 6. Jalankan smoke test dengan identitas dan pesan sintetis, termasuk JWT valid,

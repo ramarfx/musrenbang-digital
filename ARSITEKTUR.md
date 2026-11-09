@@ -545,6 +545,20 @@ ke `config.kota`, `config.tahun_anggaran`, `verified_program`, dan URL sumber.
 Nilai kota, tahun, dan anggaran virtual juga tersimpan di tabel `config` agar halaman
 publik membaca sumber yang sama dengan data. Seed menimpa nilai `config` dari env.
 
+### 12.1 Penyedia AI
+
+Tiga Edge Function AI (`musrenai-chat`, `admin-ai-triage`, `musrenai-cost-hint`)
+memakai satu klien OpenAI-compatible di `supabase/functions/_shared/ai.ts`. Klien
+mengirim `POST {base}/chat/completions` dengan `response_format` JSON schema, sehingga
+penyedia dapat diganti tanpa mengubah handler. Preset: Gemini lewat
+`/v1beta/openai` (default), OpenRouter, OpenAI, dan `custom` untuk gateway sendiri.
+
+Konfigurasi dibaca berurutan `AI_<FITUR>_*`, lalu `AI_*`, lalu `GEMINI_*` untuk key
+dan model. `<FITUR>` adalah `CHAT`, `TRIAGE`, dan `COST_HINT`, jadi satu fungsi dapat
+memakai penyedia berbeda dari fungsi lain. Key, model, atau base URL yang tidak lengkap
+membuat handler gagal tertutup. Rincian variabel dan contoh ada di
+`supabase/functions/AI_PROVIDERS.md`.
+
 ## 13. Toolchain dan perintah
 
 Dijalankan dari root:

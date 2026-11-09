@@ -4,7 +4,7 @@ Status: kode kandidat, belum ada persetujuan deployment atau aktivasi. Productio
 
 ## Yang masih nonaktif
 
-- MusrenAI Warga memerlukan FAQ disetujui, `MUSRENAI_GEMINI_ENABLED=true`, secret backend, origin dan deployment Edge Function yang disetujui. Default flag tidak aktif. Tanpa konfigurasi lengkap, handler gagal tertutup.
+- MusrenAI Warga memerlukan FAQ disetujui, `MUSRENAI_AI_ENABLED=true` (nama lama `MUSRENAI_GEMINI_ENABLED`), secret backend, origin dan deployment Edge Function yang disetujui. Default flag tidak aktif. Tanpa konfigurasi lengkap, handler gagal tertutup.
 - Auto-flagging dan ringkasan memiliki antrean dan adapter mock. Runtime `scripts/musrenai-runtime/worker.ts` default mati; belum di-deploy dan tidak membuat cron secara otomatis. Runtime secara eksplisit menolak project production saat ini. Penghapusan blok tersebut memerlukan review dan persetujuan tersendiri.
 - Adapter konten Gemini admin selalu menolak penggunaan. Tidak ada flag lingkungan yang dapat membuka gerbang ini; review kebijakan privasi, dasar pemrosesan, minimisasi, redaksi, dan keselamatan harus disetujui sebelum pekerjaan adapter nyata.
 - Mock hanya untuk pengujian dan harus dilabeli `mock`. Ringkasan mock hanya mengelompokkan kategori dan bukan analisis semantik. Referensi ID yang valid tidak membuktikan isi narasi benar.
