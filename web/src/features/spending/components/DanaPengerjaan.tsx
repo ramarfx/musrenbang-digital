@@ -6,7 +6,6 @@ import { cn } from '@/lib/cn';
 import { formatPersen, formatRupiah, formatTanggal } from '@/lib/format';
 import { persenDari, totalPengeluaran } from '../lib';
 import { useSpendingQuery } from '../queries';
-import { DaftarPengeluaran } from './DaftarPengeluaran';
 
 const sel = 'py-3 sm:px-5 sm:first:pl-0 sm:last:pr-0';
 
@@ -72,15 +71,6 @@ export function DanaPengerjaan({ proposal }: { proposal: Proposal }) {
         Dicatat admin, {catatan.length} entri
         {terakhir ? `, terakhir ${formatTanggal(terakhir)}` : ''}.
       </p>
-
-      <details className="group mt-2">
-        <summary className="inline-flex min-h-9 cursor-pointer items-center text-sm font-semibold text-warga underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga">
-          Lihat rinciannya
-        </summary>
-        <div className="mt-2">
-          <DaftarPengeluaran catatan={catatan} />
-        </div>
-      </details>
     </section>
   );
 }
