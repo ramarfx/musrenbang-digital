@@ -15,7 +15,11 @@ const LEBAR_KARTU = 320;
 const BINGKAI_DIAM = 6;
 const BATAS_TUNGGU_MS = 1400;
 
-const cari = (target: string) => document.querySelector<HTMLElement>(`[data-tur="${target}"]`);
+// Versi HP dan versi layar lebar sebuah bagian bisa sama-sama ada di DOM; ambil yang tampil.
+const cari = (target: string) =>
+  [...document.querySelectorAll<HTMLElement>(`[data-tur="${target}"]`)].find(
+    (el) => el.getClientRects().length > 0,
+  ) ?? null;
 
 function ukur(el: HTMLElement): Kotak {
   const r = el.getBoundingClientRect();

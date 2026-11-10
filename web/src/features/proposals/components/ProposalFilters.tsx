@@ -39,7 +39,7 @@ export function ProposalFilters({
   totalCount,
 }: ProposalFiltersProps) {
   return (
-    <div className="rounded-3xl border border-border bg-surface p-5">
+    <div className="rounded-[20px] border border-border bg-surface p-4 sm:rounded-3xl sm:p-5">
       <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(200px,280px)] sm:items-end">
         <div>
           <label htmlFor="cari-usulan" className="mb-1.5 block text-[13px] text-muted">
@@ -76,23 +76,11 @@ export function ProposalFilters({
         <p id="label-status" className="mb-2 text-[13px] text-muted">
           Status
         </p>
-        {/* Di HP enam tombol status menumpuk tiga baris, jadi diganti satu pilihan turun. */}
-        <Select
-          aria-labelledby="label-status"
-          className="sm:hidden"
-          value={status}
-          onChange={(event) => onStatusChange(event.target.value as StatusFilter)}
-        >
-          {OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {option === 'semua' ? 'Semua status' : option} ({counts[option]})
-            </option>
-          ))}
-        </Select>
+        {/* Di HP enam tombol status jadi satu baris yang digeser ke samping, tidak menumpuk. */}
         <div
           role="group"
           aria-labelledby="label-status"
-          className="hidden flex-wrap gap-2 sm:flex"
+          className="trek-sembunyi -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
         >
           {OPTIONS.map((option) => {
             const aktif = status === option;
@@ -103,7 +91,7 @@ export function ProposalFilters({
                 aria-pressed={aktif}
                 onClick={() => onStatusChange(option)}
                 className={cn(
-                  'inline-flex h-9 items-center gap-2 rounded-xl border px-3.5 text-[13px] font-semibold transition-[scale,background-color,border-color,color] duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga',
+                  'inline-flex h-9 flex-none items-center gap-2 rounded-full border px-3.5 text-[13px] font-semibold sm:rounded-xl transition-[scale,background-color,border-color,color] duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga',
                   aktif
                     ? 'border-ink bg-ink text-on-ink'
                     : 'border-border bg-surface text-ink hover:bg-active',

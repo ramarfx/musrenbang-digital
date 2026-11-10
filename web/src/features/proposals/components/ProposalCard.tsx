@@ -230,16 +230,17 @@ export function ProposalCard({ proposal, turDukung }: { proposal: Proposal; turD
       ref={ref}
       data-keluar={keluar || undefined}
       className={cn(
-        'kartu-usulan group relative flex h-full flex-col rounded-3xl border-[1.5px] border-edge bg-surface p-4 shadow-[0_4px_0_var(--edge)] hover:-translate-y-0.5 sm:p-5',
+        'kartu-usulan group relative flex h-full min-w-0 flex-col rounded-[18px] border-[1.5px] border-edge bg-surface p-3 shadow-[0_3px_0_var(--edge)] hover:-translate-y-0.5 sm:rounded-3xl sm:p-5 sm:shadow-[0_4px_0_var(--edge)]',
         tampak && 'kartu-tampak',
       )}
     >
       {milikku && <TandaTayang moderasi={proposal.moderasi} />}
 
-      <div className="flex items-center gap-3">
+      {/* HP (dua kolom): ikon di atas judul, rincian disembunyikan; lengkapnya di halaman detail. */}
+      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
         <CategoryTile kategori={proposal.kategori} />
         <div className="min-w-0">
-          <h3 className="line-clamp-2 min-h-[2lh] leading-snug font-bold [overflow-wrap:anywhere] text-ink transition-colors duration-150 group-hover:text-warga sm:text-[17px]">
+          <h3 className="line-clamp-3 min-h-[3lh] text-[13.5px] leading-snug font-bold sm:line-clamp-2 sm:min-h-[2lh] sm:text-base [overflow-wrap:anywhere] text-ink transition-colors duration-150 group-hover:text-warga sm:text-[17px]">
             <Link
               to={`/usulan/${proposal.id}`}
               className="after:absolute after:inset-0 after:rounded-3xl after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-warga"
@@ -247,18 +248,18 @@ export function ProposalCard({ proposal, turDukung }: { proposal: Proposal; turD
               {proposal.judul}
             </Link>
           </h3>
-          <p className="text-[13px] text-muted">{proposal.kategori}</p>
+          <p className="mt-0.5 truncate text-[11.5px] text-muted sm:mt-0 sm:text-[13px]">{proposal.kategori}</p>
         </div>
       </div>
 
-      <p className="mt-3 line-clamp-2 min-h-[2lh] text-sm text-ink/80 [overflow-wrap:anywhere]">
+      <p className="mt-3 line-clamp-2 min-h-[2lh] text-sm text-ink/80 [overflow-wrap:anywhere] max-sm:hidden">
         {proposal.deskripsi}
       </p>
 
-      <div className="mt-3.5 flex h-6 min-w-0 items-center gap-2">
+      <div className="mt-2 flex h-6 min-w-0 items-center gap-2 sm:mt-3.5">
         <span
           className={cn(
-            'kartu-label inline-flex flex-none items-center gap-1.5 text-[13px] font-bold',
+            'kartu-label inline-flex min-w-0 items-center gap-1.5 text-[12px] font-bold sm:flex-none sm:text-[13px]',
             keadaan.warnaTeks,
           )}
         >
@@ -276,20 +277,20 @@ export function ProposalCard({ proposal, turDukung }: { proposal: Proposal; turD
           </svg>
           {keadaan.label}
         </span>
-        <span aria-hidden="true" className="h-3.5 w-px flex-none bg-border" />
-        <span className="truncate text-[12.5px] text-muted" title={keadaan.kalimat}>
+        <span aria-hidden="true" className="hidden h-3.5 w-px flex-none bg-border sm:block" />
+        <span className="hidden truncate text-[12.5px] text-muted sm:block" title={keadaan.kalimat}>
           {keadaan.kalimat}
         </span>
       </div>
 
-      <div className="mt-3">
+      <div className="mt-3 hidden sm:block">
         <TahapMini tahap={keadaan.tahap} ditolak={keadaan.ditolak} />
       </div>
 
       <FotoMini photos={fotoPengerjaan} />
 
       <div className="mt-auto">
-        <dl className="mt-3.5 grid grid-cols-2 gap-3 border-t border-rule pt-3 text-sm">
+        <dl className="mt-3.5 hidden grid-cols-2 gap-3 border-t border-rule pt-3 text-sm sm:grid">
           <div>
             <dt className="text-[12px] text-muted">Estimasi</dt>
             <dd className="font-bold">{formatRupiahRingkas(proposal.estimasi_biaya)}</dd>
@@ -300,16 +301,16 @@ export function ProposalCard({ proposal, turDukung }: { proposal: Proposal; turD
           </div>
         </dl>
 
-        <div className="relative z-10 mt-3 flex min-h-9 flex-wrap items-center gap-2">
+        <div className="relative z-10 mt-2.5 flex min-h-9 flex-wrap items-center gap-1.5 sm:mt-3 sm:gap-2">
           {proposal.moderasi === 'Disetujui' ? (
             <>
               <UpvoteButton proposalId={proposal.id} jumlah={proposal.jumlah_suara} tur={turDukung} />
               <Link
                 to={`/usulan/${proposal.id}#komentar`}
-                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-surface px-3 text-[13px] font-semibold text-ink transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.95] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
+                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-surface px-2.5 text-[13px] sm:px-3 font-semibold text-ink transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.95] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
               >
                 <Icon name="usulan" size={16} />
-                Komentar
+                <span className="sr-only sm:not-sr-only">Komentar</span>
                 <span
                   aria-label={`${jumlahKomentar} komentar`}
                   className="rounded-md bg-pasir px-1.5 text-[12px] font-bold tabular-nums"
@@ -321,7 +322,7 @@ export function ProposalCard({ proposal, turDukung }: { proposal: Proposal; turD
           ) : (
             punyaAksi && <AksiPemilik proposal={proposal} onKeluar={setKeluar} />
           )}
-          <span className="ml-auto text-[12.5px] text-muted">oleh {proposal.pengusul_nama}</span>
+          <span className="ml-auto hidden text-[12.5px] text-muted sm:inline">oleh {proposal.pengusul_nama}</span>
         </div>
       </div>
     </article>

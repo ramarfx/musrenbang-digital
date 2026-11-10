@@ -13,7 +13,7 @@ type CardProps = {
 export function Card({ children, className, as: Tag = 'section', tur }: CardProps) {
   return (
     // Kartu bercap Desain 2: tepi tinta dan alas tebal (lihat kartu-cap di index.css).
-    <Tag data-tur={tur} className={cn('kartu-cap rounded-3xl bg-surface p-5 sm:p-6', className)}>
+    <Tag data-tur={tur} className={cn('kartu-cap rounded-[20px] bg-surface p-4 sm:rounded-3xl sm:p-6', className)}>
       {children}
     </Tag>
   );
