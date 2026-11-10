@@ -123,7 +123,9 @@ function Asisten() {
 
   return (
     // z-[1100]: di atas kontrol peta (sampai z-[1000]), di bawah pemuat layar dan sambutan.
-    <div className="fixed right-3 bottom-3 z-[1100] sm:right-5 sm:bottom-5">
+    // Di layar lebar, right menyisakan tempat untuk tombol bantuan halaman (TurHalaman) di
+    // ujung pojok. Di HP tombol bantuan ditumpuk di atas tombol ini.
+    <div className="fixed right-3 bottom-3 z-[1100] sm:right-[68px] sm:bottom-5">
       {buka && (
         <section
           role="dialog"
