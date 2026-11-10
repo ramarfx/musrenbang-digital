@@ -41,10 +41,10 @@ function Logo({ selaluGelap = false }: { selaluGelap?: boolean }) {
 function JudulBagian({ id, judul, children }: { id: string; judul: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-8">
-      <h2 id={id} className="flex-none text-[30px] leading-tight font-bold tracking-[-0.02em]">
+      <h2 id={id} className="flex-none text-[24px] leading-tight font-bold tracking-[-0.02em] sm:text-[30px]">
         <span className="stabilo">{judul}</span>
       </h2>
-      <p className="max-w-[52ch] text-[15px] text-muted">{children}</p>
+      <p className="max-w-[52ch] text-sm text-muted sm:text-[15px]">{children}</p>
     </div>
   );
 }
@@ -293,38 +293,38 @@ export default function Landing() {
       <main id="isi">
         <section
           aria-labelledby="judul-utama"
-          className="mx-auto grid max-w-[1160px] items-center gap-8 px-4 pt-12 pb-10 sm:px-6 md:grid-cols-[1.05fr_1fr] md:pt-16 lg:gap-14"
+          className="mx-auto grid max-w-[1160px] items-center gap-5 px-4 pt-6 pb-8 sm:gap-8 sm:px-6 sm:pt-12 sm:pb-10 md:grid-cols-[1.05fr_1fr] md:pt-16 lg:gap-14"
         >
           <div>
             <h1
               id="judul-utama"
-              className="text-[40px] leading-[1.32] font-bold tracking-[-0.035em] sm:text-[54px]"
+              className="text-[32px] leading-[1.28] font-bold tracking-[-0.035em] sm:text-[54px] sm:leading-[1.32]"
             >
               Suara warga, sampai ke <span className="stabilo">meja anggaran.</span>
             </h1>
-            <p className="mt-5 max-w-[50ch] text-[17px] text-muted">
+            <p className="mt-3.5 max-w-[50ch] text-[15px] text-muted sm:mt-5 sm:text-[17px]">
               Usulkan program untuk anggaran kota tahun depan, dukung usulan tetangga, lalu lihat
               seberapa jauh prioritas warga dari APBD {kota} {tahun}. Semua usulan dan
               perbandingannya bisa dibaca tanpa akun.
             </p>
-            <div className="mt-7 flex flex-wrap gap-3">
+            <div className="mt-5 grid grid-cols-2 gap-2.5 sm:mt-7 sm:flex sm:flex-wrap sm:gap-3">
               <Link
                 to="/beranda"
                 state={{ masukApp: true }}
-                className={buttonClass('primary', 'md', 'h-12 px-6 text-[15px]')}
+                className={buttonClass('primary', 'md', 'h-12 px-4 text-[15px] sm:px-6')}
               >
                 Masuk beranda
               </Link>
               <Link
                 to="/usulan"
                 state={{ masukApp: true }}
-                className={buttonClass('outline', 'md', 'h-12 border-edge px-6 text-[15px]')}
+                className={buttonClass('outline', 'md', 'h-12 border-edge px-4 text-[15px] sm:px-6')}
               >
-                Lihat usulan warga
+                Lihat usulan
               </Link>
             </div>
           </div>
-          <div className="mx-auto w-full max-w-[460px] md:max-w-none">
+          <div className="mx-auto w-full max-w-[250px] sm:max-w-[460px] md:max-w-none">
             <Toa />
           </div>
         </section>
@@ -332,7 +332,7 @@ export default function Landing() {
         <section aria-label="Bidang usulan" className="mx-auto max-w-[1160px] px-4 sm:px-6">
           <div
             ref={bidangRef}
-            className={cn('masuk border-y border-rule py-6', bidangTampak && 'masuk-tampak')}
+            className={cn('masuk border-y border-rule py-4 sm:py-6', bidangTampak && 'masuk-tampak')}
           >
             <p className="mb-3 text-[13px] text-muted">Bidang yang bisa kamu usulkan</p>
             {categoriesQuery.isPending && (
@@ -347,9 +347,14 @@ export default function Landing() {
               <p className="text-[15px] text-muted">Belum ada bidang yang terdaftar.</p>
             )}
             {categoriesQuery.isSuccess && categoriesQuery.data.length > 0 && (
-              <ul className="flex flex-wrap gap-x-7 gap-y-2.5 text-[17px] font-bold tracking-[-0.01em]">
+              <ul className="trek-sembunyi -mx-4 flex gap-2 overflow-x-auto px-4 text-sm font-bold sm:mx-0 sm:flex-wrap sm:gap-x-7 sm:gap-y-2.5 sm:overflow-visible sm:px-0 sm:text-[17px] sm:tracking-[-0.01em]">
                 {categoriesQuery.data.map((kategori) => (
-                  <li key={kategori.nama}>{kategori.nama}</li>
+                  <li
+                    key={kategori.nama}
+                    className="flex-none rounded-full border-[1.5px] border-ink bg-surface px-3 py-1.5 whitespace-nowrap sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0"
+                  >
+                    {kategori.nama}
+                  </li>
                 ))}
               </ul>
             )}
@@ -359,7 +364,7 @@ export default function Landing() {
         <section
           id="fitur"
           aria-labelledby="judul-fitur"
-          className="mx-auto max-w-[1160px] scroll-mt-6 px-4 pt-20 sm:px-6"
+          className="mx-auto max-w-[1160px] scroll-mt-6 px-4 pt-12 sm:px-6 sm:pt-20"
         >
           <JudulBagian id="judul-fitur" judul="Yang bisa kamu lakukan">
             Empat langkah, dari menulis usulan sampai melihat apakah anggaran kota sejalan dengan
@@ -368,7 +373,7 @@ export default function Landing() {
           <ol
             ref={fiturRef}
             className={cn(
-              'masuk-stagger mt-10 grid gap-6 md:grid-cols-2',
+              'masuk-stagger mt-6 grid grid-cols-2 gap-2.5 sm:mt-10 sm:gap-6',
               fiturTampak && 'masuk-tampak',
             )}
           >
@@ -376,11 +381,11 @@ export default function Landing() {
               <li
                 key={fitur.judul}
                 className={cn(
-                  'kartu-cap flex flex-col justify-between gap-8 rounded-[28px] p-6 sm:flex-row sm:items-end sm:p-8',
+                  'kartu-cap flex flex-col justify-between gap-3 rounded-[20px] p-3.5 sm:flex-row sm:items-end sm:gap-8 sm:rounded-[28px] sm:p-8',
                   fitur.gelap ? 'bg-hijau text-white' : 'bg-surface',
                 )}
               >
-                <div className="flex min-h-full flex-col justify-between gap-8">
+                <div className="flex flex-1 flex-col justify-between gap-3 sm:min-h-full sm:gap-8">
                   <div>
                     <p
                       className={cn(
@@ -390,12 +395,12 @@ export default function Landing() {
                     >
                       Langkah {index + 1}
                     </p>
-                    <h3 className="mt-2 text-[24px] leading-tight font-bold tracking-[-0.02em]">
+                    <h3 className="mt-1 text-[15px] leading-tight font-bold tracking-[-0.01em] sm:mt-2 sm:text-[24px] sm:tracking-[-0.02em]">
                       <span className={fitur.gelap ? 'stabilo' : undefined}>{fitur.judul}</span>
                     </h3>
                     <p
                       className={cn(
-                        'mt-3 max-w-[36ch] text-[15px]',
+                        'mt-1.5 line-clamp-4 max-w-[36ch] text-[12px] leading-snug sm:mt-3 sm:line-clamp-none sm:text-[15px] sm:leading-normal',
                         fitur.gelap ? 'text-white/80' : 'text-muted',
                       )}
                     >
@@ -409,13 +414,18 @@ export default function Landing() {
                 <span
                   aria-hidden="true"
                   className={cn(
-                    'grid size-24 flex-none place-items-center self-end rounded-[22px] border-2',
+                    'grid size-10 flex-none place-items-center self-start rounded-xl border-2 max-sm:order-first sm:size-24 sm:self-end sm:rounded-[22px]',
                     fitur.gelap
                       ? 'border-white/30 text-hijau-terang'
                       : 'border-edge bg-hijau-terang text-hitam',
                   )}
                 >
-                  <Icon name={fitur.ikon} size={44} filled={fitur.ikon === 'panah-atas'} />
+                  <span className="sm:hidden">
+                    <Icon name={fitur.ikon} size={22} filled={fitur.ikon === 'panah-atas'} />
+                  </span>
+                  <span className="hidden sm:block">
+                    <Icon name={fitur.ikon} size={44} filled={fitur.ikon === 'panah-atas'} />
+                  </span>
                 </span>
               </li>
             ))}
@@ -424,30 +434,30 @@ export default function Landing() {
 
         <section
           aria-labelledby="judul-batas"
-          className="mx-auto max-w-[1160px] px-4 pt-20 sm:px-6"
+          className="mx-auto max-w-[1160px] px-4 pt-12 sm:px-6 sm:pt-20"
         >
           <JudulBagian id="judul-batas" judul="Usulan, bukan laporan">
             Di sini warga mengusulkan program untuk anggaran tahun depan. Yang mendesak hari ini,
             laporkan lewat kanal pengaduan resmi pemerintah.
           </JudulBagian>
-          <div className="mt-8 grid gap-x-12 gap-y-8 md:grid-cols-2">
+          <div className="mt-5 grid grid-cols-2 gap-x-3 gap-y-6 sm:mt-8 sm:gap-x-12 md:gap-y-8">
             <div>
-              <h3 className="text-[19px] font-bold">
-                <span className="stabilo">Cocok diusulkan di sini</span>
+              <h3 className="text-[15px] font-bold sm:text-[19px]">
+                <span className="stabilo">Cocok diusulkan</span>
               </h3>
-              <ul className="mt-4 divide-y divide-rule border-y border-rule text-[16px]">
+              <ul className="mt-3 divide-y divide-rule border-y border-rule text-[13px] leading-snug sm:mt-4 sm:text-[16px]">
                 {CONTOH_COCOK.map((contoh) => (
-                  <li key={contoh} className="py-3">
+                  <li key={contoh} className="py-2.5 sm:py-3">
                     {contoh}
                   </li>
                 ))}
               </ul>
             </div>
             <div>
-              <h3 className="text-[19px] font-bold">Bukan untuk di sini</h3>
-              <ul className="mt-4 divide-y divide-rule border-y border-rule text-[16px] text-muted">
+              <h3 className="text-[15px] font-bold sm:text-[19px]">Bukan untuk di sini</h3>
+              <ul className="mt-3 divide-y divide-rule border-y border-rule text-[13px] leading-snug text-muted sm:mt-4 sm:text-[16px]">
                 {CONTOH_BUKAN.map((contoh) => (
-                  <li key={contoh} className="py-3">
+                  <li key={contoh} className="py-2.5 sm:py-3">
                     {contoh}
                   </li>
                 ))}
@@ -459,34 +469,34 @@ export default function Landing() {
 
         <section
           aria-labelledby="judul-ajakan"
-          className="mx-auto max-w-[1160px] px-4 pt-20 sm:px-6"
+          className="mx-auto max-w-[1160px] px-4 pt-12 sm:px-6 sm:pt-20"
         >
           <div
             ref={ajakanRef}
             className={cn(
-              'masuk kartu-cap grid items-center gap-8 rounded-[28px] bg-mint-pucat p-6 sm:p-10 md:grid-cols-[1.4fr_1fr]',
+              'masuk kartu-cap grid items-center gap-5 rounded-[22px] bg-mint-pucat p-5 sm:gap-8 sm:rounded-[28px] sm:p-10 md:grid-cols-[1.4fr_1fr]',
               ajakanTampak && 'masuk-tampak',
             )}
           >
             <div>
               <h2
                 id="judul-ajakan"
-                className="text-[28px] leading-tight font-bold tracking-[-0.02em]"
+                className="text-[22px] leading-tight font-bold tracking-[-0.02em] sm:text-[28px]"
               >
                 Anggaran kota juga urusanmu
               </h2>
-              <p className="mt-3 max-w-[50ch] text-[15px] text-ink">
+              <p className="mt-2.5 max-w-[50ch] text-sm text-ink sm:mt-3 sm:text-[15px]">
                 Daftar dengan email atau akun Google, lalu tulis usulan untuk anggaran tahun depan.
                 Admin memeriksa usulan dulu sebelum tampil untuk umum.
               </p>
               <Link
                 to={user ? '/usulan/baru' : '/login'}
-                className={buttonClass('primary', 'md', 'mt-6 h-12 px-6 text-[15px]')}
+                className={buttonClass('primary', 'md', 'mt-4 h-12 w-full px-6 text-[15px] sm:mt-6 sm:w-auto')}
               >
                 {user ? 'Tulis usulan sekarang' : 'Daftar dan mulai mengusulkan'}
               </Link>
             </div>
-            <div className="flex justify-center md:justify-end">
+            <div className="hidden justify-center sm:flex md:justify-end">
               <KotakSuara />
             </div>
           </div>
@@ -495,7 +505,7 @@ export default function Landing() {
         <section
           id="transparansi"
           aria-labelledby="judul-transparansi"
-          className="mx-auto max-w-[1160px] scroll-mt-6 px-4 pt-20 pb-20 sm:px-6"
+          className="mx-auto max-w-[1160px] scroll-mt-6 px-4 pt-12 pb-12 sm:px-6 sm:pt-20 sm:pb-20"
         >
           <JudulBagian id="judul-transparansi" judul="Terbuka untuk dicek">
             Tiga aturan yang membuat angka dan status di aplikasi ini bisa ditelusuri ulang.
@@ -503,7 +513,7 @@ export default function Landing() {
           <div
             ref={transparansiRef}
             className={cn(
-              'masuk-stagger kartu-cap mt-10 grid rounded-[28px] bg-surface md:grid-cols-3',
+              'masuk-stagger trek-sembunyi mt-6 flex snap-x snap-mandatory gap-2.5 overflow-x-auto sm:kartu-cap sm:mt-10 sm:grid sm:overflow-visible sm:rounded-[28px] sm:bg-surface md:grid-cols-3',
               transparansiTampak && 'masuk-tampak',
             )}
           >
@@ -511,13 +521,13 @@ export default function Landing() {
               <article
                 key={butir.judul}
                 className={cn(
-                  'flex flex-col justify-between gap-6 p-6 sm:p-8',
-                  index > 0 && 'border-t border-rule md:border-t-0 md:border-l',
+                  'kartu-cap flex w-[260px] flex-none snap-start flex-col justify-between gap-4 rounded-[20px] bg-surface p-4 sm:w-auto sm:gap-6 sm:rounded-none sm:p-8 sm:shadow-none sm:border-0 sm:[box-shadow:none]',
+                  index > 0 && 'sm:border-t sm:border-rule md:border-t-0 md:border-l',
                 )}
               >
                 <div>
-                  <h3 className="text-[19px] leading-snug font-bold">{butir.judul}</h3>
-                  <p className="mt-2.5 text-[15px] text-muted">{butir.isi}</p>
+                  <h3 className="text-[16px] leading-snug font-bold sm:text-[19px]">{butir.judul}</h3>
+                  <p className="mt-2 text-[13px] text-muted sm:mt-2.5 sm:text-[15px]">{butir.isi}</p>
                 </div>
                 <Link
                   to={butir.ke}
@@ -532,7 +542,7 @@ export default function Landing() {
       </main>
 
       <footer className="px-4 pb-4 sm:px-6">
-        <div className="mx-auto flex max-w-[1160px] flex-col gap-6 rounded-[28px] bg-hijau px-6 py-8 text-white sm:px-10 md:flex-row md:items-center md:justify-between">
+        <div className="mx-auto flex max-w-[1160px] flex-col gap-4 rounded-[22px] bg-hijau px-5 py-6 text-white sm:gap-6 sm:rounded-[28px] sm:px-10 sm:py-8 md:flex-row md:items-center md:justify-between">
           <div>
             <Logo selaluGelap />
             <p className="mt-3 max-w-[48ch] text-[14px] text-white/75">
