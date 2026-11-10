@@ -871,8 +871,9 @@ html::-webkit-scrollbar,
     wilayah-isi 700ms var(--ease-out) 260ms backwards;
   transition: opacity 200ms var(--ease-out);
 }
-/* Peta sedang jauh (lihat ZOOM_WILAYAH_TAMPIL di LapisanWilayah): warna wilayah disembunyikan. */
-.peta-wilayah-jauh .wilayah-arsir {
+/* Peta sedang berzoom lewat jarak jauh (lihat ZOOM_WILAYAH_JAUH di LapisanWilayah): warna wilayah
+   disembunyikan sampai zoom selesai. */
+.peta-wilayah-bergerak .wilayah-arsir {
   opacity: 0;
 }
 @keyframes wilayah-garis {
