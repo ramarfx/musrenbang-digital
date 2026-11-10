@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { Pagination } from '@/components/ui/Pagination';
 import { Select } from '@/components/ui/Select';
+import { Textarea } from '@/components/ui/Textarea';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
 import { useCommentCountsQuery } from '@/features/comments/queries';
 import { cn } from '@/lib/cn';
@@ -27,6 +28,12 @@ type SaringAi = 'semua' | 'aman' | FlagAi;
 type Ulasan = Awaited<ReturnType<typeof getAiReview>> | undefined;
 
 const FLAGS_AI: FlagAi[] = ['spam', 'promotion', 'irrelevant', 'needs_review'];
+
+/** Indikasi yang boleh ditolak massal. "Perlu ditinjau" sengaja tidak: itu butuh mata admin. */
+const FLAGS_TOLAK: FlagAi[] = ['spam', 'promotion', 'irrelevant'];
+
+const alasanBawaan = (flag: FlagAi) =>
+  `Ditandai MusrenAI sebagai ${LABEL_INDIKASI[flag].toLowerCase()}.`;
 
 /** Jumlah kartu per halaman antrean. */
 const KARTU_PER_HALAMAN = 10;
@@ -172,6 +179,9 @@ export function AntreanTinjau({ proposals }: { proposals: Proposal[] }) {
   const [urutan, setUrutan] = useState<Urutan>('terlama');
   const [saringAi, setSaringAi] = useState<SaringAi>('semua');
   const [konfirmasi, setKonfirmasi] = useState(false);
+  const [tolakFlag, setTolakFlag] = useState<FlagAi | null>(null);
+  const [alasanTolak, setAlasanTolak] = useState('');
+  const [sedangTolak, setSedangTolak] = useState(false);
   const [proses, setProses] = useState<{ sekarang: number; total: number; id: number } | null>(
     null,
   );
@@ -366,6 +376,37 @@ export function AntreanTinjau({ proposals }: { proposals: Proposal[] }) {
     }
   };
 
+  const daftarTolak = tolakFlag ? daftarPerFlag(tolakFlag) : [];
+
+  const bukaTolak = (flag: FlagAi) => {
+    setAlasanTolak(alasanBawaan(flag));
+    setTolakFlag(flag);
+  };
+
+  const tolakSemua = async () => {
+    const catatan = alasanTolak.trim();
+    if (!tolakFlag || catatan.length === 0) return;
+    const sasaran = daftarTolak;
+    setTolakFlag(null);
+    setSedangTolak(true);
+    let berhasil = 0;
+    try {
+      for (const proposal of sasaran) {
+        await moderasi.mutateAsync({ proposalId: proposal.id, moderasi: 'Ditolak', catatan });
+        berhasil += 1;
+      }
+      toast.success(`${berhasil} usulan ditolak dengan alasan tercatat.`);
+    } catch (error) {
+      toast.error(
+        `${berhasil} dari ${sasaran.length} usulan ditolak. ${
+          error instanceof Error ? error.message : ''
+        }`.trim(),
+      );
+    } finally {
+      setSedangTolak(false);
+    }
+  };
+
   if (proposals.length === 0) {
     return (
       <EmptyState
@@ -508,18 +549,29 @@ export function AntreanTinjau({ proposals }: { proposals: Proposal[] }) {
                       ['needs_review', 'Perlu ditinjau', daftarPerFlag('needs_review').length],
                     ] as const
                   ).map(([nilai, label, jumlah]) => (
-                    <button
-                      key={nilai}
-                      type="button"
-                      aria-pressed={saringAi === nilai}
-                      onClick={() => setSaringAi(nilai)}
-                      className={kelasChip(saringAi === nilai)}
-                    >
-                      {label}
-                      <span className="text-[11px] font-bold tabular-nums opacity-70">
-                        {jumlah}
-                      </span>
-                    </button>
+                    <span key={nilai} className="inline-flex items-center gap-1">
+                      <button
+                        type="button"
+                        aria-pressed={saringAi === nilai}
+                        onClick={() => setSaringAi(nilai)}
+                        className={kelasChip(saringAi === nilai)}
+                      >
+                        {label}
+                        <span className="text-[11px] font-bold tabular-nums opacity-70">
+                          {jumlah}
+                        </span>
+                      </button>
+                      {jumlah > 0 && FLAGS_TOLAK.includes(nilai as FlagAi) && (
+                        <button
+                          type="button"
+                          disabled={sedangTolak}
+                          onClick={() => bukaTolak(nilai as FlagAi)}
+                          className="relative inline-flex min-h-9 items-center rounded-lg px-1.5 text-[13px] font-semibold text-[#b42318] underline underline-offset-2 hover:bg-[#fbeae8] disabled:opacity-50 after:absolute after:-inset-1 after:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b42318]"
+                        >
+                          Tolak semua
+                        </button>
+                      )}
+                    </span>
                   ))}
                 </div>
 
@@ -759,6 +811,53 @@ export function AntreanTinjau({ proposals }: { proposals: Proposal[] }) {
               </div>
             </>
           )}
+        </div>
+      </Modal>
+
+      <Modal
+        open={tolakFlag !== null}
+        onClose={() => setTolakFlag(null)}
+        labelledBy="judul-tolak-semua"
+        className="w-[min(560px,calc(100vw-24px))]"
+      >
+        <div className="p-5 sm:p-6">
+          <h2 id="judul-tolak-semua" className="text-xl font-bold">
+            Tolak {daftarTolak.length} usulan sekaligus?
+          </h2>
+          <p className="mt-2 text-sm text-muted">
+            Usulan di bawah ini ditandai MusrenAI
+            {tolakFlag ? ` sebagai ${LABEL_INDIKASI[tolakFlag].toLowerCase()}` : ''}. MusrenAI bisa
+            keliru, jadi lihat daftarnya dulu. Pengusul akan melihat alasan penolakan.
+          </p>
+          <ul className="mt-3 max-h-48 list-disc space-y-1 overflow-y-auto pl-5 text-sm">
+            {daftarTolak.map((proposal) => (
+              <li key={proposal.id} className="[overflow-wrap:anywhere]">
+                {proposal.judul}
+              </li>
+            ))}
+          </ul>
+          <Field label="Alasan penolakan" htmlFor="alasan-tolak-semua" required className="mt-4">
+            <Textarea
+              id="alasan-tolak-semua"
+              rows={2}
+              value={alasanTolak}
+              onChange={(event) => setAlasanTolak(event.target.value)}
+              maxLength={2000}
+            />
+          </Field>
+          <div className="mt-5 flex flex-wrap justify-end gap-2.5">
+            <Button type="button" variant="ghost" onClick={() => setTolakFlag(null)}>
+              Batal
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              disabled={alasanTolak.trim().length === 0 || daftarTolak.length === 0}
+              onClick={() => void tolakSemua()}
+            >
+              Tolak {daftarTolak.length} usulan
+            </Button>
+          </div>
         </div>
       </Modal>
 
