@@ -514,6 +514,38 @@ html::-webkit-scrollbar,
 }
 
 /*
+ * Centang langkah partisipasi (beranda): lingkaran muncul dari skala 0.8, lalu centangnya digambar
+ * dari awal garis. Sekali saat centang tampil (muat ulang atau langkah baru selesai), tanpa
+ * pengulangan. Jedanya mengikuti urutan langkah lewat --urutan.
+ */
+.centang-langkah {
+  animation: centang-muncul 320ms var(--ease-out) backwards;
+  animation-delay: calc(var(--urutan, 0) * 90ms + 120ms);
+}
+.centang-langkah path {
+  stroke-dasharray: 1;
+  animation: centang-garis 360ms var(--ease-out) backwards;
+  animation-delay: calc(var(--urutan, 0) * 90ms + 300ms);
+}
+@keyframes centang-muncul {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+@keyframes centang-garis {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .centang-langkah,
+  .centang-langkah path {
+    animation: none;
+  }
+}
+
+/*
  * Stabilo di belakang nama kategori (simulator). Seluruh tinggi tulisan diwarnai, dan tiap baris
  * bila nama terlipat, lalu tersapu dari kiri ke kanan setelah barisnya naik. Jedanya mengikuti
  * urutan baris lewat --urutan.
