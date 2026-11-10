@@ -120,6 +120,39 @@ export function RingkasanAspirasiLengkap() {
   );
 }
 
+/** Satu dari tiga angka di bawah grafik: angka tebal, keterangan, dan batang kecil porsinya. */
+function AngkaBidang({
+  label,
+  nilai,
+  keterangan,
+  persen,
+  warna,
+}: {
+  label: string;
+  nilai: string;
+  keterangan?: string;
+  persen: number;
+  warna: string;
+}) {
+  return (
+    <div className="px-4 py-3">
+      <dt className="text-[13px] text-muted">{label}</dt>
+      <dd className="mt-0.5">
+        <span className="text-[22px] leading-tight font-extrabold tracking-[-0.03em] tabular-nums">
+          {nilai}
+        </span>
+        {keterangan && <span className="ml-1.5 text-[13px] text-muted">{keterangan}</span>}
+        <span aria-hidden="true" className="mt-2 block h-2 overflow-hidden rounded-[3px] bg-track">
+          <span
+            className="block h-full"
+            style={{ width: `${Math.min(100, Math.max(0, persen))}%`, backgroundColor: warna }}
+          />
+        </span>
+      </dd>
+    </div>
+  );
+}
+
 type Metrik = 'usulan' | 'suara' | 'alokasi';
 
 const PILIHAN_METRIK: { nilai: Metrik; label: string; judul: string }[] = [
@@ -197,10 +230,10 @@ function GrafikAspirasi({
           dihitung.
         </p>
       ) : (
-        <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start">
+        <div className="mt-4">
           <div className="min-w-0">
             <div
-              className="h-72 sm:h-80"
+              className="h-56 sm:h-64"
               role="img"
               aria-label={`Grafik batang ${pilihan.judul}. Klik batang untuk memilih bidang.`}
             >
@@ -254,67 +287,60 @@ function GrafikAspirasi({
               />
             </div>
             <p className="mt-2 text-[13px] text-muted">
-              Klik batang atau nama bidang untuk melihat angka lengkapnya.
+              Klik batang atau pilih bidang untuk melihat angka lengkapnya.
             </p>
-            <ul aria-label="Pilih bidang" className="mt-3 flex flex-wrap gap-1.5">
-              {terurut.map((item) => (
-                <li key={item.kategori}>
-                  <button
-                    type="button"
-                    aria-pressed={item.kategori === aktif}
-                    onClick={() => setTerpilih(item.kategori)}
-                    className={cn(
-                      'inline-flex min-h-11 items-center gap-2 rounded-full border px-3 text-[13px] font-semibold transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga',
-                      item.kategori === aktif
-                        ? 'border-ink bg-ink text-on-ink'
-                        : 'border-border bg-surface text-ink hover:bg-active',
-                    )}
-                  >
-                    <span
-                      aria-hidden="true"
-                      className="size-2.5 rounded-full"
-                      style={{ backgroundColor: getCategoryInfo(item.kategori).warna.kuat }}
-                    />
-                    {item.kategori}
-                  </button>
-                </li>
-              ))}
-            </ul>
           </div>
 
-          <section
-            aria-label={`Rincian ${aktif ?? 'bidang'}`}
-            aria-live="polite"
-            className="rounded-2xl border-[1.5px] border-edge bg-surface px-4 py-4"
-          >
+          <section aria-label={`Rincian ${aktif ?? 'bidang'}`} aria-live="polite" className="mt-4">
             {barisAktif ? (
               <>
-                <h3 className="font-bold [overflow-wrap:anywhere]">{barisAktif.kategori}</h3>
-                <p className="mt-0.5 text-[13px] text-muted">
-                  Peringkat {peringkatAktif} dari {formatAngka(terurut.length)} bidang untuk metrik{' '}
-                  {pilihan.label.toLowerCase()}.
-                </p>
-                <dl className="mt-3 space-y-2 text-sm">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <dt className="text-muted">Usulan disetujui</dt>
-                    <dd className="font-bold tabular-nums">
-                      {formatAngka(barisAktif.jumlah_usulan)} dari {formatAngka(totalUsulan)}
-                    </dd>
-                  </div>
-                  <div className="flex items-baseline justify-between gap-3">
-                    <dt className="text-muted">Dukungan warga</dt>
-                    <dd className="font-bold tabular-nums">
-                      {formatAngka(barisAktif.jumlah_suara)} dari {formatAngka(totalSuara)}
-                    </dd>
-                  </div>
-                  <div className="flex items-baseline justify-between gap-3">
-                    <dt className="text-muted">Porsi anggaran</dt>
-                    <dd className="font-bold tabular-nums">
-                      {totalAlokasi > 0
-                        ? formatPersen(barisAktif.persen_alokasi)
-                        : 'Belum ada data'}
-                    </dd>
-                  </div>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                  <span
+                    className="rounded-[3px] px-1.5 py-px text-[15px] font-bold text-hitam [overflow-wrap:anywhere]"
+                    style={{ backgroundColor: getCategoryInfo(barisAktif.kategori).warna.latar }}
+                  >
+                    {barisAktif.kategori}
+                  </span>
+                  <span className="text-[13px] text-muted">
+                    peringkat {peringkatAktif} dari {formatAngka(terurut.length)} untuk metrik{' '}
+                    {pilihan.label.toLowerCase()}
+                  </span>
+                  <select
+                    aria-label="Pilih bidang"
+                    value={barisAktif.kategori}
+                    onChange={(event) => setTerpilih(event.target.value)}
+                    className="min-h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga sm:ml-auto"
+                  >
+                    {terurut.map((item) => (
+                      <option key={item.kategori} value={item.kategori}>
+                        {item.kategori}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <dl className="mt-3 grid divide-y-[1.5px] divide-ink overflow-hidden rounded-2xl border-[1.5px] border-ink sm:grid-cols-3 sm:divide-x-[1.5px] sm:divide-y-0">
+                  <AngkaBidang
+                    label="usulan disetujui"
+                    nilai={formatAngka(barisAktif.jumlah_usulan)}
+                    keterangan={`dari ${formatAngka(totalUsulan)}`}
+                    persen={totalUsulan > 0 ? (barisAktif.jumlah_usulan / totalUsulan) * 100 : 0}
+                    warna={getCategoryInfo(barisAktif.kategori).warna.kuat}
+                  />
+                  <AngkaBidang
+                    label="dukungan warga"
+                    nilai={formatAngka(barisAktif.jumlah_suara)}
+                    keterangan={`dari ${formatAngka(totalSuara)}`}
+                    persen={totalSuara > 0 ? (barisAktif.jumlah_suara / totalSuara) * 100 : 0}
+                    warna={getCategoryInfo(barisAktif.kategori).warna.kuat}
+                  />
+                  <AngkaBidang
+                    label="porsi anggaran"
+                    nilai={
+                      totalAlokasi > 0 ? formatPersen(barisAktif.persen_alokasi) : 'Belum ada data'
+                    }
+                    persen={totalAlokasi > 0 ? barisAktif.persen_alokasi : 0}
+                    warna={getCategoryInfo(barisAktif.kategori).warna.kuat}
+                  />
                 </dl>
               </>
             ) : (
