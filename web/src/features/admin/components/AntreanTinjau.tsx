@@ -172,14 +172,13 @@ const kelasChip = (aktif: boolean) =>
 /**
  * Antrean usulan yang belum diputuskan. Satu usulan satu kartu, dengan satu tindakan utama:
  * membuka rinciannya. Keputusan diambil di halaman rincian setelah isinya dibaca, kecuali
- * persetujuan massal untuk usulan yang tidak punya indikasi dari MusrenAI.
+ * penolakan massal untuk usulan yang ditandai spam, promosi, atau tidak relevan oleh MusrenAI.
  */
 export function AntreanTinjau({ proposals }: { proposals: Proposal[] }) {
   const [cari, setCari] = useState('');
   const [kategori, setKategori] = useState('semua');
   const [urutan, setUrutan] = useState<Urutan>('terlama');
   const [saringAi, setSaringAi] = useState<SaringAi>('semua');
-  const [konfirmasi, setKonfirmasi] = useState(false);
   const [tolakFlag, setTolakFlag] = useState<FlagAi | null>(null);
   const [alasanTolak, setAlasanTolak] = useState('');
   const [sedangTolak, setSedangTolak] = useState(false);
@@ -187,7 +186,6 @@ export function AntreanTinjau({ proposals }: { proposals: Proposal[] }) {
     null,
   );
   const [galat, setGalat] = useState<string | null>(null);
-  const [sedangSetujui, setSedangSetujui] = useState(false);
   const [halaman, setHalaman] = useState(1);
   const [pratinjau, setPratinjau] = useState<Proposal | null>(null);
   const jumlahKomentar = useCommentCountsQuery().data ?? {};
@@ -354,27 +352,6 @@ export function AntreanTinjau({ proposals }: { proposals: Proposal[] }) {
       }
     }
     setSummaryData({ perFlag, aman: amanList, gagal: gagalList, belumDiperiksa });
-  };
-
-  const setujuiSemua = async () => {
-    setKonfirmasi(false);
-    setSedangSetujui(true);
-    let berhasil = 0;
-    try {
-      for (const proposal of daftarAman) {
-        await moderasi.mutateAsync({ proposalId: proposal.id, moderasi: 'Disetujui' });
-        berhasil += 1;
-      }
-      toast.success(`${berhasil} usulan disetujui dan tampil publik.`);
-    } catch (error) {
-      toast.error(
-        `${berhasil} dari ${daftarAman.length} usulan disetujui. ${
-          error instanceof Error ? error.message : ''
-        }`.trim(),
-      );
-    } finally {
-      setSedangSetujui(false);
-    }
   };
 
   const daftarTolak = tolakFlag ? daftarPerFlag(tolakFlag) : [];
@@ -591,23 +568,6 @@ export function AntreanTinjau({ proposals }: { proposals: Proposal[] }) {
                         </button>
                       );
                     })}
-                  </div>
-                )}
-
-                {saringAi === 'aman' && daftarAman.length > 0 && (
-                  <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <p className="text-[13px] text-muted">
-                      Persetujuan berlaku untuk semua usulan tanpa indikasi di daftar ini.
-                    </p>
-                    <Button
-                      type="button"
-                      size="sm"
-                      disabled={sedangSetujui}
-                      isLoading={sedangSetujui}
-                      onClick={() => setKonfirmasi(true)}
-                    >
-                      Setujui semua ({daftarAman.length})
-                    </Button>
                   </div>
                 )}
 
@@ -875,38 +835,6 @@ export function AntreanTinjau({ proposals }: { proposals: Proposal[] }) {
               onClick={() => void tolakSemua()}
             >
               Tolak {daftarTolak.length} usulan
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      <Modal
-        open={konfirmasi}
-        onClose={() => setKonfirmasi(false)}
-        labelledBy="judul-setujui-semua"
-        className="w-[min(560px,calc(100vw-24px))]"
-      >
-        <div className="p-5 sm:p-6">
-          <h2 id="judul-setujui-semua" className="text-xl font-bold">
-            Setujui {daftarAman.length} usulan sekaligus?
-          </h2>
-          <p className="mt-2 text-sm text-muted">
-            Semua usulan di bawah ini tidak punya indikasi dari MusrenAI. Setelah disetujui, usulan
-            tampil publik dan bisa didukung warga.
-          </p>
-          <ul className="mt-3 max-h-56 list-disc space-y-1 overflow-y-auto pl-5 text-sm">
-            {daftarAman.map((proposal) => (
-              <li key={proposal.id} className="[overflow-wrap:anywhere]">
-                {proposal.judul}
-              </li>
-            ))}
-          </ul>
-          <div className="mt-5 flex flex-wrap justify-end gap-2.5">
-            <Button type="button" variant="ghost" onClick={() => setKonfirmasi(false)}>
-              Batal
-            </Button>
-            <Button type="button" onClick={() => void setujuiSemua()}>
-              Setujui {daftarAman.length} usulan
             </Button>
           </div>
         </div>
