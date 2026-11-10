@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { getCategoryInfo } from '@/features/categories/info';
+import { Select } from '@/components/ui/Select';
 import { cn } from '@/lib/cn';
 import { formatAngka, formatPersen } from '@/lib/format';
 import { queryKeys } from '@/lib/query-keys';
@@ -204,7 +205,24 @@ function GrafikAspirasi({
     <Card>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-bold">{pilihan.judul}</h2>
-        <div role="group" aria-label="Pilih metrik grafik" className="flex flex-wrap gap-1.5">
+        {/* Di HP tiga tombol metrik menumpuk, jadi diganti satu pilihan turun. */}
+        <Select
+          aria-label="Pilih metrik grafik"
+          className="w-full sm:hidden"
+          value={metrik}
+          onChange={(event) => setMetrik(event.target.value as Metrik)}
+        >
+          {PILIHAN_METRIK.map((item) => (
+            <option key={item.nilai} value={item.nilai}>
+              {item.label}
+            </option>
+          ))}
+        </Select>
+        <div
+          role="group"
+          aria-label="Pilih metrik grafik"
+          className="hidden flex-wrap gap-1.5 sm:flex"
+        >
           {PILIHAN_METRIK.map((item) => (
             <button
               key={item.nilai}

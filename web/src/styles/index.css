@@ -1698,3 +1698,32 @@ html::-webkit-scrollbar,
     animation: none;
   }
 }
+
+/* Anak grid boleh menyusut. Tanpa ini, grid satu kolom di HP ikut melebar selebar isi terpanjang
+   (teks satu baris, baris tombol), halaman jadi lebih lebar dari layar, dan browser HP
+   mengecilkan seluruh tampilan. Di lapisan base supaya utilitas min-w-* tetap menang. */
+@layer base {
+  .grid > * {
+    min-width: 0;
+  }
+}
+
+/* Dasar sentuh untuk HP. Sengaja di luar lapisan supaya menang atas utilitas ukuran teks. */
+html {
+  /* Kilatan abu-abu bawaan browser saat mengetuk; tiap tombol sudah punya umpan balik sendiri. */
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+a,
+[role='button'] {
+  /* Tanpa jeda menunggu ketukan ganda, jadi ketukan terasa langsung. */
+  touch-action: manipulation;
+}
+@media (pointer: coarse) {
+  /* Safari iOS memperbesar halaman bila kolom isian di bawah 16px dan tidak mengecilkannya lagi. */
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
