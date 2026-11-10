@@ -163,7 +163,7 @@ export function ProposalForm({ proposal, onSaved, onCancel }: ProposalFormProps 
 
   return (
     <form onSubmit={onSubmit} className="space-y-6" noValidate>
-      <Card className="space-y-4">
+      <Card tur="isi" className="space-y-4">
         <Field
           label="Judul usulan"
           htmlFor="judul"
@@ -260,7 +260,7 @@ export function ProposalForm({ proposal, onSaved, onCancel }: ProposalFormProps 
         </Field>
       </Card>
 
-      <Card>
+      <Card tur="titik">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="font-semibold text-stone-900">Titik di peta (opsional)</h2>
@@ -318,7 +318,7 @@ export function ProposalForm({ proposal, onSaved, onCancel }: ProposalFormProps 
         />
       )}
 
-      <div className="flex flex-wrap gap-3">
+      <div data-tur="kirim" className="flex flex-wrap gap-3">
         <Button type="submit" isLoading={mutation.isPending}>
           {proposal ? 'Simpan perubahan' : 'Kirim Usulan'}
         </Button>

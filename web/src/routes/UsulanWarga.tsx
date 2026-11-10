@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Pagination } from '@/components/ui/Pagination';
 import { ListSkeleton } from '@/components/ui/Skeleton';
+import type { LangkahTur } from '@/components/tutorial/TurHalaman';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ProposalCard } from '@/features/proposals/components/ProposalCard';
 import { TopProposals } from '@/features/proposals/components/TopProposals';
@@ -18,6 +19,29 @@ import { useProposalsQuery } from '@/features/proposals/queries';
 const KARTU_PER_HALAMAN = 6;
 
 /** Semua usulan warga yang sudah disetujui: terpopuler, peta, lalu daftar dengan filter. */
+const TUR_USULAN: readonly LangkahTur[] = [
+  {
+    target: 'peta',
+    judul: 'Peta usulan',
+    isi: 'Tiap titik adalah satu usulan. Cincin di titik menunjukkan tahapnya: makin penuh, makin dekat selesai.',
+  },
+  {
+    target: 'saring',
+    judul: 'Cari usulan',
+    isi: 'Ketik kata kunci atau saring berdasarkan status dan bidang supaya cepat ketemu.',
+  },
+  {
+    target: 'daftar',
+    judul: 'Dukung usulan',
+    isi: 'Tekan tombol dukungan pada usulan yang menurutmu penting. Usulan dengan dukungan terbanyak naik ke atas.',
+  },
+  {
+    target: 'buat',
+    judul: 'Punya usulan sendiri?',
+    isi: 'Tekan di sini untuk menulis usulan untuk lingkunganmu.',
+  },
+];
+
 export default function UsulanWarga() {
   const proposalsQuery = useProposalsQuery();
   const [search, setSearch] = useState('');
@@ -110,9 +134,10 @@ export default function UsulanWarga() {
     <div className="space-y-8">
       <PageHeader
         title="Usulan warga"
+        tur={TUR_USULAN}
         description="Dukung usulan yang menurutmu penting, atau tulis usulan untuk lingkunganmu."
         actions={
-          <Link to="/usulan/baru" className={buttonClass('primary')}>
+          <Link to="/usulan/baru" data-tur="buat" className={buttonClass('primary')}>
             Buat usulan
           </Link>
         }
@@ -120,7 +145,7 @@ export default function UsulanWarga() {
 
       {proposalsQuery.isSuccess && <TopProposals proposals={proposals} />}
 
-      <section>
+      <section data-tur="peta">
         <div className="mb-3">
           <h2 className="text-xl font-bold">Peta usulan</h2>
           <p className="text-sm text-muted">
@@ -152,6 +177,7 @@ export default function UsulanWarga() {
       <section ref={daftarRef} className="scroll-mt-4 space-y-4">
         <h2 className="text-xl font-bold">Daftar usulan</h2>
 
+        <div data-tur="saring">
         <ProposalFilters
           search={search}
           onSearchChange={setSearch}
@@ -166,6 +192,7 @@ export default function UsulanWarga() {
           resultCount={filtered.length}
           totalCount={proposals.length}
         />
+        </div>
 
         {proposalsQuery.isPending && <ListSkeleton />}
 
@@ -212,7 +239,7 @@ export default function UsulanWarga() {
 
         {filtered.length > 0 && (
           <>
-            <div className="grid gap-5 md:grid-cols-2">
+            <div data-tur="daftar" className="grid gap-5 md:grid-cols-2">
               {tampilHalaman.map((proposal) => (
                 <ProposalCard key={proposal.id} proposal={proposal} />
               ))}
