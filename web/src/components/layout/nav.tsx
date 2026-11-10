@@ -13,8 +13,8 @@ type NavItem = { to: string; label: string; icon: IconName; end?: boolean };
 type NavGroup = { title?: string; items: NavItem[] };
 
 /**
- * Menu mengikuti urutan langkah warga di Beranda. APBD dan Metodologi tidak di menu karena
- * sudah ditautkan dari halaman Warga vs APBD dan dari footer; Buat usulan ada di Usulan warga.
+ * Menu mengikuti urutan langkah warga di Beranda. Metodologi tidak di menu karena sudah
+ * ditautkan dari halaman APBD, Warga vs APBD, dan footer; Buat usulan ada di Usulan warga.
  * Admin mendapat kelompok sendiri tepat di bawah Beranda, karena pekerjaan admin adalah
  * tujuan utamanya saat masuk.
  */
@@ -46,7 +46,10 @@ export function buildNav(isAdmin: boolean, sudahMasuk = false): NavGroup[] {
     },
     {
       title: 'Hasil',
-      items: [{ to: '/bandingkan', label: 'Warga vs APBD', icon: 'bandingkan' }],
+      items: [
+        { to: '/bandingkan', label: 'Warga vs APBD', icon: 'bandingkan' },
+        { to: '/apbd', label: 'APBD', icon: 'apbd' },
+      ],
     },
   );
   if (sudahMasuk) {
