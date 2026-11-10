@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button, buttonClass } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -20,6 +20,7 @@ type Aksi = 'setujui' | 'tolak' | 'status' | 'hapus' | null;
 export default function UsulanDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const lokasi = useLocation();
   const proposalId = Number(id);
   const valid = Number.isInteger(proposalId) && proposalId > 0;
 
@@ -117,7 +118,15 @@ export default function UsulanDetail() {
     );
   }
 
-  const kembali = proposal.moderasi === 'Menunggu' ? '/admin/perlu-diperiksa' : '/admin/usulan';
+  // Daftar asal membawa penyaringnya di alamat (?tahap=Dikerjakan), jadi kembali ke alamat itu
+  // persis, bukan ke daftar kosong. Hanya alamat admin yang dipercaya.
+  const dari = (lokasi.state as { dari?: unknown } | null)?.dari;
+  const kembali =
+    typeof dari === 'string' && dari.startsWith('/admin/')
+      ? dari
+      : proposal.moderasi === 'Menunggu'
+        ? '/admin/perlu-diperiksa'
+        : '/admin/usulan';
   const labelKembali = proposal.moderasi === 'Menunggu' ? 'Perlu diperiksa' : 'Semua usulan';
 
   return (
