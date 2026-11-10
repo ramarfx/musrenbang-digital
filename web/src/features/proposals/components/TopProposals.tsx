@@ -48,15 +48,16 @@ export function TopProposals({ proposals }: { proposals: readonly Proposal[] }) 
         </h2>
         <p className="text-sm text-muted">Paling banyak didukung warga.</p>
       </div>
-      <div className="stagger grid gap-4 md:grid-cols-3">
+      {/* HP: deret kartu yang digeser ke samping; layar lebar: tiga kolom. */}
+      <div className="stagger trek-sembunyi -mx-4 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0 md:pb-0">
         {teratas.map((proposal, index) => (
           <article
             key={proposal.id}
-            className="kartu-cap relative flex flex-col overflow-hidden rounded-3xl bg-surface p-5 transition-[translate] duration-150 ease-out hover:-translate-y-0.5 sm:p-6"
+            className="kartu-cap relative flex w-[236px] flex-none snap-start flex-col overflow-hidden rounded-[20px] bg-surface p-4 transition-[translate] duration-150 ease-out hover:-translate-y-0.5 sm:rounded-3xl sm:p-6 md:w-auto"
           >
             <span
               aria-hidden="true"
-              className="pointer-events-none absolute -top-1 right-4 text-[84px] leading-none font-extrabold text-ink opacity-[0.07] select-none"
+              className="pointer-events-none absolute -top-1 right-3 text-[64px] leading-none font-extrabold text-ink opacity-[0.07] select-none sm:right-4 sm:text-[84px]"
             >
               {index + 1}
             </span>
@@ -64,10 +65,10 @@ export function TopProposals({ proposals }: { proposals: readonly Proposal[] }) 
               <CategoryTile kategori={proposal.kategori} gaya="cap" />
               <StatusBadge status={proposal.status} />
             </div>
-            <h3 className="relative mt-4 text-lg leading-snug font-bold tracking-[-0.01em]">
+            <h3 className="relative mt-3 line-clamp-2 min-h-[2lh] text-[15px] leading-snug font-bold tracking-[-0.01em] sm:mt-4 sm:line-clamp-none sm:min-h-0 sm:text-lg">
               <Link
                 to={`/usulan/${proposal.id}`}
-                className="after:absolute after:-inset-5 after:content-[''] focus-visible:outline-none sm:after:-inset-6"
+                className="after:absolute after:-inset-4 after:content-[''] focus-visible:outline-none sm:after:-inset-6"
               >
                 {proposal.judul}
               </Link>
@@ -83,7 +84,7 @@ export function TopProposals({ proposals }: { proposals: readonly Proposal[] }) 
               </span>{' '}
               · {formatRupiahRingkas(proposal.estimasi_biaya)}
             </p>
-            <div className="relative z-10 mt-auto flex items-center justify-between gap-3 pt-5">
+            <div className="relative z-10 mt-auto flex items-center justify-between gap-3 pt-3.5 sm:pt-5">
               <UpvoteButton proposalId={proposal.id} jumlah={proposal.jumlah_suara} />
               <span className="text-[12.5px] text-muted">Peringkat {index + 1}</span>
             </div>

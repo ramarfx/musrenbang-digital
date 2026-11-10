@@ -59,15 +59,15 @@ function SambutanWarga() {
     <Card tur="sambutan" className="space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-warga">
+          <div className="flex items-center gap-2 text-[11px] font-bold tracking-wider text-warga uppercase sm:text-xs">
             Portal Musrenbang Warga
           </div>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+          <h1 className="mt-0.5 text-xl font-bold tracking-tight text-ink sm:mt-1 sm:text-3xl">
             {user && namaPanggilan
               ? `Selamat Datang, ${profile?.nama}`
               : 'Selamat Datang di Musrenbang Digital'}
           </h1>
-          <p className="mt-1 max-w-2xl text-base text-muted">
+          <p className="mt-1 hidden max-w-2xl text-base text-muted sm:block">
             Sampaikan usulan, beri dukungan, dan bagi anggaran virtual. Lihat sendiri seberapa jauh
             prioritas warga dengan anggaran daerah (APBD).
           </p>
@@ -75,8 +75,25 @@ function SambutanWarga() {
         <TurHalaman langkah={TUR_BERANDA} />
       </div>
 
-      <div className="rounded-2xl border border-border bg-active/40 p-4 sm:p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="rounded-2xl border-[1.5px] border-ink bg-hijau p-3.5 text-white sm:border sm:border-border sm:bg-active/40 sm:p-5 sm:text-ink">
+        {/* HP: satu strip hijau ringkas. */}
+        <div className="flex items-center justify-between gap-3 sm:hidden">
+          <div className="min-w-0">
+            <span className="block text-[11.5px] text-white/80">
+              Tahap aktif · {tahapAktif.bulan}
+            </span>
+            <span className="block truncate text-[15px] font-bold">{tahapAktif.nama}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setBukaJadwal((prev) => !prev)}
+            aria-expanded={bukaJadwal}
+            className="min-h-9 flex-none rounded-full bg-white px-3 text-xs font-bold text-hitam active:scale-[0.97]"
+          >
+            {bukaJadwal ? 'Tutup' : 'Lihat tahapan'}
+          </button>
+        </div>
+        <div className="hidden flex-wrap items-center justify-between gap-3 sm:flex">
           <div className="flex flex-wrap items-center gap-2.5">
             <Badge tone="emerald" className="px-3 py-1 text-[13px] font-bold bg-warga">
               Tahap Aktif: {tahapAktif.nama}
@@ -95,8 +112,10 @@ function SambutanWarga() {
         </div>
 
         {bukaJadwal && (
-          <div className="mt-4 border-t border-border pt-4 anim-page">
-            <p className="text-xs font-semibold text-muted">Alur 4 Tahap Musrenbang Tahunan:</p>
+          <div className="anim-page mt-3 border-t border-white/25 pt-3 sm:mt-4 sm:border-border sm:pt-4">
+            <p className="text-xs font-semibold text-white/80 sm:text-muted">
+              Alur 4 Tahap Musrenbang Tahunan:
+            </p>
             <ol className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
               {TAHAP_MUSRENBANG.map((tahap, index) => (
                 <li
@@ -166,7 +185,30 @@ function AksiUtamaWarga() {
       <h2 id="judul-aksi-cepat" className="sr-only">
         Aksi Cepat Warga
       </h2>
-      <div data-tur="aksi" className="grid gap-4 md:grid-cols-3">
+      {/* HP: tiga petak sebaris, bukan tiga kartu besar bertumpuk. */}
+      <div data-tur="aksi" className="grid grid-cols-3 gap-2 md:hidden">
+        {menu.map((item, index) => (
+          <Link
+            key={item.judul}
+            to={item.ke}
+            className={cn(
+              'kartu-cap flex min-h-[104px] flex-col items-center justify-center gap-2 rounded-2xl px-1.5 py-3 text-center text-[12.5px] leading-tight font-bold transition-[scale] duration-150 ease-out active:scale-[0.97]',
+              index === 0 ? 'bg-ink text-on-ink' : 'bg-surface text-ink',
+            )}
+          >
+            <span
+              className={cn(
+                'grid size-10 place-items-center rounded-xl border-[1.5px] border-ink text-hitam',
+                index === 0 ? 'bg-hijau-terang' : 'bg-pasir',
+              )}
+            >
+              <Icon name={item.ikon} size={20} />
+            </span>
+            {item.judul.replace(/^\d+\.\s*/, '')}
+          </Link>
+        ))}
+      </div>
+      <div data-tur="aksi" className="hidden gap-4 md:grid md:grid-cols-3">
         {menu.map((item) => (
           <Card
             key={item.judul}
@@ -288,7 +330,46 @@ function LangkahMu() {
         </div>
       </div>
 
-      <ol className="divide-y divide-border">
+      {/* HP: batang tiga langkah dan tiga baris pendek, bukan tiga blok bertombol. */}
+      <div className="pt-3 sm:hidden">
+        <div className="grid grid-cols-3 gap-1.5" aria-hidden="true">
+          {daftar.map((item) => (
+            <span
+              key={item.label}
+              className={cn('h-2 rounded-full', item.selesai ? 'bg-hijau-terang' : 'bg-pasir')}
+            />
+          ))}
+        </div>
+        <ul className="mt-2 divide-y divide-border">
+          {daftar.map((item) => (
+            <li key={item.label}>
+              <Link
+                to={user ? item.ke : '/login'}
+                className="flex min-h-12 items-center gap-3 py-2 active:bg-active"
+              >
+                <span
+                  className={cn(
+                    'grid size-7 flex-none place-items-center rounded-full text-xs font-bold',
+                    item.selesai
+                      ? 'bg-hijau-terang text-hitam'
+                      : 'border-2 border-border bg-active text-muted',
+                  )}
+                >
+                  {item.selesai ? <Icon name="centang" size={15} /> : item.nomor}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-bold text-ink">{item.label}</span>
+                  <span className="block text-xs font-semibold text-warga">{item.statusTeks}</span>
+                </span>
+                <span className="flex-none text-xs font-bold text-ink underline">
+                  {user ? item.aksi : 'Masuk'}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <ol className="hidden divide-y divide-border sm:block">
         {daftar.map((item, index) => (
           <li
             key={item.label}
@@ -401,7 +482,37 @@ function PalingDidukung() {
           .
         </div>
       ) : (
-        <ul className="flex flex-1 flex-col divide-y divide-border">
+        <>
+          {/* HP: kartu kecil yang digeser ke samping. */}
+          <ul className="trek-sembunyi -mx-4 mt-3 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 pb-1.5 sm:hidden">
+            {teratas.map((proposal, index) => (
+              <li
+                key={proposal.id}
+                className="relative flex w-[200px] flex-none snap-start flex-col overflow-hidden rounded-2xl border-[1.5px] border-ink bg-surface p-3"
+              >
+                <span
+                  aria-hidden="true"
+                  className="absolute -top-2 right-2 text-[54px] leading-none font-extrabold text-pasir"
+                >
+                  {index + 1}
+                </span>
+                <Badge tone="neutral" className="relative max-w-[130px] self-start truncate text-[11px]">
+                  {proposal.kategori}
+                </Badge>
+                <Link
+                  to={`/usulan/${proposal.id}`}
+                  className="relative mt-2 line-clamp-2 min-h-[2lh] text-[13.5px] leading-snug font-bold text-ink"
+                >
+                  {proposal.judul}
+                </Link>
+                <div className="relative mt-2.5 flex items-center justify-between gap-2">
+                  <UpvoteButton proposalId={proposal.id} jumlah={proposal.jumlah_suara} />
+                  <span className="text-[11px] text-muted">Peringkat {index + 1}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        <ul className="hidden flex-1 flex-col divide-y divide-border sm:flex">
           {teratas.map((proposal) => (
             <li key={proposal.id} className="flex flex-1 items-center gap-3.5 py-3.5">
               <CategoryTile kategori={proposal.kategori} gaya="cap" />
@@ -430,6 +541,7 @@ function PalingDidukung() {
             </li>
           ))}
         </ul>
+        </>
       )}
     </Card>
   );
@@ -571,7 +683,7 @@ function PetunjukAwam() {
         </span>
         <h2 className="text-base font-bold text-ink">Panduan Singkat untuk Warga</h2>
       </div>
-      <div className="mt-3 grid gap-3 text-sm text-muted sm:grid-cols-3">
+      <div className="trek-sembunyi -mx-4 mt-3 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 text-sm text-muted sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-3 sm:overflow-visible sm:px-0 [&>div]:w-[230px] [&>div]:flex-none [&>div]:snap-start sm:[&>div]:w-auto">
         <div className="rounded-xl border border-border/70 bg-surface p-3.5">
           <b className="block font-semibold text-ink">1. Siapa saja yang bisa usul?</b>
           <span className="mt-1 block text-xs leading-relaxed">

@@ -31,10 +31,10 @@ function KartuAngka({
   catatan?: string;
 }) {
   return (
-    <Card className="flex items-center gap-3.5 p-4 sm:p-5">
+    <Card className="flex items-center gap-3.5 p-3 max-sm:flex-col max-sm:items-start max-sm:gap-2 sm:p-5">
       <span
         aria-hidden="true"
-        className="grid size-12 flex-none place-items-center rounded-[14px] border-[1.5px] border-ink text-[#14222B]"
+        className="grid size-10 flex-none place-items-center rounded-xl border-[1.5px] border-ink text-[#14222B] sm:size-12 sm:rounded-[14px]"
         style={{ backgroundColor: warna }}
       >
         <Icon name={ikon} size={24} />
@@ -109,7 +109,7 @@ export default function UsulanSaya() {
       {milikku.length > 0 && (
         <>
           <section
-            className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+            className="stagger grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4"
             aria-label="Ringkasan usulanmu"
           >
             <KartuAngka ikon="usulan" warna="#E4DDCF" label="Usulanmu" angka={milikku.length} />
@@ -129,7 +129,7 @@ export default function UsulanSaya() {
             />
           </section>
 
-          <div className="grid gap-5 md:grid-cols-2">
+          <div className="grid gap-2.5 min-[350px]:grid-cols-2 md:gap-5">
             {[...milikku]
               .sort((a, b) => new Date(b.dibuat_pada).getTime() - new Date(a.dibuat_pada).getTime())
               .map((proposal) => (
