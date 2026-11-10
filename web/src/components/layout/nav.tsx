@@ -285,6 +285,114 @@ function initials(name: string): string {
   return ((words[0]?.[0] ?? '') + (words[1]?.[0] ?? '')).toUpperCase() || 'W';
 }
 
+/**
+ * Kartu akun saat sidebar dikecilkan: hanya lingkaran inisial. Kliknya membuka kartu kecil di
+ * samping sidebar berisi Profil dan Keluar (daftar pemberitahuan ada di sidebar yang dilebarkan).
+ * Tertutup dengan klik di luar atau Escape. Pembungkusnya tidak `relative`, jadi kartu berpatokan
+ * pada tepi sidebar, sama seperti daftar pemberitahuan.
+ */
+function UserRingkas({
+  masuk,
+  name,
+  peran,
+  isSigningOut,
+  onSignOut,
+}: {
+  masuk: boolean;
+  name: string;
+  peran: string;
+  isSigningOut: boolean;
+  onSignOut: () => void;
+}) {
+  const [buka, setBuka] = useState(false);
+  const wadah = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!buka) return;
+    const tutupLuar = (event: PointerEvent) => {
+      if (!wadah.current?.contains(event.target as Node)) setBuka(false);
+    };
+    const tutupEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setBuka(false);
+    };
+    document.addEventListener('pointerdown', tutupLuar);
+    document.addEventListener('keydown', tutupEsc);
+    return () => {
+      document.removeEventListener('pointerdown', tutupLuar);
+      document.removeEventListener('keydown', tutupEsc);
+    };
+  }, [buka]);
+
+  if (!masuk) {
+    return (
+      <Link
+        to="/login"
+        aria-label="Masuk"
+        title="Masuk"
+        className="grid size-11 place-items-center rounded-full bg-white text-hitam transition-[scale,background-color] duration-150 ease-out hover:bg-white/85 active:scale-[0.95] focus-visible:outline-2 focus-visible:outline-offset-2"
+      >
+        <Icon name="keluar" size={19} />
+      </Link>
+    );
+  }
+
+  const butirClass =
+    'flex h-11 w-full items-center justify-between gap-3 rounded-xl px-3 text-left text-[15px] font-semibold transition-colors duration-150 ease-out hover:bg-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga!';
+
+  return (
+    <div ref={wadah}>
+      {isSigningOut && <PemuatLayar label="Keluar dari akun" />}
+      <button
+        type="button"
+        onClick={() => setBuka((nilai) => !nilai)}
+        aria-expanded={buka}
+        aria-haspopup="menu"
+        aria-label={`Menu akun ${name}`}
+        title={name}
+        className="grid size-11 place-items-center rounded-full bg-hijau-terang text-[13px] font-bold text-hitam transition-[scale] duration-150 ease-out active:scale-[0.95] focus-visible:outline-2 focus-visible:outline-offset-2"
+      >
+        {initials(name)}
+      </button>
+      {buka && (
+        <div
+          role="menu"
+          aria-label="Akun"
+          className="anim-popover kartu-cap absolute bottom-0 left-full z-40 ml-4 w-56 rounded-[20px] bg-surface p-1.5 text-ink"
+        >
+          <div className="px-3 pt-2 pb-2">
+            <p className="truncate text-[15px] font-bold">{name}</p>
+            <p className="text-xs text-muted">{peran}</p>
+          </div>
+          <div className="border-t border-border pt-1.5">
+            <Link
+              to="/profil"
+              role="menuitem"
+              onClick={() => setBuka(false)}
+              className={butirClass}
+            >
+              Profil
+              <Icon name="profil" size={18} />
+            </Link>
+            <button
+              type="button"
+              role="menuitem"
+              disabled={isSigningOut}
+              onClick={() => {
+                setBuka(false);
+                onSignOut();
+              }}
+              className={cn(butirClass, 'text-[#b42318] hover:bg-[#fbeae8] disabled:opacity-60')}
+            >
+              Keluar
+              <Icon name="keluar" size={18} />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function UserRow({ dark, ringkas = false }: { dark: boolean; ringkas?: boolean }) {
   const { user, profile, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
@@ -311,41 +419,13 @@ export function UserRow({ dark, ringkas = false }: { dark: boolean; ringkas?: bo
 
   if (ringkas) {
     return (
-      <div className="flex flex-col items-center gap-2 rounded-[18px] bg-black/15 py-2">
-        {isSigningOut && <PemuatLayar label="Keluar dari akun" />}
-        {user ? (
-          <>
-            <Link
-              to="/profil"
-              aria-label={`Buka profil ${name}`}
-              title={name}
-              className="grid size-9 place-items-center rounded-full bg-hijau-terang text-xs font-bold text-hitam focus-visible:outline-2 focus-visible:outline-offset-2"
-            >
-              {initials(name)}
-            </Link>
-            <NotificationBell dark tempat="samping" />
-            <button
-              type="button"
-              aria-label="Keluar"
-              title="Keluar"
-              disabled={isSigningOut}
-              onClick={handleSignOut}
-              className="grid size-9 place-items-center rounded-xl border border-white/25 text-white transition-[scale,background-color] duration-150 ease-out hover:bg-white/15 active:scale-[0.95] disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2"
-            >
-              <Icon name="keluar" size={19} />
-            </button>
-          </>
-        ) : (
-          <Link
-            to="/login"
-            aria-label="Masuk"
-            title="Masuk"
-            className="grid size-9 place-items-center rounded-xl bg-white text-hitam transition-[scale,background-color] duration-150 ease-out hover:bg-white/85 active:scale-[0.95] focus-visible:outline-2 focus-visible:outline-offset-2"
-          >
-            <Icon name="keluar" size={19} />
-          </Link>
-        )}
-      </div>
+      <UserRingkas
+        masuk={user !== null}
+        name={name}
+        peran={isAdmin ? 'Admin' : 'Warga'}
+        isSigningOut={isSigningOut}
+        onSignOut={handleSignOut}
+      />
     );
   }
 
