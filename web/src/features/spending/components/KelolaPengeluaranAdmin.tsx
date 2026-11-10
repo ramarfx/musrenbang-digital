@@ -16,24 +16,44 @@ const JUDUL_ID = 'judul-catat-pengeluaran';
  * Pop-up catat pengeluaran. Catatan tampil ke warga dan tidak bisa diubah, jadi salah catat
  * dikoreksi dengan entri baru yang mengurangi total (kotak centang "koreksi"), bukan diedit.
  */
-function DialogCatat({ proposal, onClose }: { proposal: Proposal; onClose: () => void }) {
+function DialogCatat({
+  proposal,
+  totalSekarang,
+  onClose,
+}: {
+  proposal: Proposal;
+  totalSekarang: number;
+  onClose: () => void;
+}) {
   const mutation = useCatatPengeluaranMutation();
   const [jumlah, setJumlah] = useState('');
-  const [koreksi, setKoreksi] = useState(false);
-  const [keterangan, setKeterangan] = useState('');
-  const [sumber, setSumber] = useState('');
   const [galat, setGalat] = useState<string | null>(null);
 
   const angka = angkaDariKetikan(jumlah);
+  // Admin mengisi total keseluruhan; yang disimpan selisihnya dari total tercatat, supaya
+  // riwayat tetap tambah-saja dan total di database selalu sama dengan yang diisi admin.
+  const selisih = angka - totalSekarang;
 
   const simpan = (event: React.FormEvent) => {
     event.preventDefault();
+    if (jumlah.trim() === '') {
+      setGalat('Isi total dana yang terpakai.');
+      return;
+    }
+    if (selisih === 0) {
+      setGalat('Totalnya sama dengan yang sudah tercatat.');
+      return;
+    }
+    const koreksi = selisih < 0;
     const periksa = spendingInputSchema.safeParse({
       proposalId: proposal.id,
-      jumlah: angka,
+      jumlah: Math.abs(selisih),
       koreksi,
-      keterangan,
-      sumber,
+      keterangan: koreksi
+        ? 'Koreksi total dana terpakai'
+        : totalSekarang === 0
+          ? 'Total dana terpakai'
+          : 'Pembaruan total dana terpakai',
     });
     if (!periksa.success) {
       setGalat(periksa.error.issues[0]?.message ?? 'Isian belum benar.');
@@ -42,7 +62,7 @@ function DialogCatat({ proposal, onClose }: { proposal: Proposal; onClose: () =>
     setGalat(null);
     mutation.mutate(periksa.data, {
       onSuccess: () => {
-        toast.success(koreksi ? 'Koreksi dicatat.' : 'Pengeluaran dicatat.');
+        toast.success('Total dana terpakai disimpan.');
         onClose();
       },
       onError: (error) => setGalat(error.message),
@@ -57,64 +77,30 @@ function DialogCatat({ proposal, onClose }: { proposal: Proposal; onClose: () =>
             Catat pengeluaran
           </h2>
           <p className="mt-1 text-sm text-muted">
-            Catatan ini tampil ke warga dan tidak bisa diubah atau dihapus. Salah catat? Centang
-            koreksi dan masukkan jumlah yang mau dikurangi.
+            Isi total keseluruhan dana yang sudah terpakai untuk usulan ini. Angka ini tampil ke
+            warga. Kalau nanti bertambah, isi lagi dengan total terbarunya.
           </p>
         </div>
 
-        <Field label="Jumlah (Rupiah)" htmlFor="jumlah-pengeluaran" required>
+        <Field
+          label="Total dana terpakai (Rupiah)"
+          htmlFor="jumlah-pengeluaran"
+          required
+          hint={totalSekarang > 0 ? `Saat ini tercatat ${formatRupiah(totalSekarang)}.` : undefined}
+        >
           <Input
             id="jumlah-pengeluaran"
             inputMode="numeric"
             autoComplete="off"
-            placeholder="mis. 50000000"
+            placeholder="mis. 75000000"
             value={jumlah}
             onChange={(event) => setJumlah(event.target.value)}
           />
-          {angka > 0 && (
+          {jumlah.trim() !== '' && (
             <p className="mt-1 text-[13px] font-semibold text-ink tabular-nums" aria-live="polite">
-              {koreksi ? '−' : ''}
               {formatRupiah(angka)}
             </p>
           )}
-        </Field>
-
-        <label className="flex items-start gap-2.5 text-sm">
-          <input
-            type="checkbox"
-            checked={koreksi}
-            onChange={(event) => setKoreksi(event.target.checked)}
-            className="mt-0.5 size-4 accent-[#b42318]"
-          />
-          <span>
-            <span className="font-semibold">Ini koreksi</span>
-            <span className="block text-[13px] text-muted">
-              Jumlahnya dikurangkan dari total, bukan ditambahkan.
-            </span>
-          </span>
-        </label>
-
-        <Field label="Untuk apa" htmlFor="keterangan-pengeluaran" required>
-          <Input
-            id="keterangan-pengeluaran"
-            placeholder="mis. Termin 2 pembelian pompa"
-            maxLength={300}
-            value={keterangan}
-            onChange={(event) => setKeterangan(event.target.value)}
-          />
-        </Field>
-
-        <Field
-          label="Sumber (boleh kosong)"
-          htmlFor="sumber-pengeluaran"
-          hint="Nomor kontrak, nomor SP2D, atau tautan dokumen, supaya angkanya bisa diperiksa."
-        >
-          <Input
-            id="sumber-pengeluaran"
-            maxLength={300}
-            value={sumber}
-            onChange={(event) => setSumber(event.target.value)}
-          />
         </Field>
 
         {galat && (
@@ -128,7 +114,7 @@ function DialogCatat({ proposal, onClose }: { proposal: Proposal; onClose: () =>
             Batal
           </Button>
           <Button type="submit" isLoading={mutation.isPending} disabled={mutation.isPending}>
-            Simpan catatan
+            Simpan total
           </Button>
         </div>
       </form>
@@ -163,7 +149,7 @@ export function KelolaPengeluaranAdmin({ proposal }: { proposal: Proposal }) {
           </p>
         </div>
         <Button type="button" variant="outline" size="sm" onClick={() => setBuka(true)}>
-          Catat pengeluaran
+          {catatan.length === 0 ? 'Isi total dana' : 'Ubah total'}
         </Button>
       </div>
 
@@ -194,7 +180,9 @@ export function KelolaPengeluaranAdmin({ proposal }: { proposal: Proposal }) {
         </div>
       )}
 
-      {buka && <DialogCatat proposal={proposal} onClose={() => setBuka(false)} />}
+      {buka && (
+        <DialogCatat proposal={proposal} totalSekarang={total} onClose={() => setBuka(false)} />
+      )}
     </section>
   );
 }
