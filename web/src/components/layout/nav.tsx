@@ -52,9 +52,7 @@ export function buildNav(isAdmin: boolean, sudahMasuk = false): NavGroup[] {
       ],
     },
   );
-  if (sudahMasuk) {
-    groups.push({ title: 'Akun', items: [{ to: '/profil', label: 'Profil', icon: 'profil' }] });
-  }
+  // Profil tidak di menu: dibuka dari kartu akun di dasar sidebar (UserRow).
   return groups;
 }
 
