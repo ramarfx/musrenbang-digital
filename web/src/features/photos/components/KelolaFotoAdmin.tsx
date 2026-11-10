@@ -7,7 +7,7 @@ import {
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+
 import { Icon } from '@/components/ui/Icon';
 import { formatTanggal } from '@/lib/format';
 import { urlFoto } from '../api';
@@ -59,8 +59,10 @@ export function KelolaFotoAdmin({ proposal }: { proposal: Proposal }) {
   };
 
   return (
-    <Card>
-      <h2 className="text-lg font-bold">Foto pengerjaan</h2>
+    <section aria-labelledby="judul-foto-admin" className="mt-5 border-t border-rule pt-5">
+      <h3 id="judul-foto-admin" className="text-base font-bold">
+        Foto pengerjaan
+      </h3>
       <p className="mt-1 text-sm text-muted">
         Warga melihat foto ini di halaman usulan. {tersimpan.length} dari {MAKS_FOTO_PER_USULAN}{' '}
         foto terpakai.
@@ -138,6 +140,6 @@ export function KelolaFotoAdmin({ proposal }: { proposal: Proposal }) {
           )}
         </div>
       )}
-    </Card>
+    </section>
   );
 }
