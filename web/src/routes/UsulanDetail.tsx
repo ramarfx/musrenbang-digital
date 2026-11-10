@@ -14,6 +14,8 @@ import { CommentSection } from '@/features/comments/components/CommentSection';
 import { ModerationBadge } from '@/features/proposals/components/ModerationBadge';
 import { StatusBadge } from '@/features/proposals/components/StatusBadge';
 import { StatusTimeline } from '@/features/proposals/components/StatusTimeline';
+import { GaleriFoto } from '@/features/photos/components/GaleriFoto';
+import { usePhotosQuery } from '@/features/photos/queries';
 import { VotePanel } from '@/features/proposals/components/VotePanel';
 import { useProposalQuery, useStatusHistoryQuery } from '@/features/proposals/queries';
 import { formatRupiah, formatTanggal, formatTanggalWaktu } from '@/lib/format';
@@ -36,6 +38,7 @@ export default function UsulanDetail() {
 
   const proposalQuery = useProposalQuery(proposalId);
   const historyQuery = useStatusHistoryQuery(proposalId);
+  const fotoQuery = usePhotosQuery(proposalId);
   const proposal = proposalQuery.data ?? null;
 
   // Dari tombol Komentar di kartu: gulir ke kolom komentar begitu usulan termuat.
@@ -176,6 +179,16 @@ export default function UsulanDetail() {
           </p>
         )}
       </Card>
+
+      {fotoQuery.data && fotoQuery.data.length > 0 && (
+        <Card>
+          <h2 className="text-lg font-bold text-ink">Foto pengerjaan</h2>
+          <p className="mb-4 text-sm text-muted">
+            Foto lapangan dari admin selama usulan dikerjakan.
+          </p>
+          <GaleriFoto photos={fotoQuery.data} />
+        </Card>
+      )}
 
       {/* Baris berpasangan: tiap baris dua kartu setinggi sama, jadi tidak ada kolom yang lebih
           panjang dan menyisakan ruang kosong. Di layar sempit semuanya menumpuk berurutan. */}

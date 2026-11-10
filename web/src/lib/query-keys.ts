@@ -12,6 +12,8 @@ export const queryKeys = {
   proposals: ['proposals'] as const,
   proposal: (proposalId: number) => ['proposals', 'detail', proposalId] as const,
   proposalHistory: (proposalId: number) => ['proposals', 'history', proposalId] as const,
+  proposalPhotos: (proposalId: number) => ['photos', 'proposal', proposalId] as const,
+  allPhotos: ['photos', 'all'] as const,
   comments: (proposalId: number) => ['comments', proposalId] as const,
   hasVoted: (proposalId: number, userId: string | null) =>
     ['votes', 'has-voted', proposalId, userId] as const,

@@ -7,6 +7,7 @@ import type { Profile } from '../schemas/profile';
 import type { AdminStats, AspirationOverviewRow, PublicStats } from '../schemas/stats';
 import type {
   Proposal,
+  ProposalPhoto,
   ProposalRow,
   ProposalSeed,
   StatusHistory,
@@ -94,6 +95,11 @@ export type Database = {
       proposal_status_history: TableDefinition<
         StatusHistoryRow,
         StatusHistoryInsert,
+        Record<string, never>
+      >;
+      proposal_photos: TableDefinition<
+        ProposalPhoto,
+        { proposal_id: number; path: string; keterangan?: string | null },
         Record<string, never>
       >;
       votes: TableDefinition<

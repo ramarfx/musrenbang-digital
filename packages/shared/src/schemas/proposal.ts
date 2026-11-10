@@ -124,6 +124,18 @@ export const statusHistorySchema = statusHistoryRowSchema.omit({ diubah_oleh: tr
   diubah_oleh_nama: z.string().nullable(),
 });
 
+/** Foto pengerjaan usulan yang diunggah admin saat status Dikerjakan atau Selesai. */
+export const proposalPhotoSchema = z.object({
+  id: idSchema,
+  proposal_id: idSchema,
+  /** Lokasi berkas di bucket `foto-pengerjaan`: "<proposal_id>/<uuid>.webp". */
+  path: z.string().min(3),
+  status: z.enum(['Dikerjakan', 'Selesai']),
+  keterangan: z.string().nullable().default(null),
+  diunggah_oleh: uuidSchema.nullable(),
+  dibuat_pada: timestampSchema,
+});
+
 /** Bentuk usulan di berkas seed (tanpa id/timestamp buatan database). */
 export const proposalSeedSchema = z.object({
   judul: z.string().trim().min(TEXT_LIMITS.judulMin),
@@ -145,3 +157,4 @@ export type ProposalModerationInput = z.infer<typeof proposalModerationInputSche
 export type ProposalSeed = z.infer<typeof proposalSeedSchema>;
 export type StatusHistoryRow = z.infer<typeof statusHistoryRowSchema>;
 export type StatusHistory = z.infer<typeof statusHistorySchema>;
+export type ProposalPhoto = z.infer<typeof proposalPhotoSchema>;

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button, buttonClass } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
+import { KelolaFotoAdmin } from '@/features/photos/components/KelolaFotoAdmin';
 import { getCategoryInfo } from '@/features/categories/info';
 import { ModerationBadge } from '@/features/proposals/components/ModerationBadge';
 import { StatusBadge } from '@/features/proposals/components/StatusBadge';
@@ -115,6 +116,8 @@ export function RincianUsulan({
             </div>
           )}
         </Card>
+
+        <KelolaFotoAdmin proposal={proposal} />
 
         <Card>
           <h2 className="text-lg font-bold">Riwayat tahap</h2>
