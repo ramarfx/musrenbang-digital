@@ -5,6 +5,8 @@ import { Icon } from '@/components/ui/Icon';
 import { useAuth } from '@/features/auth';
 import { useCommentCountsQuery } from '@/features/comments/queries';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
+import { FotoMini } from '@/features/photos/components/FotoMini';
+import { useFotoPerUsulan } from '@/features/photos/queries';
 import { cn } from '@/lib/cn';
 import { formatRupiahRingkas, formatTanggal } from '@/lib/format';
 import { useMasukTerlihat } from '@/lib/reveal';
@@ -221,6 +223,7 @@ export function ProposalCard({ proposal }: { proposal: Proposal }) {
   const punyaAksi = milikku && (bisaDiubah(proposal) || bisaDihapus(proposal));
   const keadaan = keadaanUsulan(proposal);
   const jumlahKomentar = useCommentCountsQuery().data?.[proposal.id] ?? 0;
+  const fotoPengerjaan = useFotoPerUsulan().get(proposal.id) ?? [];
 
   return (
     <article
@@ -282,6 +285,8 @@ export function ProposalCard({ proposal }: { proposal: Proposal }) {
       <div className="mt-3">
         <TahapMini tahap={keadaan.tahap} ditolak={keadaan.ditolak} />
       </div>
+
+      <FotoMini photos={fotoPengerjaan} />
 
       <div className="mt-auto">
         <dl className="mt-3.5 grid grid-cols-2 gap-3 border-t border-rule pt-3 text-sm">
