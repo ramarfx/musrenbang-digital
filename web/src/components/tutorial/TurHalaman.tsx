@@ -1,13 +1,7 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
-import { createPortal } from "react-dom";
-import { Icon } from "@/components/ui/Icon";
-import { cn } from "@/lib/cn";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Icon } from '@/components/ui/Icon';
+import { cn } from '@/lib/cn';
 
 /** Satu langkah tur: `target` dicocokkan dengan atribut `data-tur` di halaman. */
 export type LangkahTur = { target: string; judul: string; isi: string };
@@ -16,9 +10,15 @@ type Kotak = { atas: number; kiri: number; lebar: number; tinggi: number };
 
 const JARAK = 8;
 const LEBAR_KARTU = 320;
+/** Berapa bingkai berturut-turut posisi bagian harus diam sebelum gulir dianggap selesai. */
+const BINGKAI_DIAM = 6;
+const BATAS_TUNGGU_MS = 1400;
 
-const cari = (target: string) =>
-  document.querySelector<HTMLElement>(`[data-tur="${target}"]`);
+// Tombol asisten melayang menempati pojok kanan bawah bila menyala; tombol bantuan
+// ditumpuk tepat di atasnya supaya posisinya sama di semua halaman.
+const ADA_ASISTEN = import.meta.env.VITE_MUSRENAI_ENABLED === 'true';
+
+const cari = (target: string) => document.querySelector<HTMLElement>(`[data-tur="${target}"]`);
 
 function ukur(el: HTMLElement): Kotak {
   const r = el.getBoundingClientRect();
@@ -33,10 +33,22 @@ function ukur(el: HTMLElement): Kotak {
   };
 }
 
+/** Bagian yang tinggi diletakkan di atas layar, yang lain di tengah. Benar bila sudah di sana. */
+function perluGulir(el: HTMLElement): { gulir: boolean; tinggi: boolean } {
+  const r = el.getBoundingClientRect();
+  const tinggiLayar = window.innerHeight;
+  const tinggi = r.height > tinggiLayar * 0.7;
+  const sudah = tinggi
+    ? r.top >= 0 && r.top <= tinggiLayar * 0.25
+    : Math.abs((r.top + r.bottom) / 2 - tinggiLayar / 2) <= 40;
+  return { gulir: !sudah, tinggi };
+}
+
 /**
- * Tombol "?" di samping judul halaman. Dipencet, halaman dipudarkan dan satu bagian disorot
- * bergantian, tiap bagian dengan kartu penjelasan. Bisa ditutup kapan saja. Langkah yang
- * bagiannya tidak ada di layar (mis. data belum dimuat) dilewati.
+ * Tombol "?" kecil di pojok kanan bawah, selalu di tempat yang sama. Dipencet, halaman
+ * dipudarkan dan satu bagian disorot bergantian, tiap bagian dengan kartu penjelasan. Bisa
+ * ditutup kapan saja. Langkah yang bagiannya tidak ada di layar (mis. data belum dimuat)
+ * dilewati.
  */
 export function TurHalaman({ langkah }: { langkah: readonly LangkahTur[] }) {
   const [daftar, setDaftar] = useState<readonly LangkahTur[] | null>(null);
@@ -47,7 +59,9 @@ export function TurHalaman({ langkah }: { langkah: readonly LangkahTur[] }) {
     tombolRef.current?.focus();
   }, []);
 
-  return (
+  // Dipasang ke body: kelas animasi halaman memakai transform, yang akan membuat posisi
+  // `fixed` ikut bergeser terhadap halaman.
+  return createPortal(
     <>
       <button
         ref={tombolRef}
@@ -58,75 +72,120 @@ export function TurHalaman({ langkah }: { langkah: readonly LangkahTur[] }) {
         }}
         aria-label="Bantuan halaman ini"
         title="Bantuan halaman ini"
-        className="grid size-9 flex-none place-items-center rounded-full border-[1.5px] border-ink bg-[#F6D98B] text-base font-extrabold text-[#14222B] shadow-[0_2px_0_var(--ink)] transition-transform duration-150 ease-[var(--ease-out)] active:translate-y-0.5 active:shadow-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
+        className={cn(
+          'fixed right-3 z-40 grid size-10 place-items-center rounded-full border border-edge bg-surface text-sm font-semibold text-muted transition-[color,border-color,scale] duration-150 ease-out hover:border-ink hover:text-ink active:scale-[0.94] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga sm:right-5 sm:size-9',
+          ADA_ASISTEN ? 'bottom-[68px] sm:bottom-[76px]' : 'bottom-3 sm:bottom-5',
+        )}
       >
         ?
       </button>
-      {daftar &&
-        createPortal(<Tur langkah={daftar} onTutup={tutup} />, document.body)}
-    </>
+      {daftar && <Tur langkah={daftar} onTutup={tutup} />}
+    </>,
+    document.body,
   );
 }
 
-function Tur({
-  langkah,
-  onTutup,
-}: {
-  langkah: readonly LangkahTur[];
-  onTutup: () => void;
-}) {
+function Tur({ langkah, onTutup }: { langkah: readonly LangkahTur[]; onTutup: () => void }) {
   const [urutan, setUrutan] = useState(0);
   const [kotak, setKotak] = useState<Kotak | null>(null);
-  const [tinggiKartu, setTinggiKartu] = useState(180);
+  // Selama layar masih bergulir ke bagian berikutnya, hanya latar gelap yang tampil.
+  const [siap, setSiap] = useState(false);
+  const [tinggiKartu, setTinggiKartu] = useState(190);
+  const siapRef = useRef(false);
+  const akarRef = useRef<HTMLDivElement>(null);
   const kartuRef = useRef<HTMLDivElement>(null);
   const lanjutRef = useRef<HTMLButtonElement>(null);
   const kini = langkah[urutan];
   const terakhir = urutan === langkah.length - 1;
 
-  // Gulung ke bagian yang disorot, lalu ikuti posisinya selama layar bergerak atau berubah ukuran.
+  // Gulung ke bagian yang disorot, tunggu sampai gulirnya berhenti, baru tampilkan sorotan.
+  // Dengan begitu sorotan tidak pernah mengejar halaman yang masih bergerak.
   useLayoutEffect(() => {
     const el = cari(kini.target);
     if (!el) return;
-    const kurangiGerak = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    el.scrollIntoView({
-      block: "center",
-      behavior: kurangiGerak ? "auto" : "smooth",
-    });
+    setSiap(false);
+    const kurangiGerak = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const { gulir, tinggi } = perluGulir(el);
+    if (gulir) {
+      el.scrollIntoView({
+        block: tinggi ? 'start' : 'center',
+        behavior: kurangiGerak ? 'auto' : 'smooth',
+      });
+    }
+
     let bingkai = 0;
-    const perbarui = () => {
-      cancelAnimationFrame(bingkai);
-      bingkai = requestAnimationFrame(() => setKotak(ukur(el)));
+    let terakhirAtas = Number.NaN;
+    let diam = 0;
+    let selesai = false;
+    const tampilkan = () => {
+      if (selesai) return;
+      selesai = true;
+      setKotak(ukur(el));
+      setSiap(true);
     };
-    setKotak(ukur(el));
-    // Pendengar gulir ikut memantau gulir halus yang belum selesai saat pertama diukur.
-    window.addEventListener("scroll", perbarui, true);
-    window.addEventListener("resize", perbarui);
+    const tunggu = () => {
+      if (selesai) return;
+      const atas = el.getBoundingClientRect().top;
+      diam = Math.abs(atas - terakhirAtas) < 0.5 ? diam + 1 : 0;
+      terakhirAtas = atas;
+      if (diam >= (gulir ? BINGKAI_DIAM : 2)) {
+        tampilkan();
+        return;
+      }
+      bingkai = requestAnimationFrame(tunggu);
+    };
+    bingkai = requestAnimationFrame(tunggu);
+    // Pengaman: tab yang tidak tampil tidak menjalankan bingkai animasi.
+    const pengaman = window.setTimeout(tampilkan, BATAS_TUNGGU_MS);
+
+    // Setelah siap, layar yang berubah ukuran atau bergeser tetap diikuti.
+    const ikuti = () => {
+      if (siapRef.current) setKotak(ukur(el));
+    };
+    window.addEventListener('resize', ikuti);
+    window.addEventListener('scroll', ikuti, true);
     return () => {
+      selesai = true;
+      clearTimeout(pengaman);
       cancelAnimationFrame(bingkai);
-      window.removeEventListener("scroll", perbarui, true);
-      window.removeEventListener("resize", perbarui);
+      window.removeEventListener('resize', ikuti);
+      window.removeEventListener('scroll', ikuti, true);
     };
   }, [kini.target]);
 
   useEffect(() => {
-    lanjutRef.current?.focus();
-  }, [urutan]);
+    siapRef.current = siap;
+  }, [siap]);
+
+  useEffect(() => {
+    if (siap) lanjutRef.current?.focus({ preventScroll: true });
+  }, [siap, urutan]);
 
   useLayoutEffect(() => {
-    if (kartuRef.current) setTinggiKartu(kartuRef.current.offsetHeight);
-  }, [urutan]);
+    if (siap && kartuRef.current) setTinggiKartu(kartuRef.current.offsetHeight);
+  }, [siap, urutan]);
+
+  // Halaman di balik tur tidak boleh bergulir oleh pengguna: sorotan akan terlihat meleset.
+  useEffect(() => {
+    const akar = akarRef.current;
+    if (!akar) return;
+    const cegah = (e: Event) => e.preventDefault();
+    akar.addEventListener('wheel', cegah, { passive: false });
+    akar.addEventListener('touchmove', cegah, { passive: false });
+    return () => {
+      akar.removeEventListener('wheel', cegah);
+      akar.removeEventListener('touchmove', cegah);
+    };
+  }, []);
 
   useEffect(() => {
     const saatKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onTutup();
-      if (e.key === "ArrowRight")
-        setUrutan((n) => Math.min(n + 1, langkah.length - 1));
-      if (e.key === "ArrowLeft") setUrutan((n) => Math.max(n - 1, 0));
+      if (e.key === 'Escape') onTutup();
+      if (e.key === 'ArrowRight') setUrutan((n) => Math.min(n + 1, langkah.length - 1));
+      if (e.key === 'ArrowLeft') setUrutan((n) => Math.max(n - 1, 0));
     };
-    window.addEventListener("keydown", saatKey);
-    return () => window.removeEventListener("keydown", saatKey);
+    window.addEventListener('keydown', saatKey);
+    return () => window.removeEventListener('keydown', saatKey);
   }, [onTutup, langkah.length]);
 
   const lebarLayar = window.innerWidth;
@@ -134,107 +193,104 @@ function Tur({
   const sempit = lebarLayar < 640;
 
   // Di HP kartu menempel di bawah layar. Di layar lebar kartu di bawah bagian yang disorot,
-  // atau di atasnya bila tidak muat, dan dijepit supaya tidak keluar layar.
-  let gaya: React.CSSProperties;
-  if (sempit || !kotak) {
-    gaya = { left: 12, right: 12, bottom: 12 };
-  } else {
-    const lebar = Math.min(LEBAR_KARTU, lebarLayar - 24);
-    const kiri = Math.min(Math.max(12, kotak.kiri), lebarLayar - lebar - 12);
-    const bawahKotak = kotak.atas + kotak.tinggi + 12;
-    const muatDiBawah = bawahKotak + tinggiKartu < tinggiLayar - 12;
-    const atasKotak = kotak.atas - tinggiKartu - 12;
-    if (muatDiBawah) gaya = { left: kiri, top: bawahKotak, width: lebar };
-    else if (atasKotak >= 12) gaya = { left: kiri, top: atasKotak, width: lebar };
-    // Bagian sorot memenuhi layar: kartu menempel di bawah, di atas sorotan.
-    else gaya = { left: kiri, bottom: 12, width: lebar };
+  // atau di atasnya bila tidak muat, atau di bawah layar bila sorotan memenuhi layar.
+  let gaya: React.CSSProperties | null = null;
+  if (siap && kotak) {
+    if (sempit) {
+      gaya = { left: 12, right: 12, bottom: 12 };
+    } else {
+      const lebar = Math.min(LEBAR_KARTU, lebarLayar - 24);
+      const kiri = Math.min(Math.max(12, kotak.kiri), lebarLayar - lebar - 12);
+      const bawahKotak = kotak.atas + kotak.tinggi + 12;
+      const atasKotak = kotak.atas - tinggiKartu - 12;
+      if (bawahKotak + tinggiKartu < tinggiLayar - 12) gaya = { left: kiri, top: bawahKotak, width: lebar };
+      else if (atasKotak >= 12) gaya = { left: kiri, top: atasKotak, width: lebar };
+      else gaya = { left: kiri, bottom: 12, width: lebar };
+    }
   }
 
-  return (
-    <div className="fixed inset-0 z-[1200]">
+  return createPortal(
+    <div ref={akarRef} className="fixed inset-0 z-[1200]">
       {/* Penangkap klik: tidak ada yang bisa dipencet di halaman selama tur. */}
       <div className="absolute inset-0" onClick={onTutup} aria-hidden="true" />
-      {kotak && (
+      {siap && kotak ? (
         <div
           aria-hidden="true"
           className="tur-sorot pointer-events-none absolute rounded-xl border-[1.5px] border-ink"
-          style={{
-            top: kotak.atas,
-            left: kotak.kiri,
-            width: kotak.lebar,
-            height: kotak.tinggi,
-          }}
+          style={{ top: kotak.atas, left: kotak.kiri, width: kotak.lebar, height: kotak.tinggi }}
         />
+      ) : (
+        <div aria-hidden="true" className="tur-latar pointer-events-none absolute inset-0" />
       )}
-      <div
-        ref={kartuRef}
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Bantuan halaman, langkah ${urutan + 1} dari ${langkah.length}`}
-        key={urutan}
-        style={gaya}
-        className={cn(
-          "tur-kartu absolute rounded-xl border-[1.5px] border-ink bg-surface p-4 text-ink shadow-[0_4px_0_var(--ink)]",
-          sempit && "max-w-none",
-        )}
-      >
-        <div className="flex items-center justify-between gap-2 text-xs font-bold text-muted">
-          <span>
-            Langkah {urutan + 1} dari {langkah.length}
-          </span>
-          <button
-            type="button"
-            onClick={onTutup}
-            aria-label="Tutup bantuan"
-            title="Tutup"
-            className="-mr-1.5 grid size-8 place-items-center rounded-lg text-ink hover:bg-active focus-visible:outline-2 focus-visible:outline-warga"
-          >
-            <Icon name="tutup" size={16} />
-          </button>
-        </div>
-        <h2 className="mt-1 text-base font-bold">{kini.judul}</h2>
-        <p className="mt-1 text-sm text-muted">{kini.isi}</p>
-        <div className="mt-3 flex items-center gap-2">
-          <span className="flex flex-1 items-center gap-1" aria-hidden="true">
-            {langkah.map((item, i) => (
-              <i
-                key={item.target}
-                className={cn(
-                  "block h-1.5 rounded-full transition-[width,background-color] duration-200",
-                  i === urutan ? "w-4 bg-ink" : "w-1.5 bg-track",
-                )}
-              />
-            ))}
-          </span>
-          {!terakhir && (
+      {gaya && (
+        <div
+          ref={kartuRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Bantuan halaman, langkah ${urutan + 1} dari ${langkah.length}`}
+          key={urutan}
+          style={gaya}
+          className="tur-kartu absolute rounded-xl border-[1.5px] border-ink bg-surface p-4 text-ink shadow-[0_4px_0_var(--ink)]"
+        >
+          <div className="flex items-center justify-between gap-2 text-xs font-bold text-muted">
+            <span>
+              Langkah {urutan + 1} dari {langkah.length}
+            </span>
             <button
               type="button"
               onClick={onTutup}
-              className="min-h-9 px-2 text-xs text-muted underline hover:text-ink"
+              aria-label="Tutup bantuan"
+              title="Tutup"
+              className="-mr-1.5 grid size-8 place-items-center rounded-lg text-ink hover:bg-active focus-visible:outline-2 focus-visible:outline-warga"
             >
-              Lewati
+              <Icon name="tutup" size={16} />
             </button>
-          )}
-          {urutan > 0 && (
+          </div>
+          <h2 className="mt-1 text-base font-bold">{kini.judul}</h2>
+          <p className="mt-1 text-sm text-muted">{kini.isi}</p>
+          <div className="mt-3 flex items-center gap-2">
+            <span className="flex flex-1 items-center gap-1" aria-hidden="true">
+              {langkah.map((item, i) => (
+                <i
+                  key={item.target}
+                  className={cn(
+                    'block h-1.5 rounded-full',
+                    i === urutan ? 'w-4 bg-ink' : 'w-1.5 bg-track',
+                  )}
+                />
+              ))}
+            </span>
+            {!terakhir && (
+              <button
+                type="button"
+                onClick={onTutup}
+                className="min-h-9 px-2 text-xs text-muted underline hover:text-ink"
+              >
+                Lewati
+              </button>
+            )}
+            {urutan > 0 && (
+              <button
+                type="button"
+                onClick={() => setUrutan(urutan - 1)}
+                aria-label="Langkah sebelumnya"
+                className="grid size-9 place-items-center rounded-lg border-[1.5px] border-ink bg-surface hover:bg-active"
+              >
+                <Icon name="panahKiri" size={16} />
+              </button>
+            )}
             <button
+              ref={lanjutRef}
               type="button"
-              onClick={() => setUrutan(urutan - 1)}
-              aria-label="Langkah sebelumnya"
-              className="grid size-9 place-items-center rounded-lg border-[1.5px] border-ink bg-surface hover:bg-active"
+              onClick={() => (terakhir ? onTutup() : setUrutan(urutan + 1))}
+              className="min-h-9 rounded-lg border-[1.5px] border-ink bg-[#035C42] px-4 text-sm font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
             >
-              <Icon name="panahKiri" size={16} />
+              {terakhir ? 'Selesai' : 'Lanjut'}
             </button>
-          )}
-          <button
-            ref={lanjutRef}
-            type="button"
-            onClick={() => (terakhir ? onTutup() : setUrutan(urutan + 1))}
-            className="min-h-9 rounded-lg border-[1.5px] border-ink bg-[#035C42] px-4 text-sm font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
-          >
-            {terakhir ? "Selesai" : "Lanjut"}
-          </button>
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+    </div>,
+    document.body,
   );
 }
