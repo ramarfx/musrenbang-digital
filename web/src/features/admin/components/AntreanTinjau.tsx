@@ -7,6 +7,7 @@ import { Button, buttonClass } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Field } from '@/components/ui/Field';
+import { Icon } from '@/components/ui/Icon';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { Pagination } from '@/components/ui/Pagination';
@@ -549,46 +550,49 @@ export function AntreanTinjau({ proposals }: { proposals: Proposal[] }) {
                       ['needs_review', 'Perlu ditinjau', daftarPerFlag('needs_review').length],
                     ] as const
                   ).map(([nilai, label, jumlah]) => (
-                    <span
+                    <button
                       key={nilai}
-                      className={cn(
-                        'inline-flex items-stretch',
-                        jumlah > 0 &&
-                          FLAGS_TOLAK.includes(nilai as FlagAi) &&
-                          'overflow-hidden rounded-lg border border-[#b42318]/60 bg-surface',
-                      )}
+                      type="button"
+                      aria-pressed={saringAi === nilai}
+                      onClick={() => setSaringAi(nilai)}
+                      className={kelasChip(saringAi === nilai)}
                     >
-                      <button
-                        type="button"
-                        aria-pressed={saringAi === nilai}
-                        onClick={() => setSaringAi(nilai)}
-                        className={
-                          jumlah > 0 && FLAGS_TOLAK.includes(nilai as FlagAi)
-                            ? cn(
-                                'relative inline-flex min-h-9 items-center gap-1.5 px-2.5 text-[13px] font-semibold transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-warga',
-                                saringAi === nilai ? 'bg-ink text-on-ink' : 'hover:bg-active',
-                              )
-                            : kelasChip(saringAi === nilai)
-                        }
-                      >
-                        {label}
-                        <span className="text-[11px] font-bold tabular-nums opacity-70">
-                          {jumlah}
-                        </span>
-                      </button>
-                      {jumlah > 0 && FLAGS_TOLAK.includes(nilai as FlagAi) && (
-                        <button
-                          type="button"
-                          disabled={sedangTolak}
-                          onClick={() => bukaTolak(nilai as FlagAi)}
-                          className="inline-flex min-h-9 items-center border-l border-[#b42318]/30 px-2.5 text-[13px] font-semibold text-[#b42318] transition-colors duration-150 ease-out hover:bg-[#fbeae8] disabled:opacity-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#b42318]"
-                        >
-                          Tolak semua
-                        </button>
-                      )}
-                    </span>
+                      {label}
+                      <span className="text-[11px] font-bold tabular-nums opacity-70">
+                        {jumlah}
+                      </span>
+                    </button>
                   ))}
                 </div>
+
+                {FLAGS_TOLAK.some((flag) => daftarPerFlag(flag).length > 0) && (
+                  <div
+                    role="group"
+                    aria-label="Tolak cepat usulan berindikasi"
+                    className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3"
+                  >
+                    <span className="mr-1 text-[13px] font-bold">Tolak cepat</span>
+                    {FLAGS_TOLAK.map((flag) => {
+                      const jumlah = daftarPerFlag(flag).length;
+                      if (jumlah === 0) return null;
+                      return (
+                        <button
+                          key={flag}
+                          type="button"
+                          disabled={sedangTolak}
+                          onClick={() => bukaTolak(flag)}
+                          className="group inline-flex min-h-9 items-center gap-1.5 rounded-[10px] border-[1.5px] border-ink bg-surface px-3 text-[13px] font-semibold text-ink transition-colors duration-150 ease-out hover:border-[#b42318] hover:bg-[#fbeae8] disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
+                        >
+                          <span className="text-[#b42318] transition-transform duration-150 ease-out group-hover:-rotate-6 motion-reduce:transition-none motion-reduce:group-hover:rotate-0">
+                            <Icon name="sampah" size={17} />
+                          </span>
+                          {LABEL_INDIKASI[flag]}
+                          <span className="font-semibold text-muted tabular-nums">{jumlah}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {saringAi === 'aman' && daftarAman.length > 0 && (
                   <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
