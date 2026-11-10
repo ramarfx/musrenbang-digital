@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button, buttonClass } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import type { LangkahTur } from '@/components/tutorial/TurHalaman';
 import { Icon } from '@/components/ui/Icon';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { PageLoader } from '@/components/ui/PageLoader';
@@ -14,6 +15,34 @@ import { porsiKategori } from '@/features/apbd/lib';
 import { useApbdQuery } from '@/features/apbd/queries';
 import { useCategoriesQuery } from '@/features/categories/queries';
 import { useAppConfigQuery } from '@/features/config/queries';
+
+const TUR_APBD: readonly LangkahTur[] = [
+  {
+    target: 'ringkasan',
+    judul: 'Total dan bidang terbesar',
+    isi: 'Ringkasan anggaran daerah tahun ini dan bidang yang mendapat porsi paling besar.',
+  },
+  {
+    target: 'porsi',
+    judul: 'Porsi tiap bidang',
+    isi: 'Setiap batang menunjukkan berapa persen APBD yang dialokasikan ke satu bidang.',
+  },
+  {
+    target: 'angka',
+    judul: 'Angka dan sumbernya',
+    isi: 'Buka daftar lengkap angka per program, lengkap dengan status verifikasi dan tautan ke sumber resmi.',
+  },
+  {
+    target: 'dokumen',
+    judul: 'Dokumen resmi',
+    isi: 'Unduhan dokumen APBD asli dari pemerintah daerah, untuk memeriksa angkanya sendiri.',
+  },
+  {
+    target: 'bandingkan',
+    judul: 'Bandingkan dengan pilihan warga',
+    isi: 'Lihat seberapa jauh pilihan warga berbeda dari anggaran di halaman ini.',
+  },
+];
 
 export default function Apbd() {
   const apbdQuery = useApbdQuery();
@@ -36,9 +65,10 @@ export default function Apbd() {
     <div className="space-y-6">
       <PageHeader
         title={`APBD ${kota} ${tahun}`}
+        tur={TUR_APBD}
         description="Perbandingan di halaman Bandingkan hanya memakai angka yang sudah terverifikasi dan bertautan ke sumber resminya. Angka yang belum terverifikasi tetap tampil di sini dengan statusnya."
         actions={
-          <Link to="/bandingkan" className={buttonClass('outline', 'sm')}>
+          <Link to="/bandingkan" data-tur="bandingkan" className={buttonClass('outline', 'sm')}>
             Bandingkan dengan pilihan warga
           </Link>
         }
@@ -64,12 +94,17 @@ export default function Apbd() {
 
       {items.length > 0 && (
         <>
-          <ApbdRingkasan porsi={porsi} kota={kota} tahun={tahun} />
-          <ApbdPorsi porsi={porsi} />
+          <div data-tur="ringkasan">
+            <ApbdRingkasan porsi={porsi} kota={kota} tahun={tahun} />
+          </div>
+          <div data-tur="porsi">
+            <ApbdPorsi porsi={porsi} />
+          </div>
 
           <div>
             <Button
               variant="outline"
+              data-tur="angka"
               onClick={() => setTabelTerbuka((terbuka) => !terbuka)}
               aria-expanded={tabelTerbuka}
               aria-controls="daftar-angka-apbd"
@@ -84,7 +119,9 @@ export default function Apbd() {
         </>
       )}
 
-      <DokumenResmiKartu />
+      <div data-tur="dokumen">
+        <DokumenResmiKartu />
+      </div>
     </div>
   );
 }
