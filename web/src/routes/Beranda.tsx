@@ -15,11 +15,35 @@ import { useGapQuery } from '@/features/gap/queries';
 import { pilihTeratas } from '@/features/proposals/components/TopProposals';
 import { UpvoteButton } from '@/features/proposals/components/UpvoteButton';
 import { useMyVotesQuery, useProposalsQuery } from '@/features/proposals/queries';
+import { TurHalaman, type LangkahTur } from '@/components/tutorial/TurHalaman';
 import { cn } from '@/lib/cn';
 import { formatAngka, formatPersen } from '@/lib/format';
 import { TAHAP_MUSRENBANG, tahapSekarang } from '@/lib/jadwal';
 
 const TARGET_DUKUNGAN = 3;
+
+const TUR_BERANDA: readonly LangkahTur[] = [
+  {
+    target: 'sambutan',
+    judul: 'Tahap yang sedang berjalan',
+    isi: 'Di sini kamu tahu musrenbang sedang di tahap apa dan kapan jadwalnya.',
+  },
+  {
+    target: 'aksi',
+    judul: 'Tiga hal yang bisa kamu lakukan',
+    isi: 'Tulis usulan, dukung usulan warga lain, atau bagi anggaran virtual. Mulai dari yang nomor 1.',
+  },
+  {
+    target: 'langkah',
+    judul: 'Kemajuan partisipasimu',
+    isi: 'Centang otomatis bertambah setiap kamu menyelesaikan satu langkah.',
+  },
+  {
+    target: 'populer',
+    judul: 'Usulan yang paling didukung',
+    isi: 'Lihat usulan terpopuler dan dukung langsung dari sini dengan satu klik.',
+  },
+];
 
 /**
  * Kartu sambutan ramah warga awam: sapaan jelas, ringkasan tahap berjalan, dan opsi lihat jadwal.
@@ -32,8 +56,8 @@ function SambutanWarga() {
   const namaPanggilan = profile?.nama?.trim().split(/\s+/)[0];
 
   return (
-    <Card className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <Card tur="sambutan" className="space-y-4">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-warga">
             Portal Musrenbang Warga
@@ -48,6 +72,7 @@ function SambutanWarga() {
             prioritas warga dengan anggaran daerah (APBD).
           </p>
         </div>
+        <TurHalaman langkah={TUR_BERANDA} />
       </div>
 
       <div className="rounded-2xl border border-border bg-active/40 p-4 sm:p-5">
@@ -141,7 +166,7 @@ function AksiUtamaWarga() {
       <h2 id="judul-aksi-cepat" className="sr-only">
         Aksi Cepat Warga
       </h2>
-      <div className="grid gap-4 md:grid-cols-3">
+      <div data-tur="aksi" className="grid gap-4 md:grid-cols-3">
         {menu.map((item) => (
           <Card
             key={item.judul}
@@ -229,7 +254,7 @@ function LangkahMu() {
   const jumlahSelesai = daftar.filter((item) => item.selesai).length;
 
   return (
-    <Card>
+    <Card tur="langkah">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3">
         <div>
           <h2 className="text-lg font-bold text-ink">Status Partisipasi Anda</h2>
@@ -335,7 +360,7 @@ function PalingDidukung() {
   );
 
   return (
-    <Card className="flex flex-col">
+    <Card tur="populer" className="flex flex-col">
       <div className="flex items-baseline justify-between gap-3 border-b border-border pb-3">
         <div>
           <h2 className="text-lg font-bold text-ink">Usulan Warga Paling Populer</h2>

@@ -1675,3 +1675,30 @@ html::-webkit-scrollbar,
     animation-duration: 600ms;
   }
 }
+
+/* Tur halaman (tombol "?"): sorotan menggelapkan sisa layar lewat bayangan raksasa. */
+.tur-sorot {
+  box-shadow: 0 0 0 9999px rgba(20, 34, 43, 0.62);
+  transition:
+    top 220ms var(--ease-out),
+    left 220ms var(--ease-out),
+    width 220ms var(--ease-out),
+    height 220ms var(--ease-out);
+}
+.tur-kartu {
+  animation: tur-masuk 180ms var(--ease-out);
+}
+@keyframes tur-masuk {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tur-sorot {
+    transition: none;
+  }
+  .tur-kartu {
+    animation: none;
+  }
+}
