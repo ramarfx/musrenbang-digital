@@ -236,11 +236,11 @@ export function ProposalCard({ proposal, turDukung }: { proposal: Proposal; turD
     >
       {milikku && <TandaTayang moderasi={proposal.moderasi} />}
 
-      {/* HP (dua kolom): ikon di atas judul, rincian disembunyikan; lengkapnya di halaman detail. */}
-      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
+      {/* HP (dua kolom): ikon dan judul sejajar, rincian disembunyikan; lengkapnya di halaman detail. */}
+      <div className="flex items-start gap-2 sm:items-center sm:gap-3 max-sm:[&>span]:size-8 max-sm:[&>span]:rounded-[10px] max-sm:[&_svg]:size-[18px]">
         <CategoryTile kategori={proposal.kategori} />
         <div className="min-w-0">
-          <h3 className="line-clamp-3 min-h-[3lh] text-[13.5px] leading-snug font-bold sm:line-clamp-2 sm:min-h-[2lh] sm:text-base [overflow-wrap:anywhere] text-ink transition-colors duration-150 group-hover:text-warga sm:text-[17px]">
+          <h3 className="line-clamp-3 min-h-[2lh] text-[13px] leading-snug font-bold sm:line-clamp-2 sm:text-base [overflow-wrap:break-word] text-ink transition-colors duration-150 group-hover:text-warga sm:text-[17px]">
             <Link
               to={`/usulan/${proposal.id}`}
               className="after:absolute after:inset-0 after:rounded-3xl after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-warga"
