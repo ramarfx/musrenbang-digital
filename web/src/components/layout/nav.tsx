@@ -101,8 +101,9 @@ function TutsMenu({ item, aktif, ringkas }: { item: NavItem; aktif: boolean; rin
       aria-current={aktif ? 'page' : undefined}
       title={ringkas ? item.label : undefined}
       className={cn(
-        'group relative isolate flex h-[46px] items-center rounded-[14px] pb-1 pl-[9px] text-[15px] font-semibold transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2',
-        ringkas ? 'pr-[5px]' : 'pr-3',
+        'group relative isolate flex h-[46px] items-center rounded-[14px] pb-1 text-[15px] font-semibold transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2',
+        // Tertutup: bulatan ikon (30px) tepat di tengah tuts selebar 44px.
+        ringkas ? 'px-[7px]' : 'pr-3 pl-[9px]',
         aktif
           ? 'text-ink'
           : // Latar hover hanya seluas muka tuts, tidak menutupi bagian alas 4px di bawahnya.
