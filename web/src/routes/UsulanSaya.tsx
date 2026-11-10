@@ -4,12 +4,49 @@ import { buttonClass } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { Icon, type IconName } from '@/components/ui/Icon';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ListSkeleton } from '@/components/ui/Skeleton';
 import { useAuth } from '@/features/auth';
 import { ProposalCard } from '@/features/proposals/components/ProposalCard';
 import { useProposalsQuery } from '@/features/proposals/queries';
 import { formatAngka } from '@/lib/format';
+
+/**
+ * Kartu angka ringkasan: ikon di kotak kiri, label dan angka di kanan. Warna kotak ikon hanya
+ * bermakna untuk dua status (kuning menunggu, hijau masuk APBD), sama dengan warna status di
+ * seluruh aplikasi; lainnya netral.
+ */
+function KartuAngka({
+  ikon,
+  warna,
+  label,
+  angka,
+  catatan,
+}: {
+  ikon: IconName;
+  warna: string;
+  label: string;
+  angka: number;
+  catatan?: string;
+}) {
+  return (
+    <Card className="flex items-center gap-3.5 p-4 sm:p-5">
+      <span
+        aria-hidden="true"
+        className="grid size-12 flex-none place-items-center rounded-[14px] border-[1.5px] border-ink text-[#14222B]"
+        style={{ backgroundColor: warna }}
+      >
+        <Icon name={ikon} size={24} />
+      </span>
+      <div className="min-w-0">
+        <p className="text-sm text-muted">{label}</p>
+        <p className="text-2xl leading-tight font-bold tabular-nums">{formatAngka(angka)}</p>
+        {catatan && <p className="mt-0.5 text-[13px] text-muted">{catatan}</p>}
+      </div>
+    </Card>
+  );
+}
 
 /** Tahap "Masuk APBD" ke atas dihitung sebagai usulan yang sudah ditindaklanjuti. */
 const TAHAP_TINDAK_LANJUT = PROPOSAL_STATUSES.indexOf('Masuk APBD');
@@ -75,25 +112,21 @@ export default function UsulanSaya() {
             className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
             aria-label="Ringkasan usulanmu"
           >
-            <Card>
-              <p className="text-sm text-muted">Usulanmu</p>
-              <p className="text-2xl font-bold tabular-nums">{formatAngka(milikku.length)}</p>
-            </Card>
-            <Card>
-              <p className="text-sm text-muted">Menunggu persetujuan</p>
-              <p className="text-2xl font-bold tabular-nums">{formatAngka(menunggu)}</p>
-              {ditolak > 0 && (
-                <p className="mt-0.5 text-[13px] text-muted">{formatAngka(ditolak)} ditolak</p>
-              )}
-            </Card>
-            <Card>
-              <p className="text-sm text-muted">Upvote terkumpul</p>
-              <p className="text-2xl font-bold tabular-nums">{formatAngka(totalUpvote)}</p>
-            </Card>
-            <Card>
-              <p className="text-sm text-muted">Sudah masuk APBD atau lebih</p>
-              <p className="text-2xl font-bold tabular-nums">{formatAngka(sudahDitindaklanjuti)}</p>
-            </Card>
+            <KartuAngka ikon="usulan" warna="#E4DDCF" label="Usulanmu" angka={milikku.length} />
+            <KartuAngka
+              ikon="jam"
+              warna="#F6D98B"
+              label="Menunggu persetujuan"
+              angka={menunggu}
+              catatan={ditolak > 0 ? `${formatAngka(ditolak)} ditolak` : undefined}
+            />
+            <KartuAngka ikon="panah-atas" warna="#E4DDCF" label="Upvote terkumpul" angka={totalUpvote} />
+            <KartuAngka
+              ikon="apbd"
+              warna="#4FC79C"
+              label="Sudah masuk APBD atau lebih"
+              angka={sudahDitindaklanjuti}
+            />
           </section>
 
           <div className="grid gap-5 md:grid-cols-2">

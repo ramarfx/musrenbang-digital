@@ -4,6 +4,7 @@ import { LoadingDots } from '@/components/brand/LogoLoader';
 import { Icon } from '@/components/ui/Icon';
 import { useAuth } from '@/features/auth';
 import { cn } from '@/lib/cn';
+import { useAdaTur } from '@/lib/tur';
 import { sendChat, type ChatMessage, type ChatResponse } from './api';
 
 type Entry = ChatMessage & { links?: ChatResponse['links']; disclaimer?: string | null };
@@ -55,6 +56,7 @@ function Gelembung({ entry, onPindah }: { entry: Entry; onPindah: () => void }) 
  */
 function Asisten() {
   const { user, loading } = useAuth();
+  const adaTur = useAdaTur();
   const [buka, setBuka] = useState(false);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [pesan, setPesan] = useState('');
@@ -123,9 +125,15 @@ function Asisten() {
 
   return (
     // z-[1100]: di atas kontrol peta (sampai z-[1000]), di bawah pemuat layar dan sambutan.
-    // Tombol ini selalu di pojok. Tombol bantuan halaman (TurHalaman) menempel di kirinya di
-    // layar lebar dan ditumpuk di atasnya di HP.
-    <div className="fixed right-3 bottom-3 z-[1100] sm:right-5 sm:bottom-5">
+    // Di layar lebar, tombol ini bergeser dari pojok bila halaman punya tombol bantuan
+    // (TurHalaman); tanpa tombol itu tombol ini menempati pojok. Di HP tombol bantuan ditumpuk
+    // di atasnya.
+    <div
+      className={cn(
+        'fixed right-3 bottom-3 z-[1100] sm:bottom-5',
+        adaTur ? 'sm:right-[68px]' : 'sm:right-5',
+      )}
+    >
       {buka && (
         <section
           role="dialog"
@@ -268,7 +276,7 @@ function Asisten() {
         onClick={() => setBuka((nilai) => !nilai)}
         aria-expanded={buka}
         aria-label={buka ? 'Tutup asisten MusrenAI' : 'Buka asisten MusrenAI'}
-        className="kartu-cap inline-flex h-11 items-center gap-2 rounded-full bg-hijau-terang px-3 text-[13px] font-bold text-hitam transition-[scale] duration-150 ease-out active:scale-[0.96] sm:w-40 sm:justify-center sm:px-4"
+        className="kartu-cap inline-flex h-11 items-center gap-2 rounded-full bg-hijau-terang px-3 text-[13px] font-bold text-hitam transition-[scale] duration-150 ease-out active:scale-[0.96] sm:px-4"
       >
         <Icon name={buka ? 'tutup' : 'usulan'} size={18} />
         <span className="hidden sm:inline">{buka ? 'Tutup' : 'Tanya MusrenAI'}</span>

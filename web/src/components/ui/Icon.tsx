@@ -40,6 +40,7 @@ const PATHS = {
   muatUlang: 'M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5',
   panahKiri: 'M15 6l-6 6 6 6',
   keluar: 'M10 4H5v16h5M14 8l4 4-4 4M18 12H9',
+  jam: 'M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0',
 } as const;
 
 export type IconName = keyof typeof PATHS;
