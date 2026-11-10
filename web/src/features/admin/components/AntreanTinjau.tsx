@@ -242,6 +242,7 @@ export function AntreanTinjau({ proposals }: { proposals: Proposal[] }) {
   const sudahDianalisis = proposals.filter(
     (proposal) => hasil.get(proposal.id)?.state === 'completed',
   ).length;
+  const semuaDiperiksa = proposals.length > 0 && sudahDianalisis === proposals.length;
   const daftarAman = tersaring.filter((proposal) => aman(hasil.get(proposal.id)));
   const daftarPerFlag = (flag: FlagAi) =>
     tersaring.filter((proposal) => {
@@ -571,10 +572,39 @@ export function AntreanTinjau({ proposals }: { proposals: Proposal[] }) {
                   </div>
                 )}
 
-                <p className="mt-2.5 text-xs text-muted">
-                  {sudahDianalisis} dari {proposals.length} usulan sudah diperiksa. MusrenAI bisa
-                  keliru, jadi tetap lihat isi usulan sebelum memutuskan.
-                </p>
+                <div className="mt-3 flex flex-wrap items-start gap-x-3 gap-y-2 rounded-2xl border-[1.5px] border-ink bg-surface px-3.5 py-3">
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      'grid size-6 flex-none place-items-center rounded-full text-sm font-extrabold text-white',
+                      semuaDiperiksa ? 'bg-warga' : 'bg-ink',
+                    )}
+                  >
+                    {semuaDiperiksa ? '✓' : '!'}
+                  </span>
+                  <div className="min-w-0 flex-1 basis-56">
+                    <p className="text-[15px] leading-snug font-extrabold">
+                      {semuaDiperiksa
+                        ? `Semua ${formatAngka(proposals.length)} usulan sudah diperiksa MusrenAI`
+                        : `${formatAngka(sudahDianalisis)} dari ${formatAngka(proposals.length)} usulan sudah diperiksa`}
+                    </p>
+                    <p className="mt-0.5 text-[13px] text-muted">
+                      {!semuaDiperiksa && 'Jalankan Summary AI untuk memeriksa sisanya. '}
+                      MusrenAI bisa keliru, jadi tetap lihat isi usulan sebelum memutuskan.
+                    </p>
+                  </div>
+                  {!semuaDiperiksa && proses === null && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={memuatUlasan}
+                      onClick={() => void buatSummaryAi()}
+                    >
+                      Periksa sisanya
+                    </Button>
+                  )}
+                </div>
               </>
             )}
           </section>
