@@ -1679,11 +1679,10 @@ html::-webkit-scrollbar,
 /* Tur halaman (tombol "?"): sorotan menggelapkan sisa layar lewat bayangan raksasa. */
 .tur-sorot {
   box-shadow: 0 0 0 9999px rgba(20, 34, 43, 0.62);
-  transition:
-    top 220ms var(--ease-out),
-    left 220ms var(--ease-out),
-    width 220ms var(--ease-out),
-    height 220ms var(--ease-out);
+}
+/* Latar gelap selama layar bergulir ke bagian berikutnya; warnanya sama dengan sorotan. */
+.tur-latar {
+  background: rgba(20, 34, 43, 0.62);
 }
 .tur-kartu {
   animation: tur-masuk 180ms var(--ease-out);
@@ -1695,9 +1694,6 @@ html::-webkit-scrollbar,
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .tur-sorot {
-    transition: none;
-  }
   .tur-kartu {
     animation: none;
   }
