@@ -136,6 +136,33 @@ export const proposalPhotoSchema = z.object({
   dibuat_pada: timestampSchema,
 });
 
+/**
+ * Catatan pengeluaran pengerjaan usulan. Tambah-saja: jumlah positif = pengeluaran, negatif =
+ * koreksi atas catatan sebelumnya. Total pengeluaran adalah jumlah semua baris.
+ */
+export const proposalSpendingSchema = z.object({
+  id: idSchema,
+  proposal_id: idSchema,
+  jumlah: z.coerce.number().int(),
+  keterangan: z.string(),
+  sumber: z.string().nullable().default(null),
+  dicatat_oleh: uuidSchema.nullable(),
+  dicatat_pada: timestampSchema,
+});
+
+/** Masukan formulir catat pengeluaran (jumlah selalu positif; koreksi menandainya sendiri). */
+export const spendingInputSchema = z.object({
+  proposalId: idSchema,
+  jumlah: z.number().int().positive('Jumlah harus lebih dari nol.').max(100_000_000_000_000),
+  koreksi: z.boolean().default(false),
+  keterangan: z
+    .string()
+    .trim()
+    .min(3, 'Tulis untuk apa dana ini dipakai.')
+    .max(300, 'Keterangan maksimal 300 karakter.'),
+  sumber: z.string().trim().max(300, 'Sumber maksimal 300 karakter.').optional(),
+});
+
 /** Bentuk usulan di berkas seed (tanpa id/timestamp buatan database). */
 export const proposalSeedSchema = z.object({
   judul: z.string().trim().min(TEXT_LIMITS.judulMin),
@@ -158,3 +185,5 @@ export type ProposalSeed = z.infer<typeof proposalSeedSchema>;
 export type StatusHistoryRow = z.infer<typeof statusHistoryRowSchema>;
 export type StatusHistory = z.infer<typeof statusHistorySchema>;
 export type ProposalPhoto = z.infer<typeof proposalPhotoSchema>;
+export type ProposalSpending = z.infer<typeof proposalSpendingSchema>;
+export type SpendingInput = z.output<typeof spendingInputSchema>;

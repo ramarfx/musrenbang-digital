@@ -17,6 +17,7 @@ import { StatusTimeline } from '@/features/proposals/components/StatusTimeline';
 import { GaleriFoto } from '@/features/photos/components/GaleriFoto';
 import { usePhotosQuery } from '@/features/photos/queries';
 import { VotePanel } from '@/features/proposals/components/VotePanel';
+import { DanaPengerjaan } from '@/features/spending/components/DanaPengerjaan';
 import { useProposalQuery, useStatusHistoryQuery } from '@/features/proposals/queries';
 import { formatRupiah, formatTanggal, formatTanggalWaktu } from '@/lib/format';
 
@@ -192,6 +193,7 @@ export default function UsulanDetail() {
             <GaleriFoto photos={fotoQuery.data} />
           </section>
         )}
+        <DanaPengerjaan proposal={proposal} />
       </Card>
 
       {/* Baris berpasangan: tiap baris dua kartu setinggi sama, jadi tidak ada kolom yang lebih
