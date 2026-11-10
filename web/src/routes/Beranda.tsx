@@ -314,13 +314,13 @@ function PalingDidukung() {
     () =>
       pilihTeratas(
         (proposalsQuery.data ?? []).filter((proposal) => proposal.moderasi === 'Disetujui'),
-        3,
+        5,
       ),
     [proposalsQuery.data],
   );
 
   return (
-    <Card>
+    <Card className="flex flex-col">
       <div className="flex items-baseline justify-between gap-3 border-b border-border pb-3">
         <div>
           <h2 className="text-lg font-bold text-ink">Usulan Warga Paling Populer</h2>
@@ -353,9 +353,9 @@ function PalingDidukung() {
           .
         </div>
       ) : (
-        <ul className="divide-y divide-border">
+        <ul className="flex flex-1 flex-col divide-y divide-border">
           {teratas.map((proposal) => (
-            <li key={proposal.id} className="flex items-center justify-between gap-4 py-3.5">
+            <li key={proposal.id} className="flex flex-1 items-center justify-between gap-4 py-3.5">
               <div className="min-w-0 flex-1">
                 <Link
                   to={`/usulan/${proposal.id}`}
@@ -554,7 +554,7 @@ export default function Beranda() {
     <div className="space-y-6">
       <SambutanWarga />
       <AksiUtamaWarga />
-      <div className="grid items-start gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         <LangkahMu />
         <PalingDidukung />
       </div>
