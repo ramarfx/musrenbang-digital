@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { type CSSProperties, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { buttonClass } from '@/components/ui/Button';
@@ -246,7 +246,7 @@ function LangkahMu() {
       </div>
 
       <ol className="divide-y divide-border">
-        {daftar.map((item) => (
+        {daftar.map((item, index) => (
           <li
             key={item.label}
             className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"
@@ -256,9 +256,10 @@ function LangkahMu() {
                 className={cn(
                   'grid size-8 flex-none place-items-center rounded-full text-sm font-bold',
                   item.selesai
-                    ? 'bg-hijau-terang text-hitam'
+                    ? 'centang-langkah bg-hijau-terang text-hitam'
                     : 'border-2 border-border bg-active text-muted',
                 )}
+                style={item.selesai ? ({ '--urutan': index } as CSSProperties) : undefined}
               >
                 {item.selesai ? (
                   <svg
@@ -272,7 +273,7 @@ function LangkahMu() {
                     strokeLinejoin="round"
                     aria-hidden="true"
                   >
-                    <path d="M5 12.5l4.5 4.5L19 7.5" />
+                    <path d="M5 12.5l4.5 4.5L19 7.5" pathLength={1} />
                   </svg>
                 ) : (
                   item.nomor
