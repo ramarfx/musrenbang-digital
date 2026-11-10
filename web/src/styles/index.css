@@ -546,6 +546,42 @@ html::-webkit-scrollbar,
 }
 
 /*
+ * Galeri foto pengerjaan. Foto besar yang baru dibuka membesar pelan dari 94% sambil memudar
+ * masuk. Saat berganti foto, foto baru masuk dari sisi arah geseran (var --geser, dikirim dari
+ * komponen) sambil memudar. Pendek dan sekali saja, tanpa pengulangan; bila gerak diminimalkan
+ * hanya memudar.
+ */
+.foto-buka {
+  animation: foto-buka 280ms var(--ease-out) both;
+}
+.foto-geser {
+  animation: foto-geser 260ms var(--ease-out) both;
+}
+@keyframes foto-buka {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+@keyframes foto-geser {
+  from {
+    opacity: 0;
+    transform: translateX(var(--geser, 0px));
+  }
+}
+@keyframes foto-memudar {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .foto-buka,
+  .foto-geser {
+    animation: foto-memudar 160ms linear both;
+  }
+}
+
+/*
  * Stabilo di belakang nama kategori (simulator). Seluruh tinggi tulisan diwarnai, dan tiap baris
  * bila nama terlipat, lalu tersapu dari kiri ke kanan setelah barisnya naik. Jedanya mengikuti
  * urutan baris lewat --urutan.
