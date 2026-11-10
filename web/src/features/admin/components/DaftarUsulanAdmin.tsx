@@ -6,7 +6,7 @@ import {
   type ProposalStatus,
 } from '@musrenbang/shared';
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Field } from '@/components/ui/Field';
@@ -35,6 +35,16 @@ type KunciUrut =
   | 'status'
   | 'dibuat_pada';
 type ArahUrut = 'naik' | 'turun';
+
+const KUNCI_URUT: KunciUrut[] = [
+  'judul',
+  'kategori',
+  'estimasi_biaya',
+  'jumlah_suara',
+  'moderasi',
+  'status',
+  'dibuat_pada',
+];
 
 // Urutan baca yang masuk akal: yang masih menunggu lebih dulu, yang sudah ditolak terakhir.
 const PERINGKAT_MODERASI: Record<ProposalModeration, number> = {
@@ -103,12 +113,46 @@ function KepalaKolom({
  * tindakan ubah tahap dan hapus langsung di baris, sama seperti tabel admin sebelumnya.
  */
 export function DaftarUsulanAdmin({ proposals }: { proposals: Proposal[] }) {
-  const [cari, setCari] = useState('');
-  const [moderasi, setModerasi] = useState<SaringModerasi>('semua');
-  const [status, setStatus] = useState<SaringStatus>('semua');
-  const [urut, setUrut] = useState<KunciUrut>('dibuat_pada');
-  const [arah, setArah] = useState<ArahUrut>('turun');
-  const [halaman, setHalaman] = useState(1);
+  // Penyaring, urutan, dan halaman disimpan di alamat halaman (?tahap=Dikerjakan&hal=2), bukan
+  // di state komponen. Begitu admin membuka sebuah usulan lalu kembali, daftarnya persis sama.
+  const [params, setParams] = useSearchParams();
+  const lokasi = useLocation();
+  const ubahParam = (perubahan: Record<string, string | null>) =>
+    setParams(
+      (sebelumnya) => {
+        const baru = new URLSearchParams(sebelumnya);
+        for (const [kunci, nilai] of Object.entries(perubahan)) {
+          if (nilai === null || nilai === '') baru.delete(kunci);
+          else baru.set(kunci, nilai);
+        }
+        return baru;
+      },
+      { replace: true },
+    );
+
+  const cari = params.get('q') ?? '';
+  const paramModerasi = params.get('persetujuan');
+  const moderasi: SaringModerasi = (PROPOSAL_MODERATION_STATUSES as readonly string[]).includes(
+    paramModerasi ?? '',
+  )
+    ? (paramModerasi as ProposalModeration)
+    : 'semua';
+  const paramStatus = params.get('tahap');
+  const status: SaringStatus = (PROPOSAL_STATUSES as readonly string[]).includes(paramStatus ?? '')
+    ? (paramStatus as ProposalStatus)
+    : 'semua';
+  const paramUrut = params.get('urut') as KunciUrut | null;
+  const urut: KunciUrut = paramUrut && KUNCI_URUT.includes(paramUrut) ? paramUrut : 'dibuat_pada';
+  const paramArah = params.get('arah');
+  const arah: ArahUrut = paramArah === 'naik' || paramArah === 'turun' ? paramArah : 'turun';
+  const halaman = Math.max(1, Number.parseInt(params.get('hal') ?? '1', 10) || 1);
+
+  const setCari = (nilai: string) => ubahParam({ q: nilai, hal: null });
+  const setModerasi = (nilai: SaringModerasi) =>
+    ubahParam({ persetujuan: nilai === 'semua' ? null : nilai, hal: null });
+  const setStatus = (nilai: SaringStatus) =>
+    ubahParam({ tahap: nilai === 'semua' ? null : nilai, hal: null });
+  const setHalaman = (nilai: number) => ubahParam({ hal: nilai <= 1 ? null : String(nilai) });
   const [ubahStatus, setUbahStatus] = useState<Proposal | null>(null);
   const [hapus, setHapus] = useState<Proposal | null>(null);
 
@@ -148,18 +192,14 @@ export function DaftarUsulanAdmin({ proposals }: { proposals: Proposal[] }) {
 
   const ubahUrutan = (kunci: KunciUrut) => {
     if (kunci === urut) {
-      setArah((sekarang) => (sekarang === 'naik' ? 'turun' : 'naik'));
+      ubahParam({ urut: kunci, arah: arah === 'naik' ? 'turun' : 'naik', hal: null });
       return;
     }
-    setUrut(kunci);
-    setArah(kunci === 'dibuat_pada' ? 'turun' : 'naik');
+    ubahParam({ urut: kunci, arah: kunci === 'dibuat_pada' ? 'turun' : 'naik', hal: null });
   };
 
   const resetSaring = () => {
-    setCari('');
-    setModerasi('semua');
-    setStatus('semua');
-    setHalaman(1);
+    ubahParam({ q: null, persetujuan: null, tahap: null, hal: null });
   };
 
   // Pagination tabel: kembali ke halaman pertama setiap penyaring berubah.
@@ -189,10 +229,7 @@ export function DaftarUsulanAdmin({ proposals }: { proposals: Proposal[] }) {
             id="cari-semua-usulan"
             type="search"
             value={cari}
-            onChange={(event) => {
-              setCari(event.target.value);
-              setHalaman(1);
-            }}
+            onChange={(event) => setCari(event.target.value)}
             placeholder="Judul, pengusul, kategori, atau lokasi"
           />
         </Field>
@@ -200,10 +237,7 @@ export function DaftarUsulanAdmin({ proposals }: { proposals: Proposal[] }) {
           <Select
             id="saring-moderasi"
             value={moderasi}
-            onChange={(event) => {
-              setModerasi(event.target.value as SaringModerasi);
-              setHalaman(1);
-            }}
+            onChange={(event) => setModerasi(event.target.value as SaringModerasi)}
           >
             <option value="semua">Semua</option>
             {PROPOSAL_MODERATION_STATUSES.map((nama) => (
@@ -217,10 +251,7 @@ export function DaftarUsulanAdmin({ proposals }: { proposals: Proposal[] }) {
           <Select
             id="saring-status"
             value={status}
-            onChange={(event) => {
-              setStatus(event.target.value as SaringStatus);
-              setHalaman(1);
-            }}
+            onChange={(event) => setStatus(event.target.value as SaringStatus)}
           >
             <option value="semua">Semua tahap ({formatAngka(proposals.length)})</option>
             {PROPOSAL_STATUSES.map((nama) => (
@@ -324,6 +355,7 @@ export function DaftarUsulanAdmin({ proposals }: { proposals: Proposal[] }) {
                     <td className="w-[30%] px-4 py-3">
                       <Link
                         to={`/admin/usulan/${proposal.id}`}
+                        state={{ dari: `${lokasi.pathname}${lokasi.search}` }}
                         className="font-medium text-warga hover:underline [overflow-wrap:anywhere]"
                       >
                         {proposal.judul}
