@@ -2,7 +2,6 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { createPortal } from 'react-dom';
 import { Icon } from '@/components/ui/Icon';
 import { cn } from '@/lib/cn';
-import { daftarkanTur } from '@/lib/tur';
 
 /** Satu langkah tur: `target` dicocokkan dengan atribut `data-tur` di halaman. */
 export type LangkahTur = { target: string; judul: string; isi: string };
@@ -14,6 +13,10 @@ const LEBAR_KARTU = 320;
 /** Berapa bingkai berturut-turut posisi bagian harus diam sebelum gulir dianggap selesai. */
 const BINGKAI_DIAM = 6;
 const BATAS_TUNGGU_MS = 1400;
+
+// Tombol asisten melayang (lebar tetap 160px, di pojok kanan bawah) bila menyala; tombol bantuan
+// menempel di kirinya di layar lebar dan ditumpuk di atasnya di HP. Tanpa asisten, "?" di pojok.
+const ADA_ASISTEN = import.meta.env.VITE_MUSRENAI_ENABLED === 'true';
 
 const cari = (target: string) => document.querySelector<HTMLElement>(`[data-tur="${target}"]`);
 
@@ -42,8 +45,8 @@ function perluGulir(el: HTMLElement): { gulir: boolean; tinggi: boolean } {
 }
 
 /**
- * Tombol "?" kecil di pojok kanan bawah, selalu di tempat yang sama. Di layar lebar tombol
- * asisten melayang bergeser ke kirinya; di HP "?" ditumpuk tepat di atas tombol asisten. Dipencet, halaman
+ * Tombol "?" kecil di dekat pojok kanan bawah, selalu di tempat yang sama. Di layar lebar "?"
+ * menempel di kiri tombol asisten melayang; di HP "?" ditumpuk tepat di atasnya. Dipencet, halaman
  * dipudarkan dan satu bagian disorot bergantian, tiap bagian dengan kartu penjelasan. Bisa
  * ditutup kapan saja. Langkah yang bagiannya tidak ada di layar (mis. data belum dimuat)
  * dilewati.
@@ -51,7 +54,6 @@ function perluGulir(el: HTMLElement): { gulir: boolean; tinggi: boolean } {
 export function TurHalaman({ langkah }: { langkah: readonly LangkahTur[] }) {
   const [daftar, setDaftar] = useState<readonly LangkahTur[] | null>(null);
   const tombolRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => daftarkanTur(), []);
 
   const tutup = useCallback(() => {
     setDaftar(null);
@@ -72,9 +74,9 @@ export function TurHalaman({ langkah }: { langkah: readonly LangkahTur[] }) {
         aria-label="Bantuan halaman ini"
         title="Bantuan halaman ini"
         className={cn(
-          // Layar lebar: sejajar tengah dengan tombol asisten (tinggi 44px), jadi naik 2px dari
-          // tepi bawahnya. HP: tepat di atas tombol asisten, selebar tepi kanan yang sama.
-          'fixed right-3 bottom-[68px] z-40 grid size-10 place-items-center rounded-full border border-edge bg-surface text-sm font-semibold text-muted transition-[color,border-color,scale] duration-150 ease-out hover:border-ink hover:text-ink active:scale-[0.94] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga sm:right-5 sm:bottom-[22px]',
+          'fixed right-3 z-40 grid size-10 place-items-center rounded-full border border-edge bg-surface text-sm font-semibold text-muted transition-[color,border-color,scale] duration-150 ease-out hover:border-ink hover:text-ink active:scale-[0.94] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga sm:right-5',
+          // Sejajar tengah dengan tombol asisten (tinggi 44px), jadi naik 2px dari tepi bawahnya.
+          ADA_ASISTEN ? 'bottom-[68px] sm:right-[188px] sm:bottom-[22px]' : 'bottom-3 sm:bottom-5',
         )}
       >
         ?
