@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { useUserAllocationsQuery } from '@/features/allocations/queries';
 import { useAuth } from '@/features/auth';
 import { useCategoriesQuery } from '@/features/categories/queries';
-import { siapkanGap } from '@/features/gap/lib';
+import { arahSelisih, siapkanGap } from '@/features/gap/lib';
 import { useGapQuery } from '@/features/gap/queries';
 import { pilihTeratas } from '@/features/proposals/components/TopProposals';
 import { UpvoteButton } from '@/features/proposals/components/UpvoteButton';
@@ -394,11 +394,14 @@ function AspirasiPilihanWarga() {
     [gapQuery.data, categoriesQuery.data],
   );
   const lima = [...ringkasan.rows].sort((a, b) => b.persen_warga - a.persen_warga).slice(0, 5);
+  const adaApbd = ringkasan.teratas.length > 0;
   const skala = Math.max(
     1,
-    ...lima.flatMap((row) => [row.persen_warga, row.adaApbd ? row.persen_apbd : 0]),
+    ...(adaApbd ? ringkasan.teratas : lima).flatMap((row) => [
+      row.persen_warga,
+      row.adaApbd ? row.persen_apbd : 0,
+    ]),
   );
-  const adaApbd = lima.some((row) => row.adaApbd);
 
   return (
     <Card>
@@ -434,42 +437,65 @@ function AspirasiPilihanWarga() {
             {ringkasan.sorotan &&
               ` Selisih terbesar dengan APBD ada di ${ringkasan.sorotan.kategori}.`}
           </p>
-          {adaApbd && (
-            <p className="mt-3 flex items-center gap-4 text-xs text-muted" aria-hidden="true">
-              <span className="flex items-center gap-1.5">
-                <span className="size-2.5 rounded-[3px] bg-hijau-terang" /> Warga
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="h-3 w-0.5 bg-ink" /> APBD
-              </span>
-            </p>
-          )}
-          <ul className="mt-3 space-y-2.5">
-            {lima.map((row) => (
-              <li
-                key={row.kategori}
-                className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_3.5rem] items-center gap-3"
-              >
-                <span className="truncate text-sm">{row.kategori}</span>
-                <span className="relative h-3.5 rounded-[4px] bg-track">
-                  <span
-                    className="bar-in absolute inset-y-0 left-0 rounded-[4px] bg-hijau-terang"
-                    style={{ width: `${(row.persen_warga / skala) * 100}%` }}
-                  />
-                  {row.adaApbd && (
+          {adaApbd ? (
+            <ul className="mt-4 grid gap-4 sm:grid-cols-3 sm:gap-0">
+              {ringkasan.teratas.map((row) => {
+                const arah = arahSelisih(row.gap_poin_persen);
+                return (
+                  <li
+                    key={row.kategori}
+                    className="border-t border-rule pt-4 first:border-t-0 first:pt-0 sm:border-t-0 sm:border-l-[1.5px] sm:border-edge sm:px-5 sm:pt-0 sm:first:border-l-0 sm:first:pl-0"
+                  >
+                    <p className="mb-2.5 font-bold">{row.kategori}</p>
+                    {[
+                      { nama: 'Warga', nilai: row.persen_warga, warna: 'bg-hijau-terang' },
+                      { nama: 'APBD', nilai: row.persen_apbd, warna: 'bg-ink' },
+                    ].map((batang) => (
+                      <div
+                        key={batang.nama}
+                        className="mb-1.5 grid grid-cols-[2.75rem_minmax(0,1fr)_3.25rem] items-center gap-2.5 text-sm"
+                      >
+                        <span>{batang.nama}</span>
+                        <span className="relative h-3 rounded-[3px] bg-track">
+                          <span
+                            className={`bar-in absolute inset-y-0 left-0 rounded-[3px] ${batang.warna}`}
+                            style={{ width: `${(batang.nilai / skala) * 100}%` }}
+                          />
+                        </span>
+                        <b className="text-right tabular-nums">{formatPersen(batang.nilai)}</b>
+                      </div>
+                    ))}
                     <span
-                      className="absolute -top-1 -bottom-1 w-0.5 bg-ink"
-                      style={{ left: `${(row.persen_apbd / skala) * 100}%` }}
-                      title={`APBD ${formatPersen(row.persen_apbd)}`}
+                      className="mt-2 inline-block rounded-lg px-2.5 py-0.5 text-[13px] font-bold text-hitam"
+                      style={{ backgroundColor: arah.warna }}
+                    >
+                      {arah.label}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <ul className="mt-3 space-y-2.5">
+              {lima.map((row) => (
+                <li
+                  key={row.kategori}
+                  className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_3.5rem] items-center gap-3"
+                >
+                  <span className="truncate text-sm">{row.kategori}</span>
+                  <span className="relative h-3.5 rounded-[4px] bg-track">
+                    <span
+                      className="bar-in absolute inset-y-0 left-0 rounded-[4px] bg-hijau-terang"
+                      style={{ width: `${(row.persen_warga / skala) * 100}%` }}
                     />
-                  )}
-                </span>
-                <span className="text-right text-sm tabular-nums">
-                  {formatPersen(row.persen_warga)}
-                </span>
-              </li>
-            ))}
-          </ul>
+                  </span>
+                  <span className="text-right text-sm tabular-nums">
+                    {formatPersen(row.persen_warga)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
           {!adaApbd && (
             <p className="mt-3 text-xs text-muted">
               Data APBD masih diverifikasi, jadi porsinya belum ditampilkan di sini.
