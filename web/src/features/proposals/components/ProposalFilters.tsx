@@ -40,33 +40,36 @@ export function ProposalFilters({
 }: ProposalFiltersProps) {
   return (
     <div className="rounded-3xl border border-border bg-surface p-5">
-      <label htmlFor="cari-usulan" className="mb-1.5 block text-[13px] text-muted">
-        Cari usulan
-      </label>
-      <Input
-        id="cari-usulan"
-        type="search"
-        value={search}
-        onChange={(event) => onSearchChange(event.target.value)}
-        placeholder="Judul, deskripsi, kategori, atau nama pengusul"
-      />
-
-      <div className="mt-4 max-w-sm">
-        <label htmlFor="filter-kategori" className="mb-1.5 block text-[13px] text-muted">
-          Kategori
-        </label>
-        <Select
-          id="filter-kategori"
-          value={kategori}
-          onChange={(event) => onKategoriChange(event.target.value)}
-        >
-          <option value="semua">Semua kategori</option>
-          {daftarKategori.map((item) => (
-            <option key={item.nama} value={item.nama}>
-              {item.nama} ({item.jumlah})
-            </option>
-          ))}
-        </Select>
+      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(200px,280px)] sm:items-end">
+        <div>
+          <label htmlFor="cari-usulan" className="mb-1.5 block text-[13px] text-muted">
+            Cari usulan
+          </label>
+          <Input
+            id="cari-usulan"
+            type="search"
+            value={search}
+            onChange={(event) => onSearchChange(event.target.value)}
+            placeholder="Judul, deskripsi, kategori, atau nama pengusul"
+          />
+        </div>
+        <div>
+          <label htmlFor="filter-kategori" className="mb-1.5 block text-[13px] text-muted">
+            Kategori
+          </label>
+          <Select
+            id="filter-kategori"
+            value={kategori}
+            onChange={(event) => onKategoriChange(event.target.value)}
+          >
+            <option value="semua">Semua kategori</option>
+            {daftarKategori.map((item) => (
+              <option key={item.nama} value={item.nama}>
+                {item.nama} ({item.jumlah})
+              </option>
+            ))}
+          </Select>
+        </div>
       </div>
 
       <div className="mt-4">
