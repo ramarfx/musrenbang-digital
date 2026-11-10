@@ -14,10 +14,11 @@ import {
 const BATAS_TUNGGU = 60;
 
 /**
- * Warna wilayah hanya tampil dari zoom ini ke dekat. Seluruh Jakarta pas di peta pada zoom
- * sekitar 10,5 sampai 11; di bawah 9,5 kota sudah mengecil jadi noda warna di atas peta.
+ * Di bawah zoom ini peta dianggap jauh. Seluruh Jakarta pas di peta pada zoom sekitar 10,5
+ * sampai 11. Warna wilayah tetap tampil saat peta diam di jarak apa pun; hanya selama zoom yang
+ * melewati jarak jauh warnanya disembunyikan.
  */
-const ZOOM_WILAYAH_TAMPIL = 9.5;
+const ZOOM_WILAYAH_JAUH = 9.5;
 
 /** Garis bayangan tinta di bawah garis wilayah, supaya batas tetap terbaca di atas peta. */
 const TINTA = '#14222B';
@@ -103,17 +104,36 @@ export function LapisanWilayah({ kode }: { kode: PilihanWilayah }) {
     };
     terbang();
 
-    // Terlalu jauh (zoom keluar atau saat terbang kembali), warna wilayah disembunyikan lewat
-    // kelas di wadah peta; muncul lagi memudar begitu peta cukup dekat.
-    const perbaruiJarak = () => {
-      map.getContainer().classList.toggle('peta-wilayah-jauh', map.getZoom() < ZOOM_WILAYAH_TAMPIL);
+    // Selama peta sedang berzoom lewat jarak jauh (mis. tombol ulang dari tampilan yang jauh),
+    // warna wilayah disembunyikan lewat kelas di wadah peta, karena arsirannya ikut diskalakan
+    // dan tampak pecah. Begitu zoom selesai, warnanya muncul lagi, di jarak mana pun.
+    const kelas = map.getContainer().classList;
+    let sedangZoom = false;
+    let lewatJauh = false;
+    const terapkan = () => kelas.toggle('peta-wilayah-bergerak', sedangZoom && lewatJauh);
+    const mulaiZoom = () => {
+      sedangZoom = true;
+      lewatJauh = map.getZoom() < ZOOM_WILAYAH_JAUH;
+      terapkan();
     };
-    perbaruiJarak();
-    map.on('zoom zoomend', perbaruiJarak);
+    const saatZoom = () => {
+      if (map.getZoom() < ZOOM_WILAYAH_JAUH) lewatJauh = true;
+      terapkan();
+    };
+    const selesaiZoom = () => {
+      sedangZoom = false;
+      lewatJauh = false;
+      terapkan();
+    };
+    map.on('zoomstart', mulaiZoom);
+    map.on('zoom', saatZoom);
+    map.on('zoomend', selesaiZoom);
 
     return () => {
-      map.off('zoom zoomend', perbaruiJarak);
-      map.getContainer().classList.remove('peta-wilayah-jauh');
+      map.off('zoomstart', mulaiZoom);
+      map.off('zoom', saatZoom);
+      map.off('zoomend', selesaiZoom);
+      kelas.remove('peta-wilayah-bergerak');
       cancelAnimationFrame(bingkai);
       clearTimeout(cadangan);
       map.off('moveend', arsir);
