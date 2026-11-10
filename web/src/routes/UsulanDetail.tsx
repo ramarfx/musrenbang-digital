@@ -178,17 +178,21 @@ export default function UsulanDetail() {
             Riwayat gagal dimuat, tetapi status terkini tetap ditampilkan.
           </p>
         )}
+        {fotoQuery.data && fotoQuery.data.length > 0 && (
+          <section
+            aria-labelledby="judul-foto-pengerjaan"
+            className="mt-6 border-t border-rule pt-5"
+          >
+            <h3 id="judul-foto-pengerjaan" className="text-base font-bold text-ink">
+              Foto pengerjaan
+            </h3>
+            <p className="mb-3 text-sm text-muted">
+              Foto lapangan dari admin selama usulan dikerjakan.
+            </p>
+            <GaleriFoto photos={fotoQuery.data} />
+          </section>
+        )}
       </Card>
-
-      {fotoQuery.data && fotoQuery.data.length > 0 && (
-        <Card>
-          <h2 className="text-lg font-bold text-ink">Foto pengerjaan</h2>
-          <p className="mb-4 text-sm text-muted">
-            Foto lapangan dari admin selama usulan dikerjakan.
-          </p>
-          <GaleriFoto photos={fotoQuery.data} />
-        </Card>
-      )}
 
       {/* Baris berpasangan: tiap baris dua kartu setinggi sama, jadi tidak ada kolom yang lebih
           panjang dan menyisakan ruang kosong. Di layar sempit semuanya menumpuk berurutan. */}

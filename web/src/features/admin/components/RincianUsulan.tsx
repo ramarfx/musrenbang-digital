@@ -115,9 +115,8 @@ export function RincianUsulan({
               <p className="mt-1 [overflow-wrap:anywhere]">{proposal.catatan_moderasi}</p>
             </div>
           )}
+          <KelolaFotoAdmin proposal={proposal} />
         </Card>
-
-        <KelolaFotoAdmin proposal={proposal} />
 
         <Card>
           <h2 className="text-lg font-bold">Riwayat tahap</h2>
@@ -176,50 +175,55 @@ export function RincianUsulan({
         </Card>
       </div>
 
-      <aside className="space-y-5">
+      {/* Kolom samping memanjang sepanjang kolom isi, dan kartu keputusan bersama kartu hapus
+          menempel sebagai satu kesatuan. Menempelkan satu kartu saja membuatnya menimpa kartu
+          di bawahnya saat halaman digulir. */}
+      <aside className="space-y-5 lg:self-stretch">
         <AnalisisAi proposalId={proposal.id} />
 
-        <Card className="lg:sticky lg:top-6">
-          <h2 className="text-lg font-bold">Keputusan admin</h2>
-          <p className="mt-1 text-sm text-muted">Status persetujuan saat ini:</p>
-          <div className="mt-2">
-            <ModerationBadge moderasi={proposal.moderasi} />
-          </div>
+        <div className="space-y-5 lg:sticky lg:top-6">
+          <Card>
+            <h2 className="text-lg font-bold">Keputusan admin</h2>
+            <p className="mt-1 text-sm text-muted">Status persetujuan saat ini:</p>
+            <div className="mt-2">
+              <ModerationBadge moderasi={proposal.moderasi} />
+            </div>
 
-          <div className="mt-4 grid gap-2.5">
-            {proposal.moderasi !== 'Disetujui' && (
-              <Button type="button" onClick={onSetujui}>
-                Setujui usulan
+            <div className="mt-4 grid gap-2.5">
+              {proposal.moderasi !== 'Disetujui' && (
+                <Button type="button" onClick={onSetujui}>
+                  Setujui usulan
+                </Button>
+              )}
+              {proposal.moderasi !== 'Ditolak' && (
+                <Button type="button" variant="outline" onClick={onTolak}>
+                  Tolak usulan
+                </Button>
+              )}
+              <Button type="button" variant="outline" onClick={onUbahStatus}>
+                Ubah tahap
               </Button>
-            )}
-            {proposal.moderasi !== 'Ditolak' && (
-              <Button type="button" variant="outline" onClick={onTolak}>
-                Tolak usulan
-              </Button>
-            )}
-            <Button type="button" variant="outline" onClick={onUbahStatus}>
-              Ubah tahap
+              <Link to={`/usulan/${proposal.id}`} className={buttonClass('ghost', 'md')}>
+                Lihat tampilan publik
+              </Link>
+            </div>
+
+            <p className="mt-3 text-[13px] text-muted">
+              Penolakan wajib memakai alasan. Perubahan tahap wajib memakai catatan yang masuk ke
+              riwayat publik.
+            </p>
+          </Card>
+
+          <Card>
+            <h2 className="text-base font-bold">Hapus usulan</h2>
+            <p className="mt-1 text-sm text-muted">
+              Usulan beserta dukungan, komentar, dan riwayat tahapnya hilang permanen.
+            </p>
+            <Button type="button" variant="danger-outline" className="mt-3" onClick={onHapus}>
+              Hapus usulan
             </Button>
-            <Link to={`/usulan/${proposal.id}`} className={buttonClass('ghost', 'md')}>
-              Lihat tampilan publik
-            </Link>
-          </div>
-
-          <p className="mt-3 text-[13px] text-muted">
-            Penolakan wajib memakai alasan. Perubahan tahap wajib memakai catatan yang masuk ke
-            riwayat publik.
-          </p>
-        </Card>
-
-        <Card>
-          <h2 className="text-base font-bold">Hapus usulan</h2>
-          <p className="mt-1 text-sm text-muted">
-            Usulan beserta dukungan, komentar, dan riwayat tahapnya hilang permanen.
-          </p>
-          <Button type="button" variant="danger-outline" className="mt-3" onClick={onHapus}>
-            Hapus usulan
-          </Button>
-        </Card>
+          </Card>
+        </div>
       </aside>
     </div>
   );
