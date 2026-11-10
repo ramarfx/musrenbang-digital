@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Icon } from '@/components/ui/Icon';
 import { LogoGoogle } from '@/components/ui/LogoGoogle';
 import { PageLoader } from '@/components/ui/PageLoader';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
@@ -41,14 +42,24 @@ export default function Auth() {
   return (
     <div className="flex min-h-dvh flex-col bg-ground text-ink">
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
-        <Link to="/" className="flex min-h-11 items-center rounded-xl px-1 select-none">
-          <img
-            src={logoWarna}
-            alt="Musrenbang Digital"
-            draggable={false}
-            className="h-8 w-auto sm:h-9"
-          />
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/"
+            aria-label="Kembali ke halaman utama"
+            title="Kembali ke halaman utama"
+            className="grid size-11 flex-none place-items-center rounded-xl border border-edge bg-surface text-ink transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.94] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
+          >
+            <Icon name="kembali" />
+          </Link>
+          <Link to="/" className="flex min-h-11 items-center rounded-xl px-1 select-none">
+            <img
+              src={logoWarna}
+              alt="Musrenbang Digital"
+              draggable={false}
+              className="h-8 w-auto sm:h-9"
+            />
+          </Link>
+        </div>
         <ThemeToggle />
       </header>
 
@@ -128,10 +139,7 @@ export default function Auth() {
           </Card>
 
           <p className="mt-5 text-center text-[13px] text-muted">
-            Tanpa akun pun Anda tetap bisa melihat usulan, peta, dan data APBD.{' '}
-            <Link to="/" className="font-semibold text-warga underline">
-              Kembali ke halaman utama
-            </Link>
+            Tanpa akun pun Anda tetap bisa melihat usulan, peta, dan data APBD.
           </p>
         </div>
       </main>
