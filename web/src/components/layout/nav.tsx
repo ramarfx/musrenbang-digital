@@ -94,13 +94,15 @@ function useMenuAktif() {
  * meluncur di belakang semua menu (lihat NavList). Menu aktif hanya mengganti warna teks dan
  * bulatan ikonnya, lalu ikut turun 4px saat ditekan seperti tombol.
  */
-function TutsMenu({ item, aktif }: { item: NavItem; aktif: boolean }) {
+function TutsMenu({ item, aktif, ringkas }: { item: NavItem; aktif: boolean; ringkas: boolean }) {
   return (
     <Link
       to={item.to}
       aria-current={aktif ? 'page' : undefined}
+      title={ringkas ? item.label : undefined}
       className={cn(
-        'group relative isolate flex h-[46px] items-center rounded-[14px] pr-3 pb-1 pl-[9px] text-[15px] font-semibold transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2',
+        'group relative isolate flex h-[46px] items-center rounded-[14px] pb-1 pl-[9px] text-[15px] font-semibold transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2',
+        ringkas ? 'pr-[5px]' : 'pr-3',
         aktif
           ? 'text-ink'
           : // Latar hover hanya seluas muka tuts, tidak menutupi bagian alas 4px di bawahnya.
@@ -121,7 +123,7 @@ function TutsMenu({ item, aktif }: { item: NavItem; aktif: boolean }) {
         >
           <Icon name={item.icon} />
         </span>
-        <span>{item.label}</span>
+        <span className={cn('whitespace-nowrap', ringkas && 'sr-only')}>{item.label}</span>
       </span>
     </Link>
   );
@@ -182,19 +184,33 @@ function TutsMeluncur({
 }
 
 /** `dark` = di atas sidebar hijau; tanpa dark = menu HP di atas kertas. */
-export function NavList({ groups, dark }: { groups: NavGroup[]; dark: boolean }) {
+export function NavList({
+  groups,
+  dark,
+  ringkas = false,
+}: {
+  groups: NavGroup[];
+  dark: boolean;
+  /** Hanya ikon (sidebar dikecilkan): nama menu jadi teks tersembunyi, judul grup jadi garis. */
+  ringkas?: boolean;
+}) {
   const { aktif, kunci } = useMenuAktif();
   return (
     <nav aria-label="Navigasi utama" className="relative isolate flex flex-col">
       {dark && (
         <TutsMeluncur
-          kunciMenu={groups.flatMap((group) => group.items.map((item) => item.to)).join('|')}
+          kunciMenu={`${ringkas}|${groups.flatMap((group) => group.items.map((item) => item.to)).join('|')}`}
           kunciAktif={kunci}
         />
       )}
       {groups.map((group, index) => (
-        <div key={group.title ?? index} className={group.title ? 'mt-5' : undefined}>
-          {group.title && (
+        <div
+          key={group.title ?? index}
+          className={
+            group.title ? (ringkas ? 'mt-3 border-t border-white/25 pt-3' : 'mt-5') : undefined
+          }
+        >
+          {group.title && !ringkas && (
             <p className={cn('px-3 pb-2 text-[13px]', dark ? 'text-white/90' : 'text-muted')}>
               {group.title}
             </p>
@@ -203,7 +219,7 @@ export function NavList({ groups, dark }: { groups: NavGroup[]; dark: boolean })
             {group.items.map((item) => (
               <li key={item.to}>
                 {dark ? (
-                  <TutsMenu item={item} aktif={aktif(item)} />
+                  <TutsMenu item={item} aktif={aktif(item)} ringkas={ringkas} />
                 ) : (
                   <Link
                     to={item.to}
@@ -227,8 +243,23 @@ export function NavList({ groups, dark }: { groups: NavGroup[]; dark: boolean })
 }
 
 /** Wilayah dan tahun dibaca dari tabel config, dengan kotak tinta seperti ikon logo. */
-export function RegionBox({ dark }: { dark: boolean }) {
+export function RegionBox({ dark, ringkas = false }: { dark: boolean; ringkas?: boolean }) {
   const { data } = useAppConfigQuery();
+  if (ringkas) {
+    return (
+      <div
+        title={`${data?.kota ?? 'DKI Jakarta'}, APBD ${data?.tahunAnggaran ?? 2025}`}
+        className="grid h-11 w-11 place-items-center rounded-2xl border border-white/25 bg-black/15 text-white"
+      >
+        <span className="grid size-8 place-items-center rounded-[10px] bg-hijau text-hijau-terang">
+          <Icon name="lokasi" />
+        </span>
+        <span className="sr-only">
+          Wilayah {data?.kota ?? 'DKI Jakarta'}, APBD {data?.tahunAnggaran ?? 2025}
+        </span>
+      </div>
+    );
+  }
   return (
     <div
       className={cn(
@@ -255,7 +286,7 @@ function initials(name: string): string {
   return ((words[0]?.[0] ?? '') + (words[1]?.[0] ?? '')).toUpperCase() || 'W';
 }
 
-export function UserRow({ dark }: { dark: boolean }) {
+export function UserRow({ dark, ringkas = false }: { dark: boolean; ringkas?: boolean }) {
   const { user, profile, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -278,6 +309,46 @@ export function UserRow({ dark }: { dark: boolean }) {
     'inline-flex h-9 flex-none items-center rounded-xl px-4 text-[13px] font-bold transition-[scale,background-color] duration-150 ease-out active:scale-[0.96] disabled:opacity-60',
     dark ? 'bg-white text-hitam hover:bg-white/85' : 'bg-ink text-on-ink hover:bg-ink-tekan',
   );
+
+  if (ringkas) {
+    return (
+      <div className="flex flex-col items-center gap-2 rounded-[18px] bg-black/15 py-2">
+        {isSigningOut && <PemuatLayar label="Keluar dari akun" />}
+        {user ? (
+          <>
+            <Link
+              to="/profil"
+              aria-label={`Buka profil ${name}`}
+              title={name}
+              className="grid size-9 place-items-center rounded-full bg-hijau-terang text-xs font-bold text-hitam focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              {initials(name)}
+            </Link>
+            <NotificationBell dark tempat="samping" />
+            <button
+              type="button"
+              aria-label="Keluar"
+              title="Keluar"
+              disabled={isSigningOut}
+              onClick={handleSignOut}
+              className="grid size-9 place-items-center rounded-xl border border-white/25 text-white transition-[scale,background-color] duration-150 ease-out hover:bg-white/15 active:scale-[0.95] disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              <Icon name="keluar" size={19} />
+            </button>
+          </>
+        ) : (
+          <Link
+            to="/login"
+            aria-label="Masuk"
+            title="Masuk"
+            className="grid size-9 place-items-center rounded-xl bg-white text-hitam transition-[scale,background-color] duration-150 ease-out hover:bg-white/85 active:scale-[0.95] focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            <Icon name="keluar" size={19} />
+          </Link>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div

@@ -38,6 +38,8 @@ const PATHS = {
   putus:
     'M9.5 14.5l-2 2a3 3 0 0 1-4.2-4.2l2-2M14.5 9.5l2-2a3 3 0 0 1 4.2 4.2l-2 2M8 8 6.5 6.5M16 16l1.5 1.5M12 3v2.5M3 12h2.5M19 21l-3-3',
   muatUlang: 'M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5',
+  panahKiri: 'M15 6l-6 6 6 6',
+  keluar: 'M10 4H5v16h5M14 8l4 4-4 4M18 12H9',
 } as const;
 
 export type IconName = keyof typeof PATHS;
