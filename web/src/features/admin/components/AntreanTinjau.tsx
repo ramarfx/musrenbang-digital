@@ -549,12 +549,27 @@ export function AntreanTinjau({ proposals }: { proposals: Proposal[] }) {
                       ['needs_review', 'Perlu ditinjau', daftarPerFlag('needs_review').length],
                     ] as const
                   ).map(([nilai, label, jumlah]) => (
-                    <span key={nilai} className="inline-flex items-center gap-1">
+                    <span
+                      key={nilai}
+                      className={cn(
+                        'inline-flex items-stretch',
+                        jumlah > 0 &&
+                          FLAGS_TOLAK.includes(nilai as FlagAi) &&
+                          'overflow-hidden rounded-lg border border-[#b42318]/60 bg-surface',
+                      )}
+                    >
                       <button
                         type="button"
                         aria-pressed={saringAi === nilai}
                         onClick={() => setSaringAi(nilai)}
-                        className={kelasChip(saringAi === nilai)}
+                        className={
+                          jumlah > 0 && FLAGS_TOLAK.includes(nilai as FlagAi)
+                            ? cn(
+                                'relative inline-flex min-h-9 items-center gap-1.5 px-2.5 text-[13px] font-semibold transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-warga',
+                                saringAi === nilai ? 'bg-ink text-on-ink' : 'hover:bg-active',
+                              )
+                            : kelasChip(saringAi === nilai)
+                        }
                       >
                         {label}
                         <span className="text-[11px] font-bold tabular-nums opacity-70">
@@ -566,7 +581,7 @@ export function AntreanTinjau({ proposals }: { proposals: Proposal[] }) {
                           type="button"
                           disabled={sedangTolak}
                           onClick={() => bukaTolak(nilai as FlagAi)}
-                          className="relative inline-flex min-h-9 items-center rounded-lg px-1.5 text-[13px] font-semibold text-[#b42318] underline underline-offset-2 hover:bg-[#fbeae8] disabled:opacity-50 after:absolute after:-inset-1 after:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b42318]"
+                          className="inline-flex min-h-9 items-center border-l border-[#b42318]/30 px-2.5 text-[13px] font-semibold text-[#b42318] transition-colors duration-150 ease-out hover:bg-[#fbeae8] disabled:opacity-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#b42318]"
                         >
                           Tolak semua
                         </button>
