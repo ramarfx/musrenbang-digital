@@ -1,26 +1,17 @@
 import type { ApbdItem } from '@musrenbang/shared';
+import { Badge, type BadgeTone } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
-import { cn } from '@/lib/cn';
 import { formatRupiah } from '@/lib/format';
 import { LABEL_STATUS_DATA, rapikanSumber, statusData, type StatusData } from '../lib';
 
-const WARNA_STATUS: Record<StatusData, string> = {
-  terverifikasi: 'bg-mint-pucat text-mint-tua',
-  belum_terverifikasi: 'bg-mustard-pucat text-mustard-tua',
-  kosong: 'bg-pasir text-ink',
+const NADA_STATUS: Record<StatusData, BadgeTone> = {
+  terverifikasi: 'success',
+  belum_terverifikasi: 'warning',
+  kosong: 'neutral',
 };
 
 function BadgeStatus({ status }: { status: StatusData }) {
-  return (
-    <span
-      className={cn(
-        'inline-flex h-6 flex-none items-center rounded-lg px-2.5 text-xs font-semibold whitespace-nowrap',
-        WARNA_STATUS[status],
-      )}
-    >
-      {LABEL_STATUS_DATA[status]}
-    </span>
-  );
+  return <Badge tone={NADA_STATUS[status]}>{LABEL_STATUS_DATA[status]}</Badge>;
 }
 
 function Nominal({ item, status }: { item: ApbdItem; status: StatusData }) {

@@ -15,6 +15,7 @@ import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
 import { useCommentCountsQuery } from '@/features/comments/queries';
+import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/cn';
 import { formatAngka, formatTanggal } from '@/lib/format';
 import { analyzeProposal, getAiReview } from '../ai-api';
@@ -80,38 +81,22 @@ function ChipAi({
     return <span className="flex-none text-xs text-muted">MusrenAI tidak tersedia</span>;
   }
   if (ulasan?.state === 'failed') {
-    return (
-      <span className="flex-none rounded-lg bg-[#F5B9B0] px-2 py-1 text-xs font-semibold text-hitam">
-        Pemeriksaan gagal
-      </span>
-    );
+    return <Badge tone="danger">Pemeriksaan gagal</Badge>;
   }
   if (ulasan?.state === 'stale') {
-    return (
-      <span className="flex-none rounded-lg bg-pasir px-2 py-1 text-xs font-semibold text-ink">
-        Perlu diperiksa ulang
-      </span>
-    );
+    return <Badge tone="neutral">Perlu diperiksa ulang</Badge>;
   }
   if (ulasan?.state !== 'completed') {
-    return (
-      <span className="flex-none rounded-lg bg-pasir px-2 py-1 text-xs font-semibold text-ink">
-        Belum diperiksa
-      </span>
-    );
+    return <Badge tone="neutral">Belum diperiksa</Badge>;
   }
   if (ulasan.flags.length === 0) {
-    return (
-      <span className="flex-none rounded-lg bg-mint-pucat px-2 py-1 text-xs font-semibold text-mint-tua">
-        Tidak ada indikasi
-      </span>
-    );
+    return <Badge tone="success">Tidak ada indikasi</Badge>;
   }
   return (
-    <span className="flex-none rounded-lg bg-[#F5B9B0] px-2 py-1 text-xs font-semibold text-hitam">
+    <Badge tone="danger">
       {LABEL_INDIKASI[ulasan.flags[0]!]}
       {ulasan.flags.length > 1 && ` +${ulasan.flags.length - 1}`}
-    </span>
+    </Badge>
   );
 }
 
