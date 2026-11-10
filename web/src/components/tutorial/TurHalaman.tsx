@@ -14,10 +14,6 @@ const LEBAR_KARTU = 320;
 const BINGKAI_DIAM = 6;
 const BATAS_TUNGGU_MS = 1400;
 
-// Tombol asisten melayang menempati pojok kanan bawah bila menyala; tombol bantuan
-// ditumpuk tepat di atasnya supaya posisinya sama di semua halaman.
-const ADA_ASISTEN = import.meta.env.VITE_MUSRENAI_ENABLED === 'true';
-
 const cari = (target: string) => document.querySelector<HTMLElement>(`[data-tur="${target}"]`);
 
 function ukur(el: HTMLElement): Kotak {
@@ -45,7 +41,8 @@ function perluGulir(el: HTMLElement): { gulir: boolean; tinggi: boolean } {
 }
 
 /**
- * Tombol "?" kecil di pojok kanan bawah, selalu di tempat yang sama. Dipencet, halaman
+ * Tombol "?" kecil di pojok kanan bawah, selalu di tempat yang sama. Di layar lebar tombol
+ * asisten melayang bergeser ke kirinya; di HP "?" ditumpuk tepat di atas tombol asisten. Dipencet, halaman
  * dipudarkan dan satu bagian disorot bergantian, tiap bagian dengan kartu penjelasan. Bisa
  * ditutup kapan saja. Langkah yang bagiannya tidak ada di layar (mis. data belum dimuat)
  * dilewati.
@@ -73,8 +70,9 @@ export function TurHalaman({ langkah }: { langkah: readonly LangkahTur[] }) {
         aria-label="Bantuan halaman ini"
         title="Bantuan halaman ini"
         className={cn(
-          'fixed right-3 z-40 grid size-10 place-items-center rounded-full border border-edge bg-surface text-sm font-semibold text-muted transition-[color,border-color,scale] duration-150 ease-out hover:border-ink hover:text-ink active:scale-[0.94] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga sm:right-5 sm:size-9',
-          ADA_ASISTEN ? 'bottom-[68px] sm:bottom-[76px]' : 'bottom-3 sm:bottom-5',
+          // Layar lebar: sejajar tengah dengan tombol asisten (tinggi 44px), jadi naik 2px dari
+          // tepi bawahnya. HP: tepat di atas tombol asisten, selebar tepi kanan yang sama.
+          'fixed right-3 bottom-[68px] z-40 grid size-10 place-items-center rounded-full border border-edge bg-surface text-sm font-semibold text-muted transition-[color,border-color,scale] duration-150 ease-out hover:border-ink hover:text-ink active:scale-[0.94] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga sm:right-5 sm:bottom-[22px]',
         )}
       >
         ?
