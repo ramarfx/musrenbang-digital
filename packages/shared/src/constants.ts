@@ -67,6 +67,8 @@ export const FOTO_BUCKET = 'foto-pengerjaan';
 export const MAKS_FOTO_PER_USULAN = 12;
 /** Status usulan yang boleh diberi foto pengerjaan. */
 export const STATUS_BERFOTO = ['Dikerjakan', 'Selesai'] as const;
+/** Status usulan yang boleh dicatat pengeluarannya (sama dengan penjaga di database). */
+export const STATUS_BERANGGARAN = ['Masuk APBD', 'Dikerjakan', 'Selesai'] as const;
 
 export const APP_CONFIG_KEYS = {
   kota: 'kota',

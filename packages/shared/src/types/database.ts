@@ -9,6 +9,7 @@ import type {
   Proposal,
   ProposalPhoto,
   ProposalRow,
+  ProposalSpending,
   ProposalSeed,
   StatusHistory,
   StatusHistoryRow,
@@ -100,6 +101,11 @@ export type Database = {
       proposal_photos: TableDefinition<
         ProposalPhoto,
         { proposal_id: number; path: string; keterangan?: string | null },
+        Record<string, never>
+      >;
+      proposal_spending: TableDefinition<
+        ProposalSpending,
+        { proposal_id: number; jumlah: number; keterangan: string; sumber?: string | null },
         Record<string, never>
       >;
       votes: TableDefinition<

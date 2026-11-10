@@ -4,6 +4,7 @@ import { Button, buttonClass } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
 import { KelolaFotoAdmin } from '@/features/photos/components/KelolaFotoAdmin';
+import { KelolaPengeluaranAdmin } from '@/features/spending/components/KelolaPengeluaranAdmin';
 import { getCategoryInfo } from '@/features/categories/info';
 import { ModerationBadge } from '@/features/proposals/components/ModerationBadge';
 import { StatusBadge } from '@/features/proposals/components/StatusBadge';
@@ -116,6 +117,7 @@ export function RincianUsulan({
             </div>
           )}
           <KelolaFotoAdmin proposal={proposal} />
+          <KelolaPengeluaranAdmin proposal={proposal} />
         </Card>
 
         <Card>
