@@ -8,7 +8,7 @@ import { getCategoryInfo } from '@/features/categories/info';
 import { useCommentCountsQuery } from '@/features/comments/queries';
 import { IKON_TAHAP } from '@/features/proposals/components/StatusTimeline';
 import { UpvoteButton } from '@/features/proposals/components/UpvoteButton';
-import { buatIkonGugus, buatIkonKota, buatIkonPin, hitungTingkat } from '@/lib/penanda';
+import { buatIkonGugus, buatIkonKota, buatIkonPin } from '@/lib/penanda';
 import {
   BATAS_JAKARTA_DARAT,
   WILAYAH_PILIHAN,
@@ -75,7 +75,6 @@ export function LapisanPin({ titik }: { titik: Titik[] }) {
   const [zoom, setZoom] = useState(() => map.getZoom());
   useMapEvents({ zoomend: () => setZoom(map.getZoom()) });
 
-  const suaraTerbanyak = Math.max(0, ...titik.map((item) => item.jumlah_suara));
   const perKota = useMemo(() => kelompokkanPerKota(titik), [titik]);
   const kelompok = useMemo(() => kelompokkan(map, titik, zoom), [map, titik, zoom]);
 
@@ -117,12 +116,7 @@ export function LapisanPin({ titik }: { titik: Titik[] }) {
         const pertama = gugus.anggota[0];
         if (!pertama) return null;
         return gugus.anggota.length === 1 ? (
-          <PinUsulan
-            key={pertama.id}
-            proposal={pertama}
-            tunda={tunda}
-            suaraTerbanyak={suaraTerbanyak}
-          />
+          <PinUsulan key={pertama.id} proposal={pertama} tunda={tunda} />
         ) : (
           <PinGugus key={`${pertama.id}+${gugus.anggota.length}`} gugus={gugus} tunda={tunda} />
         );
@@ -203,27 +197,20 @@ function PinGugus({ gugus, tunda }: { gugus: Gugus; tunda: number }) {
   );
 }
 
-function PinUsulan({
-  proposal,
-  tunda,
-  suaraTerbanyak,
-}: {
-  proposal: Titik;
-  tunda: number;
-  suaraTerbanyak: number;
-}) {
+function PinUsulan({ proposal, tunda }: { proposal: Titik; tunda: number }) {
   const jumlahKomentar = useCommentCountsQuery().data?.[proposal.id] ?? 0;
   const status = (proposal.status as ProposalStatus) ?? 'Diajukan';
-  const tingkat = hitungTingkat(proposal.jumlah_suara, suaraTerbanyak);
+  const tahap = Math.max(1, PROPOSAL_STATUSES.indexOf(status) + 1);
   const ikon = useMemo(
-    () => buatIkonPin(proposal.kategori, tingkat, tunda),
-    [proposal.kategori, tingkat, tunda],
+    () => buatIkonPin(proposal.kategori, tahap, tunda),
+    [proposal.kategori, tahap, tunda],
   );
   return (
     <Marker
       position={[proposal.latitude, proposal.longitude]}
       icon={ikon}
       zIndexOffset={proposal.jumlah_suara}
+      title={`${proposal.judul}, tahap ${tahap} dari ${PROPOSAL_STATUSES.length}`}
     >
       <Popup className="popup-usulan" minWidth={236} maxWidth={260}>
         <div className="flex items-center gap-2 pr-6 text-xs leading-tight font-medium text-muted">
