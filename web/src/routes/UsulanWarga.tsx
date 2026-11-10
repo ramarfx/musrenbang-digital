@@ -1,10 +1,11 @@
 import { buttonClass } from '@/components/ui/Button';
 import { PROPOSAL_STATUSES, type ProposalStatus } from '@musrenbang/shared';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PanelPetaUsulan } from '@/components/map/PanelPetaUsulan';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { Pagination } from '@/components/ui/Pagination';
 import { ListSkeleton } from '@/components/ui/Skeleton';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ProposalCard } from '@/features/proposals/components/ProposalCard';
@@ -13,6 +14,9 @@ import { ProposalFilters } from '@/features/proposals/components/ProposalFilters
 import { useCategoriesQuery } from '@/features/categories/queries';
 import { useProposalsQuery } from '@/features/proposals/queries';
 
+/** Jumlah kartu usulan per halaman daftar. */
+const KARTU_PER_HALAMAN = 6;
+
 /** Semua usulan warga yang sudah disetujui: terpopuler, peta, lalu daftar dengan filter. */
 export default function UsulanWarga() {
   const proposalsQuery = useProposalsQuery();
@@ -20,6 +24,8 @@ export default function UsulanWarga() {
   const [status, setStatus] = useState<ProposalStatus | 'semua'>('semua');
   const [kategori, setKategori] = useState('semua');
   const [urutan, setUrutan] = useState<'terbaru' | 'terpopuler'>('terbaru');
+  const [halaman, setHalaman] = useState(1);
+  const daftarRef = useRef<HTMLElement>(null);
   const categoriesQuery = useCategoriesQuery();
 
   // Pengguna yang masuk juga menerima usulan miliknya yang belum disetujui; daftar publik tidak boleh memuatnya.
@@ -77,6 +83,25 @@ export default function UsulanWarga() {
     }));
   }, [categoriesQuery.data, cocokKeyword, status]);
 
+  // Daftar dibagi per halaman supaya tidak memanjang ke bawah. Filter baru selalu mulai dari halaman 1.
+  useEffect(() => {
+    setHalaman(1);
+  }, [search, status, kategori, urutan]);
+  const totalHalaman = Math.max(1, Math.ceil(filtered.length / KARTU_PER_HALAMAN));
+  const halamanAktif = Math.min(halaman, totalHalaman);
+  const tampilHalaman = filtered.slice(
+    (halamanAktif - 1) * KARTU_PER_HALAMAN,
+    halamanAktif * KARTU_PER_HALAMAN,
+  );
+  const gantiHalaman = (tujuan: number) => {
+    setHalaman(tujuan);
+    const kurangiGerak = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    daftarRef.current?.scrollIntoView({
+      block: 'start',
+      behavior: kurangiGerak ? 'auto' : 'smooth',
+    });
+  };
+
   const jumlahBerlokasi = filtered.filter(
     (proposal) => proposal.latitude !== null && proposal.longitude !== null,
   ).length;
@@ -99,7 +124,8 @@ export default function UsulanWarga() {
         <div className="mb-3">
           <h2 className="text-xl font-bold">Peta usulan</h2>
           <p className="text-sm text-muted">
-            {jumlahBerlokasi} usulan punya titik lokasi dari hasil filter saat ini. Pilih wilayah untuk melihat batasnya.
+            {jumlahBerlokasi} usulan punya titik lokasi dari hasil filter saat ini. Pilih wilayah
+            untuk melihat batasnya.
           </p>
         </div>
         {proposalsQuery.isPending ? (
@@ -122,7 +148,7 @@ export default function UsulanWarga() {
         )}
       </section>
 
-      <section className="space-y-4">
+      <section ref={daftarRef} className="scroll-mt-4 space-y-4">
         <h2 className="text-xl font-bold">Daftar usulan</h2>
 
         <ProposalFilters
@@ -184,11 +210,19 @@ export default function UsulanWarga() {
         )}
 
         {filtered.length > 0 && (
-          <div className="grid gap-5 md:grid-cols-2">
-            {filtered.map((proposal) => (
-              <ProposalCard key={proposal.id} proposal={proposal} />
-            ))}
-          </div>
+          <>
+            <div className="grid gap-5 md:grid-cols-2">
+              {tampilHalaman.map((proposal) => (
+                <ProposalCard key={proposal.id} proposal={proposal} />
+              ))}
+            </div>
+            <Pagination
+              halaman={halamanAktif}
+              totalHalaman={totalHalaman}
+              onHalaman={gantiHalaman}
+              label="Halaman daftar usulan"
+            />
+          </>
         )}
       </section>
     </div>
