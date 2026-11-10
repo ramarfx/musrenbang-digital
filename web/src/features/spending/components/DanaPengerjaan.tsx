@@ -62,7 +62,7 @@ export function DanaPengerjaan({ proposal }: { proposal: Proposal }) {
           <div className={cn('flex flex-col-reverse', sel)}>
             <dt className="text-[13px] text-muted">dari APBD {proposal.kategori}</dt>
             <dd className="text-[26px] leading-tight font-extrabold tracking-[-0.03em] text-warga tabular-nums">
-              {formatPersen(persenApbd)}
+              {persenApbd < 0.01 ? '<0,01%' : formatPersen(persenApbd)}
             </dd>
           </div>
         )}
