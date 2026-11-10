@@ -303,6 +303,14 @@ html::-webkit-scrollbar,
 .trek-tipis::-webkit-scrollbar-thumb:hover {
   background: rgb(255 255 255 / 55%);
 }
+/* Sidebar yang dikecilkan jadi deretan ikon: tetap bisa digulir, tanpa batang gulir yang
+   memakan lebar dan membuat tuts menu aktif lebih sempit dari menunya. */
+.trek-sembunyi {
+  scrollbar-width: none;
+}
+.trek-sembunyi::-webkit-scrollbar {
+  display: none;
+}
 
 ::selection {
   background: var(--mint);

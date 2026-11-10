@@ -80,10 +80,11 @@ export function Sidebar() {
         <RegionBox dark ringkas={ringkas} />
         <div
           className={cn(
-            'trek-tipis mt-5 min-h-0 flex-1 overflow-x-hidden overflow-y-auto',
+            'mt-5 min-h-0 flex-1 overflow-x-hidden overflow-y-auto',
             // Tertutup: tanpa batang gulir (panahnya merusak deretan ikon); layar pendek tetap bisa
-            // digulir dengan roda mouse atau jari.
-            ringkas ? '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden' : 'pr-1',
+            // digulir dengan roda mouse atau jari. Kelasnya terpisah dari .trek-tipis karena
+            // gaya tanpa lapisan itu mengalahkan utilitas Tailwind.
+            ringkas ? 'trek-sembunyi' : 'trek-tipis pr-1',
           )}
         >
           <NavList groups={buildNav(isAdmin, user !== null)} dark ringkas={ringkas} />
