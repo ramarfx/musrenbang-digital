@@ -61,6 +61,13 @@ export const TEXT_LIMITS = {
   estimasiMaks: 100_000_000_000,
 } as const;
 
+/** Bucket Storage untuk foto pengerjaan usulan (dibuat oleh migration proposal_photos). */
+export const FOTO_BUCKET = 'foto-pengerjaan';
+/** Batas foto per usulan; database menolak yang ke-13. */
+export const MAKS_FOTO_PER_USULAN = 12;
+/** Status usulan yang boleh diberi foto pengerjaan. */
+export const STATUS_BERFOTO = ['Dikerjakan', 'Selesai'] as const;
+
 export const APP_CONFIG_KEYS = {
   kota: 'kota',
   tahunAnggaran: 'tahun_anggaran',
