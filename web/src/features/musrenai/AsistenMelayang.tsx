@@ -4,6 +4,7 @@ import { LoadingDots } from '@/components/brand/LogoLoader';
 import { Icon } from '@/components/ui/Icon';
 import { useAuth } from '@/features/auth';
 import { cn } from '@/lib/cn';
+import { useAdaTur } from '@/lib/tur';
 import { sendChat, type ChatMessage, type ChatResponse } from './api';
 
 type Entry = ChatMessage & { links?: ChatResponse['links']; disclaimer?: string | null };
@@ -55,6 +56,7 @@ function Gelembung({ entry, onPindah }: { entry: Entry; onPindah: () => void }) 
  */
 function Asisten() {
   const { user, loading } = useAuth();
+  const adaTur = useAdaTur();
   const [buka, setBuka] = useState(false);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [pesan, setPesan] = useState('');
@@ -123,9 +125,15 @@ function Asisten() {
 
   return (
     // z-[1100]: di atas kontrol peta (sampai z-[1000]), di bawah pemuat layar dan sambutan.
-    // Di layar lebar, right menyisakan tempat untuk tombol bantuan halaman (TurHalaman) di
-    // ujung pojok. Di HP tombol bantuan ditumpuk di atas tombol ini.
-    <div className="fixed right-3 bottom-3 z-[1100] sm:right-[68px] sm:bottom-5">
+    // Di layar lebar, tombol ini bergeser dari pojok bila halaman punya tombol bantuan
+    // (TurHalaman); tanpa tombol itu tombol ini menempati pojok. Di HP tombol bantuan ditumpuk
+    // di atasnya.
+    <div
+      className={cn(
+        'fixed right-3 bottom-3 z-[1100] sm:bottom-5',
+        adaTur ? 'sm:right-[68px]' : 'sm:right-5',
+      )}
+    >
       {buka && (
         <section
           role="dialog"

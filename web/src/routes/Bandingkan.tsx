@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button, buttonClass } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import type { LangkahTur } from '@/components/tutorial/TurHalaman';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { PageLoader } from '@/components/ui/PageLoader';
 import { statusKategori } from '@/features/apbd/lib';
@@ -16,6 +17,29 @@ import { GapLead } from '@/features/gap/components/GapLead';
 import { GapPotret } from '@/features/gap/components/GapPotret';
 import { buatCsv, siapkanGap, type GapRow } from '@/features/gap/lib';
 import { useGapQuery } from '@/features/gap/queries';
+
+const TUR_BANDINGKAN: readonly LangkahTur[] = [
+  {
+    target: 'temuan',
+    judul: 'Temuan utama',
+    isi: 'Program mana yang pilihan warga paling berbeda dari anggaran APBD, diringkas dalam satu kalimat.',
+  },
+  {
+    target: 'potret',
+    judul: 'Gambaran besar',
+    isi: 'Pilihan warga dan porsi APBD diletakkan berdampingan, supaya jaraknya terlihat sekilas.',
+  },
+  {
+    target: 'urutan',
+    judul: 'Urutan program',
+    isi: 'Tiap baris satu program. Klik sebuah baris untuk melihat rincian angkanya.',
+  },
+  {
+    target: 'unduh',
+    judul: 'Unduh datanya',
+    isi: 'Simpan hasil perbandingan sebagai file CSV untuk dibuka di Excel.',
+  },
+];
 
 export default function Bandingkan() {
   const gapQuery = useGapQuery();
@@ -58,6 +82,7 @@ export default function Bandingkan() {
     <div className="space-y-6">
       <PageHeader
         title="Bandingkan dengan APBD"
+        tur={TUR_BANDINGKAN}
         description={
           config
             ? `Pilihan warga dibanding belanja program APBD ${config.kota} ${config.tahunAnggaran}.`
@@ -72,7 +97,7 @@ export default function Bandingkan() {
               Dokumen resmi
             </Link>
             {gapQuery.isSuccess && ringkasan.rows.length > 0 && (
-              <Button variant="outline" size="sm" onClick={unduhCsv}>
+              <Button variant="outline" size="sm" data-tur="unduh" onClick={unduhCsv}>
                 Unduh data (CSV)
               </Button>
             )}
@@ -101,9 +126,15 @@ export default function Bandingkan() {
       {gapQuery.isSuccess && ringkasan.rows.length > 0 && (
         <>
           <GapCatatanData ringkasan={ringkasan} />
-          <GapLead ringkasan={ringkasan} />
-          <GapPotret ringkasan={ringkasan} />
-          <GapComparison ringkasan={ringkasan} onPilih={setDipilih} statusApbd={statusApbd} />
+          <div data-tur="temuan">
+            <GapLead ringkasan={ringkasan} />
+          </div>
+          <div data-tur="potret">
+            <GapPotret ringkasan={ringkasan} />
+          </div>
+          <div data-tur="urutan">
+            <GapComparison ringkasan={ringkasan} onPilih={setDipilih} statusApbd={statusApbd} />
+          </div>
         </>
       )}
 

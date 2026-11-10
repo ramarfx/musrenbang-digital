@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { createPortal } from 'react-dom';
 import { Icon } from '@/components/ui/Icon';
 import { cn } from '@/lib/cn';
+import { daftarkanTur } from '@/lib/tur';
 
 /** Satu langkah tur: `target` dicocokkan dengan atribut `data-tur` di halaman. */
 export type LangkahTur = { target: string; judul: string; isi: string };
@@ -50,6 +51,7 @@ function perluGulir(el: HTMLElement): { gulir: boolean; tinggi: boolean } {
 export function TurHalaman({ langkah }: { langkah: readonly LangkahTur[] }) {
   const [daftar, setDaftar] = useState<readonly LangkahTur[] | null>(null);
   const tombolRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => daftarkanTur(), []);
 
   const tutup = useCallback(() => {
     setDaftar(null);
@@ -137,13 +139,20 @@ function Tur({ langkah, onTutup }: { langkah: readonly LangkahTur[]; onTutup: ()
     const pengaman = window.setTimeout(tampilkan, BATAS_TUNGGU_MS);
 
     // Setelah siap, layar yang berubah ukuran atau bergeser tetap diikuti.
+    // Ukur lagi sebentar setelah gerakan terakhir, supaya sorotan tidak tertinggal beberapa
+    // piksel dari bagian yang disorot bila gulir halus masih berjalan saat sorotan muncul.
+    let susulan = 0;
     const ikuti = () => {
-      if (siapRef.current) setKotak(ukur(el));
+      if (!siapRef.current) return;
+      setKotak(ukur(el));
+      clearTimeout(susulan);
+      susulan = window.setTimeout(() => setKotak(ukur(el)), 120);
     };
     window.addEventListener('resize', ikuti);
     window.addEventListener('scroll', ikuti, true);
     return () => {
       selesai = true;
+      clearTimeout(susulan);
       clearTimeout(pengaman);
       cancelAnimationFrame(bingkai);
       window.removeEventListener('resize', ikuti);
