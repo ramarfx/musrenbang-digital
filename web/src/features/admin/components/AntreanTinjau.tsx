@@ -121,26 +121,60 @@ function BintangAi({ jalan = false }: { jalan?: boolean }) {
   );
 }
 
-function DaftarRingkasan({ judul, daftar }: { judul: string; daftar: Proposal[] }) {
-  if (daftar.length === 0) return null;
+/** Warna stabilo tiap kategori hasil MusrenAI; berbeda-beda supaya tidak semuanya tampak gawat. */
+const WARNA_AMAN = '#A9E3C8';
+const WARNA_FLAG: Record<FlagAi, string> = {
+  spam: '#F5B9B0',
+  promotion: '#F5C79B',
+  irrelevant: '#F6D98B',
+  needs_review: '#D9CCF0',
+};
+
+/**
+ * Satu baris ringkasan Summary AI: label stabilo, batang kecil, jumlah, dan panah. Menekannya
+ * menyaring antrean ke kategori itu. Batang disembunyikan di layar sempit supaya baris tetap lega.
+ */
+function BarisRingkasan({
+  warna,
+  label,
+  jumlah,
+  maks,
+  onPilih,
+}: {
+  warna: string;
+  label: string;
+  jumlah: number;
+  maks: number;
+  onPilih: () => void;
+}) {
   return (
-    <section aria-label={judul}>
-      <h3 className="text-sm font-bold">
-        {judul} · {formatAngka(daftar.length)}
-      </h3>
-      <ul className="mt-1.5 space-y-1 text-sm">
-        {daftar.map((proposal) => (
-          <li key={proposal.id}>
-            <Link
-              to={`/admin/usulan/${proposal.id}`}
-              className="block rounded-lg px-1.5 py-1 hover:bg-active/60 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga [overflow-wrap:anywhere]"
-            >
-              {proposal.judul}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </section>
+    <button
+      type="button"
+      onClick={onPilih}
+      className="grid min-h-12 w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 border-t border-rule px-3.5 py-2.5 text-left font-semibold transition-colors duration-150 ease-out first:border-t-0 hover:bg-active focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-warga sm:grid-cols-[minmax(0,150px)_minmax(0,1fr)_auto_auto]"
+    >
+      <span>
+        <span
+          className="rounded-[3px] px-1.5 py-px text-[13px] font-bold text-hitam"
+          style={{ backgroundColor: warna }}
+        >
+          {label}
+        </span>
+      </span>
+      <span
+        aria-hidden="true"
+        className="hidden h-2.5 overflow-hidden rounded-[3px] bg-track sm:block"
+      >
+        <span
+          className="block h-full"
+          style={{ width: `${maks > 0 ? (jumlah / maks) * 100 : 0}%`, backgroundColor: warna }}
+        />
+      </span>
+      <span className="text-lg font-bold tabular-nums">{formatAngka(jumlah)}</span>
+      <span aria-hidden="true" className="text-muted">
+        ›
+      </span>
+    </button>
   );
 }
 
@@ -737,66 +771,87 @@ export function AntreanTinjau({ proposals }: { proposals: Proposal[] }) {
             </div>
           ) : (
             <>
-              <p className="mt-2 text-sm text-muted">
-                Dari {formatAngka(proposals.length)} usulan yang menunggu,{' '}
-                {formatAngka(summaryData.aman.length)} tanpa indikasi dan{' '}
-                {formatAngka(
-                  FLAGS_AI.reduce((jumlah, flag) => jumlah + summaryData.perFlag[flag].length, 0),
-                )}{' '}
-                dengan indikasi.
-                {summaryData.belumDiperiksa > 0 &&
-                  ` ${formatAngka(summaryData.belumDiperiksa)} belum terperiksa.`}{' '}
-                MusrenAI bisa keliru, jadi tetap lihat isi usulan sebelum memutuskan.
-              </p>
+              {(() => {
+                // Satu usulan bisa punya beberapa label, jadi "dengan indikasi" dihitung per usulan,
+                // bukan dijumlahkan per label.
+                const idBerindikasi = new Set(
+                  FLAGS_AI.flatMap((flag) => summaryData.perFlag[flag].map((item) => item.id)),
+                );
+                const jumlahAman = summaryData.aman.length;
+                const jumlahIndikasi = idBerindikasi.size;
+                const totalBatang = jumlahAman + jumlahIndikasi;
+                const maks = Math.max(
+                  jumlahAman,
+                  ...FLAGS_AI.map((flag) => summaryData.perFlag[flag].length),
+                );
+                const pilih = (saring: SaringAi) => {
+                  setSaringAi(saring);
+                  setSummaryOpen(false);
+                };
+                return (
+                  <>
+                    <p className="mt-2 text-sm text-muted">
+                      Dari <b className="text-ink">{formatAngka(proposals.length)} usulan</b> yang
+                      menunggu, <b className="text-ink">{formatAngka(jumlahAman)}</b> tanpa indikasi
+                      dan <b className="text-ink">{formatAngka(jumlahIndikasi)}</b> dengan indikasi.
+                      {summaryData.belumDiperiksa > 0 &&
+                        ` ${formatAngka(summaryData.belumDiperiksa)} belum terperiksa.`}{' '}
+                      MusrenAI bisa keliru, jadi tetap lihat isi usulan sebelum memutuskan.
+                    </p>
 
-              <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSaringAi('aman');
-                    setSummaryOpen(false);
-                  }}
-                  className="rounded-2xl bg-mint-pucat px-4 py-3 text-left transition-colors duration-150 ease-out hover:bg-mint-pucat/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
-                >
-                  <p className="text-2xl font-bold tabular-nums text-mint-tua">
-                    {formatAngka(summaryData.aman.length)}
-                  </p>
-                  <p className="text-[13px] font-semibold text-mint-tua">Tanpa indikasi</p>
-                </button>
-                {FLAGS_AI.map((flag) => {
-                  const daftar = summaryData.perFlag[flag];
-                  return (
-                    <button
-                      key={flag}
-                      type="button"
-                      onClick={() => {
-                        setSaringAi(flag);
-                        setSummaryOpen(false);
-                      }}
-                      className="rounded-2xl bg-[#F5B9B0] px-4 py-3 text-left transition-opacity duration-150 ease-out hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
-                    >
-                      <p className="text-2xl font-bold tabular-nums text-hitam">
-                        {formatAngka(daftar.length)}
+                    {totalBatang > 0 && (
+                      <div className="mt-4" aria-hidden="true">
+                        <div className="flex h-4 gap-0.5 overflow-hidden rounded bg-track">
+                          <i
+                            className="block h-full"
+                            style={{
+                              width: `${(jumlahAman / totalBatang) * 100}%`,
+                              backgroundColor: WARNA_AMAN,
+                            }}
+                          />
+                          <i
+                            className="block h-full"
+                            style={{
+                              width: `${(jumlahIndikasi / totalBatang) * 100}%`,
+                              backgroundColor: WARNA_FLAG.spam,
+                            }}
+                          />
+                        </div>
+                        <div className="mt-1.5 flex justify-between text-[13px] text-muted">
+                          <span>{formatAngka(jumlahAman)} tanpa indikasi</span>
+                          <span>{formatAngka(jumlahIndikasi)} dengan indikasi</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="mt-3 overflow-hidden rounded-[14px] border-[1.5px] border-ink">
+                      <BarisRingkasan
+                        warna={WARNA_AMAN}
+                        label="Tanpa indikasi"
+                        jumlah={jumlahAman}
+                        maks={maks}
+                        onPilih={() => pilih('aman')}
+                      />
+                      {FLAGS_AI.map((flag) => (
+                        <BarisRingkasan
+                          key={flag}
+                          warna={WARNA_FLAG[flag]}
+                          label={LABEL_INDIKASI[flag]}
+                          jumlah={summaryData.perFlag[flag].length}
+                          maks={maks}
+                          onPilih={() => pilih(flag)}
+                        />
+                      ))}
+                    </div>
+                    {summaryData.gagal.length > 0 && (
+                      <p className="mt-2 text-[13px] text-muted">
+                        {formatAngka(summaryData.gagal.length)} usulan gagal diperiksa. Jalankan
+                        Summary AI lagi untuk mencobanya ulang.
                       </p>
-                      <p className="text-[13px] font-semibold text-hitam">{LABEL_INDIKASI[flag]}</p>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="mt-4 max-h-64 space-y-3 overflow-y-auto">
-                <DaftarRingkasan judul="Tanpa indikasi" daftar={summaryData.aman} />
-                {FLAGS_AI.map((flag) => (
-                  <DaftarRingkasan
-                    key={flag}
-                    judul={LABEL_INDIKASI[flag]}
-                    daftar={summaryData.perFlag[flag]}
-                  />
-                ))}
-                {summaryData.gagal.length > 0 && (
-                  <DaftarRingkasan judul="Gagal diperiksa" daftar={summaryData.gagal} />
-                )}
-              </div>
+                    )}
+                  </>
+                );
+              })()}
 
               <div className="mt-5 flex flex-wrap justify-end gap-2.5">
                 <Button type="button" variant="ghost" onClick={() => setSummaryOpen(false)}>
