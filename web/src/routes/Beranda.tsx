@@ -8,6 +8,7 @@ import { Icon, type IconName } from '@/components/ui/Icon';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useUserAllocationsQuery } from '@/features/allocations/queries';
 import { useAuth } from '@/features/auth';
+import { CategoryTile } from '@/features/categories/components/CategoryTile';
 import { useCategoriesQuery } from '@/features/categories/queries';
 import { arahSelisih, siapkanGap } from '@/features/gap/lib';
 import { useGapQuery } from '@/features/gap/queries';
@@ -43,8 +44,8 @@ function SambutanWarga() {
               : 'Selamat Datang di Musrenbang Digital'}
           </h1>
           <p className="mt-1 max-w-2xl text-base text-muted">
-            Sampaikan usulan perbaikan lingkungan, berikan dukungan suara, dan bantu tentukan
-            prioritas pembangunan daerah secara mudah dan terbuka.
+            Sampaikan usulan, beri dukungan, dan bagi anggaran virtual. Lihat sendiri seberapa jauh
+            prioritas warga dengan anggaran daerah (APBD).
           </p>
         </div>
       </div>
@@ -109,7 +110,7 @@ function AksiUtamaWarga() {
     {
       judul: '1. Buat Usulan Baru',
       keterangan:
-        'Ada jalan rusak, saluran air mampet, atau lampu padam? Tuliskan usulan perbaikan untuk lingkungan Anda.',
+        'Sampaikan kebutuhan di lingkungan Anda. Usulan tercatat terbuka dan statusnya bisa Anda pantau sampai selesai.',
       labelTombol: 'Tulis Usulan Baru',
       ikon: 'pensil' as IconName,
       ke: user ? '/usulan/baru' : '/login',
@@ -118,7 +119,7 @@ function AksiUtamaWarga() {
     {
       judul: '2. Dukung Usulan Warga',
       keterangan:
-        'Bantu beri suara dukungan untuk usulan warga sekitar agar cepat diperhatikan dan masuk APBD.',
+        'Beri suara untuk usulan warga lain. Makin banyak dukungan, makin jelas apa yang jadi prioritas bersama.',
       labelTombol: 'Lihat & Dukung Usulan',
       ikon: 'panah-atas' as IconName,
       ke: '/usulan',
@@ -127,7 +128,7 @@ function AksiUtamaWarga() {
     {
       judul: '3. Bagi Anggaran Virtual',
       keterangan:
-        'Tentukan sendiri berapa porsi anggaran untuk tiap bidang, lalu bandingkan dengan anggaran daerah (APBD).',
+        'Bagi anggaran ke bidang yang menurut Anda paling penting, lalu lihat jaraknya dengan anggaran daerah (APBD).',
       labelTombol: 'Buka Simulator Anggaran',
       ikon: 'simulator' as IconName,
       ke: '/simulator',
@@ -197,17 +198,17 @@ function LangkahMu() {
   const daftar: Langkah[] = [
     {
       nomor: 1,
-      label: 'Bagi Anggaran Virtual',
-      penjelasan: 'Tentukan porsi anggaran untuk tiap bidang lewat simulator anggaran.',
-      statusTeks: sudahUrut ? 'Sudah Diisi' : 'Belum Diisi',
-      selesai: sudahUrut,
-      ke: '/simulator',
-      aksi: sudahUrut ? 'Ubah Urutan' : 'Mulai',
+      label: 'Buat Usulan Baru',
+      penjelasan: 'Sampaikan kebutuhan di lingkungan Anda agar tercatat dan bisa dipantau.',
+      statusTeks: punyaUsulan ? 'Usulan Anda Sudah Terkirim' : 'Belum Ada Usulan',
+      selesai: punyaUsulan,
+      ke: punyaUsulan ? '/usulan-saya' : '/usulan/baru',
+      aksi: punyaUsulan ? 'Pantau Status' : 'Tulis Sekarang',
     },
     {
       nomor: 2,
       label: `Beri Dukungan untuk ${TARGET_DUKUNGAN} Usulan`,
-      penjelasan: 'Dukung usulan sesama warga di lingkungan Anda agar naik ke tingkat pembahasan.',
+      penjelasan: 'Dukung usulan sesama warga agar prioritas bersama terlihat jelas.',
       statusTeks: `${Math.min(jumlahDukungan, TARGET_DUKUNGAN)} dari ${TARGET_DUKUNGAN} usulan didukung`,
       selesai: jumlahDukungan >= TARGET_DUKUNGAN,
       ke: '/usulan',
@@ -215,13 +216,13 @@ function LangkahMu() {
     },
     {
       nomor: 3,
-      label: 'Ajukan Usulan Lingkungan',
+      label: 'Bagi Anggaran Virtual',
       penjelasan:
-        'Sampaikan langsung keluhan jalan, selokan, atau sarana umum yang perlu diperbaiki.',
-      statusTeks: punyaUsulan ? 'Usulan Anda Sudah Terkirim' : 'Belum Ada Usulan',
-      selesai: punyaUsulan,
-      ke: punyaUsulan ? '/usulan-saya' : '/usulan/baru',
-      aksi: punyaUsulan ? 'Pantau Status' : 'Tulis Sekarang',
+        'Bagi anggaran ke bidang yang menurut Anda penting, lalu lihat jaraknya dengan APBD.',
+      statusTeks: sudahUrut ? 'Sudah Diisi' : 'Belum Diisi',
+      selesai: sudahUrut,
+      ke: '/simulator',
+      aksi: sudahUrut ? 'Ubah Urutan' : 'Mulai',
     },
   ];
 
@@ -355,7 +356,8 @@ function PalingDidukung() {
       ) : (
         <ul className="flex flex-1 flex-col divide-y divide-border">
           {teratas.map((proposal) => (
-            <li key={proposal.id} className="flex flex-1 items-center justify-between gap-4 py-3.5">
+            <li key={proposal.id} className="flex flex-1 items-center gap-3.5 py-3.5">
+              <CategoryTile kategori={proposal.kategori} gaya="cap" />
               <div className="min-w-0 flex-1">
                 <Link
                   to={`/usulan/${proposal.id}`}
@@ -368,7 +370,10 @@ function PalingDidukung() {
                     {proposal.kategori}
                   </Badge>
                   {proposal.lokasi && (
-                    <span className="text-xs text-muted truncate">{proposal.lokasi}</span>
+                    <span className="inline-flex min-w-0 items-center gap-1 text-xs text-muted">
+                      <Icon name="lokasi" size={14} />
+                      <span className="truncate">{proposal.lokasi}</span>
+                    </span>
                   )}
                 </div>
               </div>
