@@ -861,6 +861,11 @@ html::-webkit-scrollbar,
   animation:
     wilayah-garis 900ms var(--ease-out) backwards,
     wilayah-isi 700ms var(--ease-out) 260ms backwards;
+  transition: opacity 200ms var(--ease-out);
+}
+/* Peta sedang jauh (lihat ZOOM_WILAYAH_TAMPIL di LapisanWilayah): warna wilayah disembunyikan. */
+.peta-wilayah-jauh .wilayah-arsir {
+  opacity: 0;
 }
 @keyframes wilayah-garis {
   from {

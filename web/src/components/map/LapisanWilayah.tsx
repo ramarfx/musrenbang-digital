@@ -13,6 +13,12 @@ import {
 /** Batas percobaan menunggu peta punya ukuran, kira-kira satu detik pada 60 bingkai per detik. */
 const BATAS_TUNGGU = 60;
 
+/**
+ * Warna wilayah hanya tampil dari zoom ini ke dekat. Seluruh Jakarta pas di peta pada zoom
+ * sekitar 10,5 sampai 11; di bawah 9,5 kota sudah mengecil jadi noda warna di atas peta.
+ */
+const ZOOM_WILAYAH_TAMPIL = 9.5;
+
 /** Garis bayangan tinta di bawah garis wilayah, supaya batas tetap terbaca di atas peta. */
 const TINTA = '#14222B';
 
@@ -97,7 +103,17 @@ export function LapisanWilayah({ kode }: { kode: PilihanWilayah }) {
     };
     terbang();
 
+    // Terlalu jauh (zoom keluar atau saat terbang kembali), warna wilayah disembunyikan lewat
+    // kelas di wadah peta; muncul lagi memudar begitu peta cukup dekat.
+    const perbaruiJarak = () => {
+      map.getContainer().classList.toggle('peta-wilayah-jauh', map.getZoom() < ZOOM_WILAYAH_TAMPIL);
+    };
+    perbaruiJarak();
+    map.on('zoom zoomend', perbaruiJarak);
+
     return () => {
+      map.off('zoom zoomend', perbaruiJarak);
+      map.getContainer().classList.remove('peta-wilayah-jauh');
       cancelAnimationFrame(bingkai);
       clearTimeout(cadangan);
       map.off('moveend', arsir);
