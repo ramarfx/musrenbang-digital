@@ -6,35 +6,21 @@ const STABILO = '#4FC79C';
 const RUAS = 5;
 
 /**
- * Skala minimal cincin: satu cincin penuh berarti sedikitnya segini suara. Tanpa batas bawah,
- * usulan terbanyak di peta selalu penuh, sehingga satu suara pada usulan tunggal langsung
- * memenuhi cincin. Angkanya pegangan sementara sampai ada target dukungan resmi.
- */
-export const SKALA_MINIMAL = 10;
-
-/**
- * Tingkat dukungan 1 sampai 5 untuk cincin pin: suara dibanding yang terbesar antara usulan
- * terbanyak di peta dan `SKALA_MINIMAL`. Usulan tanpa suara tetap mendapat satu ruas supaya
- * cincinnya tidak kosong.
- */
-export function hitungTingkat(suara: number, suaraTerbanyak: number): number {
-  const acuan = Math.max(suaraTerbanyak, SKALA_MINIMAL);
-  return Math.min(RUAS, Math.max(1, Math.ceil((suara / acuan) * RUAS)));
-}
-
-/**
  * Penanda usulan: pin tinta dengan ikon kategori berwarna stabilo, dikelilingi cincin lima ruas
- * yang terisi sesuai tingkat dukungan. Pin jatuh masuk lalu ruasnya menyala satu per satu (kelas
- * `pin-*` di index.css); `tunda` menggeser awal animasi per pin supaya pin muncul berurutan.
- * Pin dibuat ulang hanya saat kategori, tingkat, atau tundanya berubah, jadi menggeser peta
- * tidak mengulang animasinya. Jumlah suara persisnya ada di popup. Tingkat `null` membuat pin
- * tanpa cincin, untuk peta satu usulan yang tidak punya pembanding.
+ * yang terisi sesuai TAHAP usulan: Diajukan satu ruas, Dikerjakan empat, Selesai lima (penuh).
+ * Lima ruas sengaja sama dengan lima tahap, sehingga cincin terbaca sebagai kemajuan pengerjaan,
+ * sama dengan "Tahap 4 dari 5" di kartu dan halaman usulan. Dukungan warga tidak digambar di
+ * pin; jumlahnya ada di popup. Pin jatuh masuk lalu ruasnya menyala satu per satu (kelas `pin-*`
+ * di index.css); `tunda` menggeser awal animasi per pin supaya pin muncul berurutan. Pin dibuat
+ * ulang hanya saat kategori, tahap, atau tundanya berubah, jadi menggeser peta tidak mengulang
+ * animasinya. Tahap `null` membuat pin tanpa cincin, untuk peta satu usulan yang sedang dipilih
+ * lokasinya.
  */
-export function buatIkonPin(kategori: string, tingkat: number | null, tunda: number): L.DivIcon {
+export function buatIkonPin(kategori: string, tahap: number | null, tunda: number): L.DivIcon {
   const { ikon } = getCategoryInfo(kategori);
   let ruas = '';
-  for (let i = 0; tingkat !== null && i < RUAS; i += 1) {
-    const nyala = i < tingkat;
+  for (let i = 0; tahap !== null && i < RUAS; i += 1) {
+    const nyala = i < tahap;
     ruas += `<circle class="pin-ruas${nyala ? ' pin-ruas-nyala' : ''}" style="--urut:${i}" cx="17" cy="16" r="13.5" fill="none" stroke="${STABILO}" stroke-width="3" stroke-opacity="${nyala ? 1 : 0.25}" pathLength="100" stroke-dasharray="16 84" stroke-dashoffset="${-i * 20 - 2}" transform="rotate(-90 17 16)"/>`;
   }
   const html = `
@@ -57,15 +43,19 @@ export function buatIkonPin(kategori: string, tingkat: number | null, tunda: num
 const BADAN_PIN = 'M17 43C17 43 2 28 2 16a15 15 0 0 1 30 0c0 12-15 27-15 27z';
 
 /**
- * Pin berangka: bentuk dan ukurannya sama dengan pin usulan (sedikit lebih kecil), dengan cincin
- * penuh dan jumlah di dalam kepalanya sebagai pengganti ikon kategori. Dipakai untuk gugus
- * usulan dan untuk ikon kota, supaya penanda tidak berganti rupa saat peta di-zoom out.
+ * Pin berangka: bentuk dan ukurannya sama dengan pin usulan (sedikit lebih kecil), dengan jumlah
+ * di dalam kepalanya sebagai pengganti ikon kategori. Gugus usulan memakai kepala berisi warna
+ * penuh, bukan cincin, supaya tidak tertukar dengan cincin tahap di pin usulan. Ikon kota tetap
+ * bercincin warna kotanya, sama dengan titik warna di daftar wilayah.
  */
-function pinAngka(angka: number, warnaCincin: string, warnaAngka: string): string {
+function pinAngka(angka: number, warnaCincin: string, warnaAngka: string, isi?: string): string {
   const ukuran = angka >= 1000 ? 10 : angka >= 100 ? 12 : 14;
+  const kepala = isi
+    ? `<circle cx="17" cy="16" r="13.5" fill="${isi}"/>`
+    : `<circle cx="17" cy="16" r="13.5" fill="none" stroke="${warnaCincin}" stroke-width="3"/>`;
   return `<svg class="pin-badan" width="32" height="41" viewBox="0 0 34 44" aria-hidden="true">
     <path d="${BADAN_PIN}" fill="${TINTA}"/>
-    <circle cx="17" cy="16" r="13.5" fill="none" stroke="${warnaCincin}" stroke-width="3"/>
+    ${kepala}
     <text x="17" y="${16 + ukuran * 0.36}" text-anchor="middle" font-size="${ukuran}" font-weight="700" fill="${warnaAngka}">${angka}</text>
   </svg>`;
 }
@@ -74,7 +64,7 @@ function pinAngka(angka: number, warnaCincin: string, warnaAngka: string): strin
 export function buatIkonGugus(jumlah: number, tunda: number): L.DivIcon {
   return L.divIcon({
     className: '',
-    html: `<div class="gugus-usulan" style="--tunda:${tunda}ms">${pinAngka(jumlah, STABILO, STABILO)}</div>`,
+    html: `<div class="gugus-usulan" style="--tunda:${tunda}ms">${pinAngka(jumlah, STABILO, TINTA, STABILO)}</div>`,
     iconSize: [32, 41],
     iconAnchor: [16, 41],
   });

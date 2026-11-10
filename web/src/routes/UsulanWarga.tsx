@@ -124,8 +124,9 @@ export default function UsulanWarga() {
         <div className="mb-3">
           <h2 className="text-xl font-bold">Peta usulan</h2>
           <p className="text-sm text-muted">
-            {jumlahBerlokasi} usulan punya titik lokasi dari hasil filter saat ini. Pilih wilayah
-            untuk melihat batasnya.
+            {jumlahBerlokasi} usulan punya titik lokasi dari hasil filter saat ini. Cincin di tiap
+            titik menunjukkan tahap usulan: makin penuh, makin dekat selesai. Pilih wilayah untuk
+            melihat batasnya.
           </p>
         </div>
         {proposalsQuery.isPending ? (
