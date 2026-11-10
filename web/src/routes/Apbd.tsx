@@ -20,7 +20,6 @@ export default function Apbd() {
 
   // Tiga keadaan data (kontrak backend): hanya yang terverifikasi masuk perbandingan.
   const terverifikasi = items.filter((item) => statusData(item) === 'terverifikasi');
-  const belumTerverifikasi = items.filter((item) => statusData(item) === 'belum_terverifikasi');
   const kosong = items.filter((item) => statusData(item) === 'kosong');
   const totalTerverifikasi = terverifikasi.reduce((sum, item) => sum + item.nominal_rp, 0);
 
@@ -28,64 +27,8 @@ export default function Apbd() {
     <div className="space-y-6">
       <PageHeader
         title={`APBD ${kota} ${tahun}`}
-        description="Hanya angka yang terverifikasi dan bertautan sumber yang dipakai di halaman Bandingkan. Angka lain tetap ditampilkan di sini supaya jelas statusnya, tetapi belum resmi."
+        description="Perbandingan di halaman Bandingkan hanya memakai angka yang sudah terverifikasi dan bertautan ke sumber resminya. Angka yang belum terverifikasi tetap tampil di sini dengan statusnya."
       />
-
-      {items.length > 0 && (
-        <section className="stagger grid gap-3 sm:grid-cols-3" aria-label="Status data APBD">
-          <Card>
-            <p className="text-sm text-muted">Terverifikasi</p>
-            <p className="text-2xl font-bold tabular-nums">{terverifikasi.length} kategori</p>
-            <p className="mt-1 text-[13px] text-muted">
-              {terverifikasi.length > 0
-                ? `Total ${formatRupiah(totalTerverifikasi)}, ikut dibandingkan.`
-                : 'Belum ada, jadi Bandingkan belum bisa menghitung selisih.'}
-            </p>
-          </Card>
-          <Card>
-            <p className="text-sm text-muted">Belum terverifikasi</p>
-            <p className="text-2xl font-bold tabular-nums">{belumTerverifikasi.length} kategori</p>
-            <p className="mt-1 text-[13px] text-muted">
-              Ada angka, tetapi bukan angka resmi dan belum ikut dibandingkan.
-            </p>
-          </Card>
-          <Card>
-            <p className="text-sm text-muted">Data belum ada</p>
-            <p className="text-2xl font-bold tabular-nums">{kosong.length} kategori</p>
-            <p className="mt-1 text-[13px] text-muted">Belum ada angka sama sekali.</p>
-          </Card>
-        </section>
-      )}
-
-      <Card>
-        <h2 className="text-lg font-bold">Dari mana angka ini</h2>
-        <ul className="mt-3 max-w-[68ch] list-disc space-y-2 pl-5 text-sm text-ink">
-          <li>
-            <b>Terverifikasi</b>: angkanya bertautan ke sumbernya dan telah ditandai terverifikasi
-            di data. Hanya ini yang masuk perbandingan dengan pilihan warga.
-          </li>
-          <li>
-            <b>Belum terverifikasi</b>: angka awal APBD {tahun} yang belum dicocokkan ke dokumen
-            resmi, jadi jangan dibaca sebagai angka resmi.
-          </li>
-          <li>
-            <b>Data belum ada</b>: tidak dirinci di sumber yang kami punya, dan tidak dikarang.
-          </li>
-          <li>
-            Angka tiap kategori diambil dari Lampiran 2 Perda DKI Jakarta No. 9 Tahun 2024: total
-            belanja per urusan pemerintahan, bukan per program. Sepuluh kategori di sini dipetakan
-            dari urusan itu, dan catatan pemetaannya ada di tabel. Dokumen sumbernya ada di{' '}
-            <Link to="/apbd#dokumen-resmi" className="font-semibold text-warga underline">
-              daftar dokumen resmi
-            </Link>
-            .{' '}
-            <Link to="/metodologi" className="font-semibold text-warga underline">
-              Lihat metodologi
-            </Link>
-            .
-          </li>
-        </ul>
-      </Card>
 
       <DokumenResmiKartu />
 
@@ -103,7 +46,7 @@ export default function Apbd() {
       {apbdQuery.isSuccess && items.length === 0 && (
         <EmptyState
           title="Data APBD belum tersedia"
-          description="Data APBD belum tersedia atau masih dalam proses verifikasi."
+          description="Belum ada baris APBD yang bisa ditampilkan sekarang. Coba lagi nanti."
         />
       )}
 
