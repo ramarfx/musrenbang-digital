@@ -230,19 +230,32 @@ function LangkahMu() {
 
   return (
     <Card>
-      <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-3">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3">
         <div>
           <h2 className="text-lg font-bold text-ink">Status Partisipasi Anda</h2>
           <p className="mt-0.5 text-xs text-muted">
             Pantau kontribusi Anda dalam musyawarah perencanaan tahun ini
           </p>
         </div>
-        <Badge
-          tone={jumlahSelesai === daftar.length ? 'success' : 'neutral'}
-          className="text-xs font-bold"
+        <div
+          className="text-right"
+          role="img"
+          aria-label={`${jumlahSelesai} dari ${daftar.length} langkah selesai`}
         >
-          {jumlahSelesai} dari {daftar.length} langkah selesai
-        </Badge>
+          <p
+            aria-hidden="true"
+            className={cn(
+              'text-[44px] leading-none font-extrabold tracking-[-0.04em] tabular-nums',
+              jumlahSelesai === daftar.length ? 'text-warga' : 'text-ink',
+            )}
+          >
+            {jumlahSelesai}
+            <span className="text-[22px] font-bold text-muted">/{daftar.length}</span>
+          </p>
+          <p aria-hidden="true" className="mt-0.5 text-xs text-muted">
+            langkah selesai
+          </p>
+        </div>
       </div>
 
       <ol className="divide-y divide-border">
