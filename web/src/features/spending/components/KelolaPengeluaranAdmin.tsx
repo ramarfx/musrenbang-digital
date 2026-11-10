@@ -8,7 +8,6 @@ import { Modal } from '@/components/ui/Modal';
 import { formatRupiah } from '@/lib/format';
 import { angkaDariKetikan, totalPengeluaran } from '../lib';
 import { useCatatPengeluaranMutation, useSpendingQuery } from '../queries';
-import { DaftarPengeluaran } from './DaftarPengeluaran';
 
 const JUDUL_ID = 'judul-catat-pengeluaran';
 
@@ -174,11 +173,7 @@ export function KelolaPengeluaranAdmin({ proposal }: { proposal: Proposal }) {
         <p className="mt-3 text-sm text-muted">
           Belum ada pengeluaran tercatat. Warga baru melihat bagian dana setelah ada catatan.
         </p>
-      ) : (
-        <div className="mt-2">
-          <DaftarPengeluaran catatan={catatan} />
-        </div>
-      )}
+      ) : null}
 
       {buka && (
         <DialogCatat proposal={proposal} totalSekarang={total} onClose={() => setBuka(false)} />
