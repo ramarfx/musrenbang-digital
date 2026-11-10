@@ -39,7 +39,7 @@ export function Sidebar() {
         aria-controls="sidebar-utama"
         aria-label={ringkas ? 'Lebarkan menu samping' : 'Kecilkan menu samping'}
         title={ringkas ? 'Lebarkan menu' : 'Kecilkan menu'}
-        className="absolute top-1/2 -right-3 z-10 grid h-14 w-6 -translate-y-1/2 place-items-center rounded-full border-[1.5px] border-ink bg-surface text-ink transition-colors duration-150 ease-out hover:bg-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink!"
+        className="absolute top-[26px] -right-[18px] z-10 grid size-8 place-items-center rounded-full border-[1.5px] border-ink bg-surface text-ink shadow-[0_3px_0_var(--ink)] transition-[translate,background-color] duration-150 ease-out hover:translate-x-0.5 hover:bg-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink! motion-reduce:transition-none"
       >
         <span
           className={cn(
@@ -81,7 +81,9 @@ export function Sidebar() {
         <div
           className={cn(
             'trek-tipis mt-5 min-h-0 flex-1 overflow-x-hidden overflow-y-auto',
-            !ringkas && 'pr-1',
+            // Tertutup: tanpa batang gulir (panahnya merusak deretan ikon); layar pendek tetap bisa
+            // digulir dengan roda mouse atau jari.
+            ringkas ? '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden' : 'pr-1',
           )}
         >
           <NavList groups={buildNav(isAdmin, user !== null)} dark ringkas={ringkas} />
