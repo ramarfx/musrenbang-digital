@@ -117,7 +117,7 @@ export function TutorialAwal({ onSelesai }: { onSelesai: (tujuan?: string) => vo
     setLangkah(ke);
   };
 
-  const isi: { gambar: ReactNode; teks: ReactNode }[] = [
+  const isi: { gambar: ReactNode; teks: ReactNode; demo?: boolean }[] = [
     {
       gambar: <Toa className="max-w-[520px]" />,
       teks: (
@@ -137,6 +137,7 @@ export function TutorialAwal({ onSelesai }: { onSelesai: (tujuan?: string) => vo
       ),
     },
     {
+      demo: true,
       gambar: <DemoUrutkan key={putaran} onUlang={ulang} />,
       teks: (
         <>
@@ -149,6 +150,7 @@ export function TutorialAwal({ onSelesai }: { onSelesai: (tujuan?: string) => vo
       ),
     },
     {
+      demo: true,
       gambar: <DemoDukung key={putaran} onUlang={ulang} />,
       teks: (
         <>
@@ -161,6 +163,7 @@ export function TutorialAwal({ onSelesai }: { onSelesai: (tujuan?: string) => vo
       ),
     },
     {
+      demo: true,
       gambar: <DemoUsulan key={putaran} onUlang={ulang} />,
       teks: (
         <>
@@ -173,6 +176,7 @@ export function TutorialAwal({ onSelesai }: { onSelesai: (tujuan?: string) => vo
       ),
     },
     {
+      demo: true,
       gambar: <DemoPantau key={putaran} onUlang={ulang} />,
       teks: (
         <>
@@ -187,6 +191,7 @@ export function TutorialAwal({ onSelesai }: { onSelesai: (tujuan?: string) => vo
     ...(ADA_ASISTEN
       ? [
           {
+            demo: true,
             gambar: <DemoAsisten key={putaran} onUlang={ulang} />,
             teks: (
               <>
@@ -257,7 +262,7 @@ export function TutorialAwal({ onSelesai }: { onSelesai: (tujuan?: string) => vo
           <button
             type="button"
             onClick={() => onSelesai()}
-            className="flex-none rounded-lg px-1 py-1 text-[13px] text-muted hover:text-ink"
+            className="-mr-1 flex min-h-11 flex-none items-center rounded-lg px-2 text-[13px] text-muted hover:text-ink"
           >
             Lewati
           </button>
@@ -272,7 +277,14 @@ export function TutorialAwal({ onSelesai }: { onSelesai: (tujuan?: string) => vo
           <div className="flex flex-none items-center justify-center bg-ground px-4 py-5 lg:flex-1 lg:overflow-y-auto lg:py-8">
             {sekarang.gambar}
           </div>
-          <div className="flex flex-none flex-col justify-center px-5 py-6 sm:px-8 lg:max-w-[46%] lg:flex-1 lg:overflow-y-auto lg:px-12">
+          {/* Di HP, langkah demo menaruh penjelasan di atas demonya, supaya judul dan petunjuknya
+              terbaca tanpa menggulir lewat demo yang tinggi. */}
+          <div
+            className={cn(
+              'flex flex-none flex-col justify-center px-5 py-6 sm:px-8 lg:max-w-[46%] lg:flex-1 lg:overflow-y-auto lg:px-12',
+              sekarang.demo && 'order-first pt-5 pb-1 lg:order-none lg:py-6',
+            )}
+          >
             {sekarang.teks}
           </div>
         </div>
