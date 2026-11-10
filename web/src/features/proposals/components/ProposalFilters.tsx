@@ -76,7 +76,24 @@ export function ProposalFilters({
         <p id="label-status" className="mb-2 text-[13px] text-muted">
           Status
         </p>
-        <div role="group" aria-labelledby="label-status" className="flex flex-wrap gap-2">
+        {/* Di HP enam tombol status menumpuk tiga baris, jadi diganti satu pilihan turun. */}
+        <Select
+          aria-labelledby="label-status"
+          className="sm:hidden"
+          value={status}
+          onChange={(event) => onStatusChange(event.target.value as StatusFilter)}
+        >
+          {OPTIONS.map((option) => (
+            <option key={option} value={option}>
+              {option === 'semua' ? 'Semua status' : option} ({counts[option]})
+            </option>
+          ))}
+        </Select>
+        <div
+          role="group"
+          aria-labelledby="label-status"
+          className="hidden flex-wrap gap-2 sm:flex"
+        >
           {OPTIONS.map((option) => {
             const aktif = status === option;
             return (

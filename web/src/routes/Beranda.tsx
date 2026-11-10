@@ -173,13 +173,18 @@ function AksiUtamaWarga() {
             className="flex flex-col justify-between transition-transform duration-150 hover:-translate-y-0.5"
           >
             <div>
-              <div className="flex size-11 items-center justify-center rounded-2xl bg-active text-ink">
-                <Icon name={item.ikon} size={22} />
+              {/* Di HP ikon dan judul sebaris, supaya tiga kartu tidak memakan tiga layar. */}
+              <div className="flex items-center gap-3 md:block">
+                <div className="flex size-11 flex-none items-center justify-center rounded-2xl bg-active text-ink">
+                  <Icon name={item.ikon} size={22} />
+                </div>
+                <h3 className="text-[17px] leading-snug font-bold text-ink md:mt-3.5 md:text-lg">
+                  {item.judul}
+                </h3>
               </div>
-              <h3 className="mt-3.5 text-lg font-bold text-ink">{item.judul}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{item.keterangan}</p>
+              <p className="mt-2.5 text-sm leading-relaxed text-muted md:mt-2">{item.keterangan}</p>
             </div>
-            <div className="mt-6 pt-2">
+            <div className="mt-4 md:mt-6 md:pt-2">
               <Link
                 to={item.ke}
                 className={buttonClass(item.varian, 'md', 'w-full text-base font-semibold')}
@@ -255,22 +260,22 @@ function LangkahMu() {
 
   return (
     <Card tur="langkah">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3">
-        <div>
+      <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
+        <div className="min-w-0">
           <h2 className="text-lg font-bold text-ink">Status Partisipasi Anda</h2>
           <p className="mt-0.5 text-xs text-muted">
             Pantau kontribusi Anda dalam musyawarah perencanaan tahun ini
           </p>
         </div>
         <div
-          className="text-right"
+          className="flex-none text-right"
           role="img"
           aria-label={`${jumlahSelesai} dari ${daftar.length} langkah selesai`}
         >
           <p
             aria-hidden="true"
             className={cn(
-              'text-[44px] leading-none font-extrabold tracking-[-0.04em] tabular-nums',
+              'text-[36px] leading-none font-extrabold tracking-[-0.04em] tabular-nums sm:text-[44px]',
               jumlahSelesai === daftar.length ? 'text-warga' : 'text-ink',
             )}
           >
@@ -361,12 +366,15 @@ function PalingDidukung() {
 
   return (
     <Card tur="populer" className="flex flex-col">
-      <div className="flex items-baseline justify-between gap-3 border-b border-border pb-3">
+      <div className="flex flex-col gap-1.5 border-b border-border pb-3 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
         <div>
           <h2 className="text-lg font-bold text-ink">Usulan Warga Paling Populer</h2>
           <p className="mt-0.5 text-xs text-muted">Usulan yang sedang banyak didukung warga lain</p>
         </div>
-        <Link to="/usulan" className="text-sm font-bold text-warga underline hover:text-ink">
+        <Link
+          to="/usulan"
+          className="self-start text-sm font-bold whitespace-nowrap text-warga underline hover:text-ink"
+        >
           Lihat Semua Usulan →
         </Link>
       </div>

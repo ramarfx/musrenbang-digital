@@ -535,7 +535,7 @@ export function AntreanTinjau({ proposals }: { proposals: Proposal[] }) {
                 <div
                   role="group"
                   aria-label="Saring menurut hasil MusrenAI"
-                  className="mt-2.5 flex flex-wrap gap-1.5"
+                  className="mt-2.5 hidden flex-wrap gap-1.5 sm:flex"
                 >
                   {(
                     [
@@ -561,6 +561,24 @@ export function AntreanTinjau({ proposals }: { proposals: Proposal[] }) {
                     </button>
                   ))}
                 </div>
+                {/* Di HP enam tombol saring menumpuk, jadi diganti satu pilihan turun. */}
+                <Select
+                  aria-label="Saring menurut hasil MusrenAI"
+                  className="mt-2.5 sm:hidden"
+                  value={saringAi}
+                  onChange={(event) => setSaringAi(event.target.value as SaringAi)}
+                >
+                  <option value="semua">Semua ({tersaring.length})</option>
+                  <option value="aman">Tanpa indikasi ({daftarAman.length})</option>
+                  <option value="spam">Spam ({daftarPerFlag('spam').length})</option>
+                  <option value="promotion">Promosi ({daftarPerFlag('promotion').length})</option>
+                  <option value="irrelevant">
+                    Tidak relevan ({daftarPerFlag('irrelevant').length})
+                  </option>
+                  <option value="needs_review">
+                    Perlu ditinjau ({daftarPerFlag('needs_review').length})
+                  </option>
+                </Select>
 
                 {FLAGS_TOLAK.some((flag) => daftarPerFlag(flag).length > 0) && (
                   <div
