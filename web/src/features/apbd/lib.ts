@@ -91,6 +91,55 @@ export function sumberKategori(
   return hasil;
 }
 
+export type PorsiKategori = {
+  kategori: string;
+  nominal: number;
+  /** Bagian dari total APBD terverifikasi, dalam persen. */
+  persen: number;
+};
+
+export type PorsiApbd = {
+  /** Kategori terverifikasi, urut nominal terbesar. */
+  rows: PorsiKategori[];
+  /** Jumlah nominal seluruh baris terverifikasi. */
+  total: number;
+  /** Kategori yang ada barisnya tetapi angkanya belum terverifikasi atau masih kosong. */
+  belum: string[];
+};
+
+/**
+ * Menghitung porsi tiap kategori dari baris terverifikasi saja, jadi angkanya sama dengan
+ * `persen_apbd` di v_gap. Kategori yang belum terverifikasi dipisah supaya tampilan bisa
+ * menyebut apa yang belum masuk hitungan, bukan diam-diam menghitungnya nol. Bila daftar
+ * kategori resmi diberikan, kategori yang belum punya baris sama sekali ikut disebut.
+ */
+export function porsiKategori(
+  items: readonly ApbdItem[],
+  kategoriResmi: readonly string[] = [],
+): PorsiApbd {
+  const perKategori = new Map<string, number>();
+  for (const item of items) {
+    if (statusData(item) !== 'terverifikasi') continue;
+    perKategori.set(item.kategori, (perKategori.get(item.kategori) ?? 0) + item.nominal_rp);
+  }
+  const total = [...perKategori.values()].reduce((sum, nominal) => sum + nominal, 0);
+  const rows = [...perKategori.entries()]
+    .filter(([, nominal]) => nominal > 0)
+    .map(([kategori, nominal]) => ({
+      kategori,
+      nominal,
+      persen: (nominal / total) * 100,
+    }))
+    .sort((a, b) => b.nominal - a.nominal || a.kategori.localeCompare(b.kategori));
+  const semua =
+    kategoriResmi.length > 0 ? kategoriResmi : [...new Set(items.map((item) => item.kategori))];
+  return {
+    rows,
+    total,
+    belum: semua.filter((kategori) => !perKategori.has(kategori)),
+  };
+}
+
 /** Status satu kategori dari semua baris relevannya; `sebagian` bila baris-barisnya berbeda status. */
 export type StatusKategori = StatusData | 'sebagian';
 

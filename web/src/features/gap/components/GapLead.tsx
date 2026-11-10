@@ -2,16 +2,9 @@ import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { buttonClass } from '@/components/ui/Button';
 import { Card, HeroCard } from '@/components/ui/Card';
-import { formatPersen } from '@/lib/format';
+import { formatBesarPanjang, formatPersen } from '@/lib/format';
 import { formatSelisih } from '@/lib/selisih';
-import {
-  WARNA_ARAH,
-  arahSelisih,
-  formatBesarPanjang,
-  setaraRupiah,
-  type GapRingkasan,
-  type GapRow,
-} from '../lib';
+import { WARNA_ARAH, arahSelisih, setaraRupiah, type GapRingkasan, type GapRow } from '../lib';
 
 /** Angka yang disorot dengan stabilo: hijau untuk sisi warga, oranye untuk sisi APBD. */
 function Stabilo({ warna, children }: { warna: string; children: string }) {

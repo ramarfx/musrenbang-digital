@@ -13,6 +13,7 @@ import { GapCatatanData } from '@/features/gap/components/GapCatatanData';
 import { GapComparison } from '@/features/gap/components/GapComparison';
 import { GapDetailDialog } from '@/features/gap/components/GapDetailDialog';
 import { GapLead } from '@/features/gap/components/GapLead';
+import { GapPotret } from '@/features/gap/components/GapPotret';
 import { buatCsv, siapkanGap, type GapRow } from '@/features/gap/lib';
 import { useGapQuery } from '@/features/gap/queries';
 
@@ -93,7 +94,7 @@ export default function Bandingkan() {
       {gapQuery.isSuccess && ringkasan.rows.length === 0 && (
         <EmptyState
           title="Perbandingan belum tersedia"
-          description="Data perbandingan belum tersedia atau masih dalam proses verifikasi."
+          description="Belum ada angka APBD terverifikasi yang bisa dipakai untuk membandingkan. Coba muat ulang beberapa saat lagi."
         />
       )}
 
@@ -101,6 +102,7 @@ export default function Bandingkan() {
         <>
           <GapCatatanData ringkasan={ringkasan} />
           <GapLead ringkasan={ringkasan} />
+          <GapPotret ringkasan={ringkasan} />
           <GapComparison ringkasan={ringkasan} onPilih={setDipilih} statusApbd={statusApbd} />
         </>
       )}

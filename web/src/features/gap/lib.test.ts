@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { GapItem } from '@musrenbang/shared';
-import { buatCsv, siapkanGap } from './lib';
+import { buatCsv, potretPrioritas, siapkanGap, type GapRow } from './lib';
 
 const item = (
   kategori: string,
@@ -180,5 +180,49 @@ describe('buatCsv', () => {
     const ringkasan = siapkanGap([item('A', 5, 9_000)]);
     const baris = kolom(buatCsv(ringkasan.rows, ringkasan.adaWarga), 1);
     expect(baris.slice(2)).toEqual(['', '', '', 'menyusul']);
+  });
+});
+
+describe('potretPrioritas', () => {
+  const row = (kategori: string, warga: number, apbd: number, adaApbd = true): GapRow => ({
+    kategori,
+    persen_warga: warga,
+    persen_apbd: apbd,
+    gap_poin_persen: warga - apbd,
+    nominal_apbd: adaApbd ? 100 : 0,
+    total_alokasi_warga: 100,
+    adaApbd,
+  });
+
+  test('menghitung bidang yang masuk tiga teratas di kedua sisi', () => {
+    const hasil = potretPrioritas([
+      row('A', 40, 10),
+      row('B', 30, 25),
+      row('C', 20, 5),
+      row('D', 10, 40),
+    ]);
+    expect(hasil.warga.map((item) => item.kategori)).toEqual(['A', 'B', 'C']);
+    expect(hasil.apbd.map((item) => item.kategori)).toEqual(['D', 'B', 'A']);
+    expect(hasil.sama).toBe(2);
+  });
+
+  test('bidang tanpa APBD terverifikasi tidak ikut, jadi tidak menambah kecocokan palsu', () => {
+    const hasil = potretPrioritas([row('A', 50, 0, false), row('B', 30, 20), row('C', 20, 10)]);
+    expect(hasil.warga.map((item) => item.kategori)).toEqual(['B', 'C']);
+    expect(hasil.apbd.map((item) => item.kategori)).toEqual(['B', 'C']);
+    expect(hasil.sama).toBe(2);
+  });
+
+  test('seri diurutkan menurut nama kategori supaya hasilnya tetap', () => {
+    const hasil = potretPrioritas([row('B', 10, 10), row('A', 10, 10)]);
+    expect(hasil.warga.map((item) => item.kategori)).toEqual(['A', 'B']);
+    expect(hasil.apbd.map((item) => item.kategori)).toEqual(['A', 'B']);
+  });
+
+  test('tanpa data APBD hasilnya kosong, bukan cocok seratus persen', () => {
+    const hasil = potretPrioritas([row('A', 50, 0, false)]);
+    expect(hasil.warga).toEqual([]);
+    expect(hasil.apbd).toEqual([]);
+    expect(hasil.sama).toBe(0);
   });
 });

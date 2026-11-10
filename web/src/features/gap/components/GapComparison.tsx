@@ -4,15 +4,9 @@ import { Card } from '@/components/ui/Card';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
 import { cn } from '@/lib/cn';
 import type { StatusKategori } from '@/features/apbd/lib';
-import { formatPersen } from '@/lib/format';
+import { formatBesarSingkat, formatPersen } from '@/lib/format';
 import { formatSelisih } from '@/lib/selisih';
-import {
-  arahSelisih,
-  formatBesarSingkat,
-  setaraRupiah,
-  type GapRingkasan,
-  type GapRow,
-} from '../lib';
+import { arahSelisih, setaraRupiah, type GapRingkasan, type GapRow } from '../lib';
 
 type Props = {
   ringkasan: GapRingkasan;
@@ -36,7 +30,7 @@ function BatangPersen({
   warna: string;
 }) {
   return (
-    <div className="flex items-center gap-3 text-[13px]">
+    <div className="flex items-center gap-3 text-[14px]">
       <span className="w-11 flex-none text-muted">{label}</span>
       <div className="relative h-2.5 min-w-0 flex-1 rounded-full bg-track" aria-hidden="true">
         <i
@@ -105,6 +99,18 @@ export function GapComparison({ ringkasan, onPilih, statusApbd = {} }: Props) {
         </div>
       </div>
 
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 border-t border-rule pt-3 text-[13.5px] text-muted">
+        <span className="flex items-center gap-4">
+          <span className="flex items-center gap-1.5">
+            <span className="size-2.5 rounded-[3px] bg-warga" aria-hidden="true" /> Warga
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-3 w-0.5 bg-apbd" aria-hidden="true" /> APBD
+          </span>
+        </span>
+        <span>Skala batang: penuh = {formatPersen(skala)}</span>
+      </div>
+
       <ul className="stagger">
         {rows.map((row, index) => {
           const aktif = adaWarga && row.adaApbd;
@@ -152,7 +158,7 @@ export function GapComparison({ ringkasan, onPilih, statusApbd = {} }: Props) {
                         warna="bg-warga"
                       />
                     ) : (
-                      <p className="text-[13px] text-muted">Warga: belum ada pilihan.</p>
+                      <p className="text-[14px] text-muted">Warga: belum ada pilihan.</p>
                     )}
                     <BatangPersen
                       label="APBD"
@@ -162,12 +168,12 @@ export function GapComparison({ ringkasan, onPilih, statusApbd = {} }: Props) {
                       warna="bg-apbd"
                     />
                     {statusApbd[row.kategori] === 'sebagian' && (
-                      <p className="text-[12.5px] text-muted">
+                      <p className="text-[13.5px] text-muted">
                         APBD sebagian terverifikasi; angka hanya mencakup data terverifikasi.
                       </p>
                     )}
                     {aktif && (
-                      <p className="pt-0.5 text-[12.5px] text-muted">
+                      <p className="pt-0.5 text-[13.5px] text-muted">
                         <b className="font-semibold text-ink">
                           {formatSelisih(row.gap_poin_persen)} poin
                         </b>
@@ -177,7 +183,7 @@ export function GapComparison({ ringkasan, onPilih, statusApbd = {} }: Props) {
                     )}
                   </>
                 ) : (
-                  <p className="text-[13px] text-muted">{keteranganApbd(row.kategori)}</p>
+                  <p className="text-[14px] text-muted">{keteranganApbd(row.kategori)}</p>
                 )}
               </div>
             </li>
@@ -185,9 +191,10 @@ export function GapComparison({ ringkasan, onPilih, statusApbd = {} }: Props) {
         })}
       </ul>
 
-      <p className="mt-5 max-w-[68ch] text-[13px] text-muted">
+      <p className="mt-5 max-w-[68ch] text-[14px] leading-relaxed text-muted">
         Angka APBD dipetakan dari belanja per urusan, bukan total belanja daerah. Selisih adalah
-        persen warga dikurangi persen APBD, dalam poin. Cara hitungnya ada di{' '}
+        persen warga dikurangi persen APBD, dalam poin: selisih 12 poin artinya 12 dari setiap 100
+        rupiah. Cara hitungnya ada di{' '}
         <Link to="/metodologi" className="font-semibold text-warga underline">
           Metodologi
         </Link>

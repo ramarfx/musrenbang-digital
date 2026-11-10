@@ -90,28 +90,9 @@ export function siapkanGap(
   };
 }
 
-/** Nilai rupiah yang setara dengan selisih poin terhadap APBD yang terpetakan. */
+/** Rupiah yang setara dengan selisih poin terhadap APBD yang terpetakan. */
 export function setaraRupiah(item: GapItem, totalApbd: number): number {
   return (Math.abs(item.gap_poin_persen) / 100) * totalApbd;
-}
-
-/** Rupiah besar dalam satuan yang mudah dibaca, mis. "Rp3,5 T" atau "Rp820 M". */
-export function formatBesarSingkat(nilai: number): string {
-  if (nilai >= 1e12)
-    return `Rp${(nilai / 1e12).toLocaleString('id-ID', { maximumFractionDigits: 1 })} T`;
-  if (nilai >= 1e9)
-    return `Rp${(nilai / 1e9).toLocaleString('id-ID', { maximumFractionDigits: 1 })} M`;
-  if (nilai >= 1e6)
-    return `Rp${(nilai / 1e6).toLocaleString('id-ID', { maximumFractionDigits: 1 })} jt`;
-  return `Rp${Math.round(nilai).toLocaleString('id-ID')}`;
-}
-
-/** Versi panjang untuk kalimat, mis. "Rp3,5 triliun". */
-export function formatBesarPanjang(nilai: number): string {
-  return formatBesarSingkat(nilai)
-    .replace(' T', ' triliun')
-    .replace(' M', ' miliar')
-    .replace(' jt', ' juta');
 }
 
 /** CSV untuk diunduh. Diawali BOM supaya Excel membaca UTF-8 dengan benar. */
@@ -138,6 +119,30 @@ export function buatCsv(rows: readonly GapRow[], adaWarga = true): string {
     ].join(','),
   );
   return `﻿${[kepala.join(','), ...baris].join('\n')}\n`;
+}
+
+export type PotretPrioritas = {
+  /** Tiga bidang dengan porsi warga terbesar. */
+  warga: GapRow[];
+  /** Tiga bidang dengan porsi APBD terbesar. */
+  apbd: GapRow[];
+  /** Berapa bidang yang masuk tiga teratas di kedua sisi. */
+  sama: number;
+};
+
+/**
+ * Membandingkan tiga bidang teratas tiap sisi. Hanya bidang yang APBD-nya terverifikasi ikut
+ * dihitung, supaya urutan warga tidak terlihat cocok hanya karena sisi APBD kosong. Seri
+ * diurutkan menurut nama kategori agar hasilnya sama setiap kali halaman dibuka.
+ */
+export function potretPrioritas(rows: readonly GapRow[], batas = 3): PotretPrioritas {
+  const dasar = rows.filter((row) => row.adaApbd);
+  const urut = (nilai: (row: GapRow) => number) => (a: GapRow, b: GapRow) =>
+    nilai(b) - nilai(a) || a.kategori.localeCompare(b.kategori);
+  const warga = [...dasar].sort(urut((row) => row.persen_warga)).slice(0, batas);
+  const apbd = [...dasar].sort(urut((row) => row.persen_apbd)).slice(0, batas);
+  const namaApbd = new Set(apbd.map((row) => row.kategori));
+  return { warga, apbd, sama: warga.filter((row) => namaApbd.has(row.kategori)).length };
 }
 
 /** Selisih di bawah ini (dalam poin persentase) dianggap hampir pas. */

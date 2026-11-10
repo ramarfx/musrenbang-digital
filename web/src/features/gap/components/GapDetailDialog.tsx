@@ -10,9 +10,9 @@ import {
 } from '@/features/apbd/lib';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
 import { getCategoryInfo } from '@/features/categories/info';
-import { formatPersen, formatRupiah } from '@/lib/format';
+import { formatBesarPanjang, formatPersen, formatRupiah } from '@/lib/format';
 import { formatSelisih } from '@/lib/selisih';
-import { formatBesarPanjang, setaraRupiah, type GapRingkasan, type GapRow } from '../lib';
+import { setaraRupiah, type GapRingkasan, type GapRow } from '../lib';
 
 type Props = {
   row: GapRow | null;

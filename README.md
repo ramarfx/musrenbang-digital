@@ -186,27 +186,27 @@ Urutan sebelum commit: `bun run format`, lalu `bun run check`. GitHub Actions (w
 
 ## Halaman
 
-| Route                    | Isi                                                                           |
-| ------------------------ | ----------------------------------------------------------------------------- |
-| `/`                      | Landing: penjelasan singkat, empat langkah, dan aturan transparansi           |
-| `/login`                 | Masuk / daftar (email atau Google)                                            |
-| `/beranda`               | Peta usulan + daftar usulan yang disetujui, filter kategori/status            |
-| `/usulan`                | Daftar usulan warga dengan pencarian                                          |
-| `/bandingkan`            | Perbandingan pilihan warga dan APBD; hanya data APBD terverifikasi dihitung   |
-| `/apbd`                  | APBD per kategori: terverifikasi, belum terverifikasi, atau belum ada         |
-| `/simulator`             | Urutkan prioritas program dan lihat alokasi anggaran virtual (butuh login)    |
-| `/hasilmu`               | Ringkasan hasil alokasi dan usulan milik warga (butuh login)                  |
-| `/usulan/baru`           | Form usulan dengan pilih titik di peta dan saran biaya AI (butuh login)       |
-| `/usulan-saya`           | Usulan milikmu, termasuk yang menunggu atau ditolak (butuh login)             |
-| `/usulan/:id`            | Detail usulan, upvote, komentar, linimasa status bercatatan                   |
-| `/profil`                | Identitas akun, ubah nama, ringkasan usulan, keluar (butuh login)             |
-| `/metodologi`            | Cara perbandingan dihitung dan batas datanya                                  |
-| `/musrenai`              | Redirect ke `/beranda` (route lama, tanpa halaman sendiri)                    |
-| `/admin`                 | Panel admin: ringkasan pekerjaan, angka utama, dan ringkasan aspirasi (admin) |
-| `/admin/perlu-diperiksa` | Antrean admin dipilah MusrenAI jadi Aman dan Perlu dicek (admin)              |
-| `/admin/usulan`          | Daftar seluruh usulan dengan pencarian dan penyaring (admin)                  |
-| `/admin/usulan/:id`      | Rincian usulan, riwayat tahap, keputusan, hapus, dan usulan mirip (admin)     |
-| `/admin/laporan`         | Ringkasan aspirasi warga dan urutan prioritas (admin)                         |
+| Route                    | Isi                                                                                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`                      | Landing: penjelasan singkat, empat langkah, dan aturan transparansi                                                                   |
+| `/login`                 | Masuk / daftar (email atau Google)                                                                                                    |
+| `/beranda`               | Peta usulan + daftar usulan yang disetujui, filter kategori/status                                                                    |
+| `/usulan`                | Daftar usulan warga dengan pencarian                                                                                                  |
+| `/bandingkan`            | Perbandingan pilihan warga dan APBD: potret tiga bidang teratas, lalu rincian per bidang; hanya data APBD terverifikasi yang dihitung |
+| `/apbd`                  | Porsi tiap bidang dari APBD terverifikasi, dengan angka dan sumber lengkap di balik tombol                                            |
+| `/simulator`             | Urutkan prioritas program dan lihat alokasi anggaran virtual (butuh login)                                                            |
+| `/hasilmu`               | Ringkasan hasil alokasi dan usulan milik warga (butuh login)                                                                          |
+| `/usulan/baru`           | Form usulan dengan pilih titik di peta dan saran biaya AI (butuh login)                                                               |
+| `/usulan-saya`           | Usulan milikmu, termasuk yang menunggu atau ditolak (butuh login)                                                                     |
+| `/usulan/:id`            | Detail usulan, upvote, komentar, linimasa status bercatatan                                                                           |
+| `/profil`                | Identitas akun, ubah nama, ringkasan usulan, keluar (butuh login)                                                                     |
+| `/metodologi`            | Cara perbandingan dihitung dan batas datanya                                                                                          |
+| `/musrenai`              | Redirect ke `/beranda` (route lama, tanpa halaman sendiri)                                                                            |
+| `/admin`                 | Panel admin: ringkasan pekerjaan, angka utama, dan ringkasan aspirasi (admin)                                                         |
+| `/admin/perlu-diperiksa` | Antrean admin dipilah MusrenAI jadi Aman dan Perlu dicek (admin)                                                                      |
+| `/admin/usulan`          | Daftar seluruh usulan dengan pencarian dan penyaring (admin)                                                                          |
+| `/admin/usulan/:id`      | Rincian usulan, riwayat tahap, keputusan, hapus, dan usulan mirip (admin)                                                             |
+| `/admin/laporan`         | Ringkasan aspirasi warga dan urutan prioritas (admin)                                                                                 |
 
 Landing dan `/login` berdiri sendiri tanpa sidebar. Halaman lain memakai sidebar di layar lebar, dan bar atas dengan menu layar penuh di HP. Tombol tema (terang/gelap) ada di landing, sidebar, dan bar atas HP; pilihannya disimpan di browser.
 

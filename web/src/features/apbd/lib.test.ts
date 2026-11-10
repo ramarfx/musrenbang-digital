@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { ApbdItem } from '@musrenbang/shared';
-import { rapikanSumber, statusData, statusKategori, sumberKategori } from './lib';
+import { porsiKategori, rapikanSumber, statusData, statusKategori, sumberKategori } from './lib';
 
 describe('statusData', () => {
   test('tanpa nominal berarti data belum ada, apa pun statusnya', () => {
@@ -169,5 +169,61 @@ describe('statusKategori', () => {
     expect(statusKategori([], 'Pendidikan', konfigurasi)).toBe('kosong');
     expect(statusKategori([baris(1)], 'Pendidikan', undefined)).toBe('kosong');
     expect(statusKategori([baris(1)], 'Kesehatan', konfigurasi)).toBe('kosong');
+  });
+});
+
+describe('porsiKategori', () => {
+  const baris = (
+    id: number,
+    kategori: string,
+    nominal: number,
+    tambahan: Partial<ApbdItem> = {},
+  ): ApbdItem => ({
+    id,
+    kategori,
+    nominal_rp: nominal,
+    tahun: 2026,
+    kota: 'DKI Jakarta',
+    sumber: `Sumber ${id}`,
+    sumber_url: `https://contoh.id/${id}`,
+    catatan_pemetaan: null,
+    status_verifikasi: 'verified_program',
+    dibuat_pada: '2026-10-26T00:00:00+07:00',
+    diubah_pada: '2026-10-26T00:00:00+07:00',
+    ...tambahan,
+  });
+  const belum = { status_verifikasi: 'perlu_lampiran' as const, sumber_url: null };
+
+  test('porsi dihitung dari nominal terverifikasi, urut terbesar, totalnya 100%', () => {
+    const hasil = porsiKategori([baris(1, 'A', 300), baris(2, 'B', 100), baris(3, 'C', 600)]);
+    expect(hasil.rows.map((row) => row.kategori)).toEqual(['C', 'A', 'B']);
+    expect(hasil.total).toBe(1000);
+    expect(hasil.rows.map((row) => row.persen)).toEqual([60, 30, 10]);
+    expect(hasil.belum).toEqual([]);
+  });
+
+  test('kategori belum terverifikasi tidak dijumlahkan, tetapi tetap disebut', () => {
+    const hasil = porsiKategori([baris(1, 'A', 400), baris(2, 'B', 900, belum)]);
+    expect(hasil.rows.map((row) => row.kategori)).toEqual(['A']);
+    expect(hasil.total).toBe(400);
+    expect(hasil.rows[0]?.persen).toBe(100);
+    expect(hasil.belum).toEqual(['B']);
+  });
+
+  test('baris tanpa nominal tidak muncul sebagai porsi', () => {
+    const hasil = porsiKategori([baris(1, 'A', 0), baris(2, 'B', 0, belum)]);
+    expect(hasil.rows).toEqual([]);
+    expect(hasil.total).toBe(0);
+    expect(hasil.belum).toEqual(['A', 'B']);
+  });
+
+  test('seri diurutkan menurut nama kategori supaya tampilannya tetap', () => {
+    const hasil = porsiKategori([baris(1, 'B', 100), baris(2, 'A', 100)]);
+    expect(hasil.rows.map((row) => row.kategori)).toEqual(['A', 'B']);
+  });
+
+  test('kategori resmi yang belum punya baris ikut disebut belum, bukan hilang', () => {
+    const hasil = porsiKategori([baris(1, 'A', 100)], ['A', 'B', 'C']);
+    expect(hasil.belum).toEqual(['B', 'C']);
   });
 });
