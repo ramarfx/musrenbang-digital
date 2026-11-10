@@ -31,9 +31,9 @@ const TUR_USULAN: readonly LangkahTur[] = [
     isi: 'Ketik kata kunci atau saring berdasarkan status dan bidang supaya cepat ketemu.',
   },
   {
-    target: 'daftar',
+    target: 'dukung',
     judul: 'Dukung usulan',
-    isi: 'Tekan tombol dukungan pada usulan yang menurutmu penting. Usulan dengan dukungan terbanyak naik ke atas.',
+    isi: 'Tekan tombol panah ini pada usulan yang menurutmu penting. Usulan dengan dukungan terbanyak naik ke atas.',
   },
   {
     target: 'buat',
@@ -239,9 +239,9 @@ export default function UsulanWarga() {
 
         {filtered.length > 0 && (
           <>
-            <div data-tur="daftar" className="grid gap-5 md:grid-cols-2">
+            <div className="grid gap-5 md:grid-cols-2">
               {tampilHalaman.map((proposal) => (
-                <ProposalCard key={proposal.id} proposal={proposal} />
+                <ProposalCard key={proposal.id} proposal={proposal} turDukung="dukung" />
               ))}
             </div>
             <Pagination

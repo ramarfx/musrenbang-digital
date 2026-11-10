@@ -215,7 +215,7 @@ export function TahapMini({ tahap, ditolak }: { tahap: number; ditolak?: boolean
  * penolakan dipotong), lalu lima tahap kecil berikon. Kartu memudar naik sekali saat pertama terlihat,
  * lalu label, ikon, garis, dan bulatan tahap menyusul (kelas `kartu-*` di index.css).
  */
-export function ProposalCard({ proposal }: { proposal: Proposal }) {
+export function ProposalCard({ proposal, turDukung }: { proposal: Proposal; turDukung?: string }) {
   const { user } = useAuth();
   const [ref, tampak] = useMasukTerlihat<HTMLElement>(0.15);
   const [keluar, setKeluar] = useState(false);
@@ -303,7 +303,7 @@ export function ProposalCard({ proposal }: { proposal: Proposal }) {
         <div className="relative z-10 mt-3 flex min-h-9 flex-wrap items-center gap-2">
           {proposal.moderasi === 'Disetujui' ? (
             <>
-              <UpvoteButton proposalId={proposal.id} jumlah={proposal.jumlah_suara} />
+              <UpvoteButton proposalId={proposal.id} jumlah={proposal.jumlah_suara} tur={turDukung} />
               <Link
                 to={`/usulan/${proposal.id}#komentar`}
                 className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-surface px-3 text-[13px] font-semibold text-ink transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.95] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"

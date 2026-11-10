@@ -13,6 +13,8 @@ type UpvoteButtonProps = {
   /** `terang` untuk di atas kartu hijau. */
   terang?: boolean;
   className?: string;
+  /** Penanda tombol ini untuk tur halaman (tombol "?"). */
+  tur?: string;
 };
 
 /**
@@ -20,7 +22,13 @@ type UpvoteButtonProps = {
  * Ditekan sekali = upvote (satu akun satu suara), ditekan lagi = batal. Tanpa login, tombol
  * mengajak masuk. Panah naik sekali saat di-upvote (kelas `upvote-naik`), tanpa gerak berulang.
  */
-export function UpvoteButton({ proposalId, jumlah, terang = false, className }: UpvoteButtonProps) {
+export function UpvoteButton({
+  proposalId,
+  jumlah,
+  terang = false,
+  className,
+  tur,
+}: UpvoteButtonProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const userId = user?.id ?? null;
@@ -45,6 +53,7 @@ export function UpvoteButton({ proposalId, jumlah, terang = false, className }: 
   return (
     <button
       type="button"
+      data-tur={tur}
       onClick={tekan}
       aria-pressed={sudah}
       aria-label={sudah ? 'Batalkan upvote' : 'Upvote usulan ini'}
