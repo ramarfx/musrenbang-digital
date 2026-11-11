@@ -10,6 +10,7 @@ import { ListSkeleton } from '@/components/ui/Skeleton';
 import type { LangkahTur } from '@/components/tutorial/TurHalaman';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ProposalCard } from '@/features/proposals/components/ProposalCard';
+import { TombolTampilan, type TampilanDaftar } from '@/features/proposals/components/TombolTampilan';
 import { TopProposals } from '@/features/proposals/components/TopProposals';
 import { ProposalFilters } from '@/features/proposals/components/ProposalFilters';
 import { cn } from '@/lib/cn';
@@ -52,7 +53,7 @@ export default function UsulanWarga() {
   const [kategori, setKategori] = useState('semua');
   const [urutan, setUrutan] = useState<'terbaru' | 'terpopuler'>('terbaru');
   const [halaman, setHalaman] = useState(1);
-  const [tampilan, setTampilan] = useState<'kartu' | 'daftar'>('kartu');
+  const [tampilan, setTampilan] = useState<TampilanDaftar>('kartu');
   const perHalaman = tampilan === 'kartu' ? KARTU_PER_HALAMAN : BARIS_PER_HALAMAN;
   const daftarRef = useRef<HTMLElement>(null);
   const categoriesQuery = useCategoriesQuery();
@@ -182,43 +183,7 @@ export default function UsulanWarga() {
       <section ref={daftarRef} className="scroll-mt-4 space-y-4">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-xl font-bold">Daftar usulan</h2>
-          <div
-            role="group"
-            aria-label="Tampilan daftar"
-            className="flex rounded-xl border border-border bg-surface p-0.5"
-          >
-            {(
-              [
-                ['kartu', 'Kartu', 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z'],
-                ['daftar', 'Daftar', 'M4 6h16M4 12h16M4 18h16'],
-              ] as const
-            ).map(([nilai, label, ikon]) => (
-              <button
-                key={nilai}
-                type="button"
-                aria-pressed={tampilan === nilai}
-                onClick={() => setTampilan(nilai)}
-                className={cn(
-                  'inline-flex h-8 items-center gap-1.5 rounded-[10px] px-3 text-[13px] font-semibold transition-[scale,background-color,color] duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga',
-                  tampilan === nilai ? 'bg-ink text-on-ink' : 'text-muted hover:text-ink',
-                )}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                  className="size-4"
-                >
-                  <path d={ikon} />
-                </svg>
-                {label}
-              </button>
-            ))}
-          </div>
+          <TombolTampilan nilai={tampilan} onUbah={setTampilan} />
         </div>
 
         <div data-tur="saring">

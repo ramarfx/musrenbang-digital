@@ -1,4 +1,5 @@
 import { PROPOSAL_STATUSES, type ProposalStatus } from '@musrenbang/shared';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { buttonClass } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -9,6 +10,8 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { ListSkeleton } from '@/components/ui/Skeleton';
 import { useAuth } from '@/features/auth';
 import { ProposalCard } from '@/features/proposals/components/ProposalCard';
+import { TombolTampilan, type TampilanDaftar } from '@/features/proposals/components/TombolTampilan';
+import { cn } from '@/lib/cn';
 import { useProposalsQuery } from '@/features/proposals/queries';
 import { formatAngka } from '@/lib/format';
 
@@ -60,6 +63,7 @@ const TAHAP_TINDAK_LANJUT = PROPOSAL_STATUSES.indexOf('Masuk APBD');
 export default function UsulanSaya() {
   const { user } = useAuth();
   const proposalsQuery = useProposalsQuery();
+  const [tampilan, setTampilan] = useState<TampilanDaftar>('kartu');
   const milikku = (proposalsQuery.data ?? []).filter(
     (proposal) => user !== null && proposal.pengusul_id === user.id,
   );
@@ -129,11 +133,21 @@ export default function UsulanSaya() {
             />
           </section>
 
-          <div className="grid auto-rows-fr gap-2.5 min-[350px]:grid-cols-2 md:gap-5">
+          <div className="flex justify-end">
+            <TombolTampilan nilai={tampilan} onUbah={setTampilan} />
+          </div>
+          <div
+            className={cn(
+              'grid gap-2.5',
+              tampilan === 'kartu'
+                ? 'auto-rows-fr min-[350px]:grid-cols-2 md:gap-5'
+                : 'grid-cols-1 sm:gap-3',
+            )}
+          >
             {[...milikku]
               .sort((a, b) => new Date(b.dibuat_pada).getTime() - new Date(a.dibuat_pada).getTime())
               .map((proposal) => (
-                <ProposalCard key={proposal.id} proposal={proposal} />
+                <ProposalCard key={proposal.id} proposal={proposal} daftar={tampilan === 'daftar'} />
               ))}
           </div>
         </>
