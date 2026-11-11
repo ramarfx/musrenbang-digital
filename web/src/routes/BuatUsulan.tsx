@@ -26,7 +26,6 @@ export default function BuatUsulan() {
       <PageHeader
         title="Buat usulan"
         tur={TUR_BUAT}
-        description="Tulis program pembangunan yang kamu harap masuk anggaran tahun depan. Admin memeriksa usulan lebih dulu. Setelah disetujui, usulanmu tampil publik dan bisa di-upvote warga lain. Ini bukan kanal lapor kerusakan: yang perlu cepat diperbaiki, laporkan lewat kanal pengaduan resmi."
       />
       <ProposalForm />
     </div>
