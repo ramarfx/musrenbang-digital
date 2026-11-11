@@ -101,8 +101,9 @@ export function TahapMini({
   tahap: number;
   ditolak?: boolean;
   /** Ukuran lebih besar, dipakai di kartu usulan supaya tahapnya terbaca sekilas. */
-  besar?: boolean;
+  besar?: boolean | 'raksasa';
 }) {
+  const raksasa = besar === 'raksasa';
   const terakhir = PROPOSAL_STATUSES.length - 1;
   return (
     <ol className="grid grid-cols-5" aria-label="Tahap usulan">
@@ -128,7 +129,7 @@ export function TahapMini({
               style={{ '--urutan': index } as CSSProperties}
               className={cn(
                 'kartu-ikon',
-                besar ? 'mb-2 size-6' : 'mb-1.5 size-[18px]',
+                raksasa ? 'mb-3 size-9' : besar ? 'mb-2 size-6' : 'mb-1.5 size-[18px]',
                 gagal
                   ? 'text-red-700'
                   : kini
@@ -146,7 +147,7 @@ export function TahapMini({
                   aria-hidden="true"
                   className={cn(
                     'absolute top-1/2 left-1/2 w-full -translate-y-1/2 overflow-hidden rounded-full bg-track',
-                    besar ? 'h-[3px]' : 'h-0.5',
+                    raksasa ? 'h-1' : besar ? 'h-[3px]' : 'h-0.5',
                   )}
                 >
                   {lewat && (
@@ -161,7 +162,7 @@ export function TahapMini({
                 style={{ '--urutan': index } as CSSProperties}
                 className={cn(
                   'relative z-10 grid place-items-center rounded-full font-bold',
-                  besar ? 'size-8 text-sm' : 'size-[22px] text-[11px]',
+                  raksasa ? 'size-11 text-base' : besar ? 'size-8 text-sm' : 'size-[22px] text-[11px]',
                   lewat && 'kartu-titik bg-ink text-on-ink',
                   kini &&
                     !gagal &&
@@ -178,7 +179,7 @@ export function TahapMini({
                   />
                 )}
                 {gagal ? (
-                  <svg viewBox="0 0 16 16" className={besar ? 'size-4' : 'size-3'} fill="none" aria-hidden="true">
+                  <svg viewBox="0 0 16 16" className={raksasa ? 'size-5' : besar ? 'size-4' : 'size-3'} fill="none" aria-hidden="true">
                     <path
                       d="m4.5 4.5 7 7m0-7-7 7"
                       stroke="currentColor"
@@ -187,7 +188,7 @@ export function TahapMini({
                     />
                   </svg>
                 ) : lewat || (kini && index === terakhir) ? (
-                  <svg viewBox="0 0 16 16" className={besar ? 'size-4' : 'size-3'} fill="none" aria-hidden="true">
+                  <svg viewBox="0 0 16 16" className={raksasa ? 'size-5' : besar ? 'size-4' : 'size-3'} fill="none" aria-hidden="true">
                     <path
                       d="m3.5 8.5 3 3 6-7"
                       stroke="currentColor"
@@ -204,7 +205,7 @@ export function TahapMini({
             <span
               className={cn(
                 'max-w-full truncate px-0.5',
-                besar ? 'mt-2 -mx-1 text-[11px] sm:text-[11.5px] min-[1280px]:text-[13px]' : 'mt-1.5 text-[11px] sm:text-xs',
+                raksasa ? 'mt-3 -mx-1 text-[12px] min-[1280px]:text-[14px]' : besar ? 'mt-2 -mx-1 text-[11px] sm:text-[11.5px] min-[1280px]:text-[13px]' : 'mt-1.5 text-[11px] sm:text-xs',
                 gagal
                   ? 'font-bold text-red-700'
                   : kini
@@ -239,6 +240,7 @@ export function ProposalCard({ proposal, turDukung }: { proposal: Proposal; turD
   const keadaan = keadaanUsulan(proposal);
   const jumlahKomentar = useCommentCountsQuery().data?.[proposal.id] ?? 0;
   const fotoPengerjaan = useFotoPerUsulan().get(proposal.id) ?? [];
+  const tanpaFoto = fotoPengerjaan.length === 0;
 
   return (
     <article
@@ -298,8 +300,10 @@ export function ProposalCard({ proposal, turDukung }: { proposal: Proposal; turD
         </span>
       </div>
 
-      <div className="mt-3 hidden sm:block">
-        <TahapMini tahap={keadaan.tahap} ditolak={keadaan.ditolak} besar />
+      <div className={cn('mt-3 hidden', tanpaFoto ? 'sm:flex sm:flex-1 sm:items-center' : 'sm:block')}>
+        <div className="w-full">
+          <TahapMini tahap={keadaan.tahap} ditolak={keadaan.ditolak} besar={tanpaFoto ? 'raksasa' : true} />
+        </div>
       </div>
 
       <FotoMini photos={fotoPengerjaan} />
