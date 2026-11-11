@@ -10,7 +10,17 @@ type Dependencies = {
   reserve: () => Promise<boolean>;
   suggest: (input: HintInput) => Promise<unknown>;
   log?: (stage: string, code: string) => void;
+  wait?: (ms: number) => Promise<void>;
 };
+
+const defaultWait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+// Hanya gangguan sesaat: 5xx penyedia atau kegagalan jaringan. Bukan 4xx atau respons rusak.
+function retryable(error: unknown): boolean {
+  if (error instanceof TypeError) return true;
+  const message = error instanceof Error ? error.message : '';
+  return /^provider_status=(500|502|503|504)$/.test(message);
+}
 
 const MIN_RP = 100_000;
 const MAX_RP = 100_000_000_000;
@@ -101,15 +111,28 @@ export function createHandler(d: Dependencies) {
         d.log?.('reserve', 'quota');
         return reply(429, { error: 'Layanan sementara mencapai batas. Coba lagi nanti.' });
       }
+      const redacted = {
+        judul: redact(input.judul),
+        deskripsi: redact(input.deskripsi),
+        kategori: redact(input.kategori),
+      };
       let hint: CostHint;
       try {
-        hint = validateHint(
-          await d.suggest({
-            judul: redact(input.judul),
-            deskripsi: redact(input.deskripsi),
-            kategori: redact(input.kategori),
-          }),
-        );
+        // Satu ulangan untuk gangguan sesaat penyedia; tiap percobaan memakai kuota bersama.
+        let raw: unknown;
+        for (let attempt = 0; ; attempt++) {
+          if (attempt > 0 && !(await d.reserve())) throw new Error('quota');
+          try {
+            raw = await d.suggest(redacted);
+            break;
+          } catch (error) {
+            if (attempt > 0 || !retryable(error)) throw error;
+            const message = error instanceof Error ? error.message : '';
+            d.log?.('suggest_retry', /^[a-z0-9_=:.-]{1,60}$/.test(message) ? message : 'unknown');
+            await (d.wait ?? defaultWait)(200 + Math.floor(Math.random() * 200));
+          }
+        }
+        hint = validateHint(raw);
       } catch (error) {
         const message = error instanceof Error ? error.message : '';
         d.log?.('suggest', /^[a-z0-9_=:.-]{1,60}$/.test(message) ? message : 'unknown');

@@ -103,6 +103,62 @@ describe('handler', () => {
     expect((await full.call('ok')).status).toBe(429);
     expect(full.calls.suggest).toBe(0);
   });
+  test('gangguan sesaat penyedia diulang sekali dan memakai kuota sendiri', async () => {
+    let tries = 0;
+    const logs: string[][] = [];
+    const { call, calls } = make({
+      suggest: async () => {
+        tries += 1;
+        if (tries === 1) throw new Error('provider_status=503');
+        return { min: 2_000_000, max: 5_000_000, alasan: 'Asumsi umum.' };
+      },
+      log: (s, c) => logs.push([s, c]),
+      wait: async () => {},
+    });
+    const response = await call('ok');
+    expect(response.status).toBe(200);
+    expect(tries).toBe(2);
+    expect(calls.reserve).toBe(2);
+    expect(logs).toEqual([['suggest_retry', 'provider_status=503']]);
+  });
+  test('gangguan yang berulang berhenti setelah satu ulangan', async () => {
+    let tries = 0;
+    const { call } = make({
+      suggest: async () => {
+        tries += 1;
+        throw new Error('provider_status=503');
+      },
+      wait: async () => {},
+    });
+    expect((await call('ok')).status).toBe(503);
+    expect(tries).toBe(2);
+  });
+  test('kesalahan permanen penyedia tidak diulang', async () => {
+    let tries = 0;
+    const { call } = make({
+      suggest: async () => {
+        tries += 1;
+        throw new Error('provider_status=400');
+      },
+      wait: async () => {},
+    });
+    expect((await call('ok')).status).toBe(503);
+    expect(tries).toBe(1);
+  });
+  test('ulangan berhenti bila kuota penyedia habis', async () => {
+    let reserves = 0;
+    let tries = 0;
+    const { call } = make({
+      reserve: async () => (++reserves, reserves === 1),
+      suggest: async () => {
+        tries += 1;
+        throw new Error('provider_status=503');
+      },
+      wait: async () => {},
+    });
+    expect((await call('ok')).status).toBe(503);
+    expect(tries).toBe(1);
+  });
   test('balasan model tidak sah menjadi 503 dan tidak bocor ke warga', async () => {
     const logs: string[][] = [];
     const { call } = make({
