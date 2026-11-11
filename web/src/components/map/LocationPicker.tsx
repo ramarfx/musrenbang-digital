@@ -164,7 +164,8 @@ export function LocationPicker({
 
   return (
     <div className="space-y-2.5">
-      <div role="search" className="flex gap-2">
+      <div role="search" className="flex flex-wrap items-center gap-2">
+      <div className="flex min-w-0 flex-1 basis-56 gap-2 sm:max-w-sm">
         <Input
           type="search"
           aria-label="Cari daerah, jalan, atau tempat"
@@ -189,13 +190,12 @@ export function LocationPicker({
         >
           {mencari ? <Spinner label="Mencari" /> : <Icon name="cari" size={20} />}
         </button>
+        </div>
         <button
           type="button"
-          aria-label="Pakai lokasiku sekarang"
-          title="Lokasiku sekarang"
           onClick={lokasiSaya}
           disabled={mencariPosisi}
-          className={cn(tombolIkon, 'group/lokasi')}
+          className={cn(tombolIkon, 'group/lokasi w-auto gap-2 px-3.5 text-sm font-semibold')}
         >
           {mencariPosisi ? (
             <Spinner label="Membaca lokasi" />
@@ -204,6 +204,7 @@ export function LocationPicker({
               <Icon name="sasaran" size={20} />
             </span>
           )}
+          Gunakan lokasi saya
         </button>
       </div>
 
