@@ -5,8 +5,6 @@ import { Icon } from '@/components/ui/Icon';
 import { useAuth } from '@/features/auth';
 import { useCommentCountsQuery } from '@/features/comments/queries';
 import { CategoryTile } from '@/features/categories/components/CategoryTile';
-import { FotoMini } from '@/features/photos/components/FotoMini';
-import { useFotoPerUsulan } from '@/features/photos/queries';
 import { cn } from '@/lib/cn';
 import { formatRupiahRingkas, formatTanggal } from '@/lib/format';
 import { useMasukTerlihat } from '@/lib/reveal';
@@ -101,9 +99,8 @@ export function TahapMini({
   tahap: number;
   ditolak?: boolean;
   /** Ukuran lebih besar, dipakai di kartu usulan supaya tahapnya terbaca sekilas. */
-  besar?: boolean | 'raksasa';
+  besar?: boolean;
 }) {
-  const raksasa = besar === 'raksasa';
   const terakhir = PROPOSAL_STATUSES.length - 1;
   return (
     <ol className="grid grid-cols-5" aria-label="Tahap usulan">
@@ -129,7 +126,7 @@ export function TahapMini({
               style={{ '--urutan': index } as CSSProperties}
               className={cn(
                 'kartu-ikon',
-                raksasa ? 'mb-3 size-9' : besar ? 'mb-2 size-6' : 'mb-1.5 size-[18px]',
+                besar ? 'mb-2 size-6' : 'mb-1.5 size-[18px]',
                 gagal
                   ? 'text-red-700'
                   : kini
@@ -147,7 +144,7 @@ export function TahapMini({
                   aria-hidden="true"
                   className={cn(
                     'absolute top-1/2 left-1/2 w-full -translate-y-1/2 overflow-hidden rounded-full bg-track',
-                    raksasa ? 'h-1' : besar ? 'h-[3px]' : 'h-0.5',
+                    besar ? 'h-[3px]' : 'h-0.5',
                   )}
                 >
                   {lewat && (
@@ -162,7 +159,7 @@ export function TahapMini({
                 style={{ '--urutan': index } as CSSProperties}
                 className={cn(
                   'relative z-10 grid place-items-center rounded-full font-bold',
-                  raksasa ? 'size-11 text-base' : besar ? 'size-8 text-sm' : 'size-[22px] text-[11px]',
+                  besar ? 'size-8 text-sm' : 'size-[22px] text-[11px]',
                   lewat && 'kartu-titik bg-ink text-on-ink',
                   kini &&
                     !gagal &&
@@ -179,7 +176,7 @@ export function TahapMini({
                   />
                 )}
                 {gagal ? (
-                  <svg viewBox="0 0 16 16" className={raksasa ? 'size-5' : besar ? 'size-4' : 'size-3'} fill="none" aria-hidden="true">
+                  <svg viewBox="0 0 16 16" className={besar ? 'size-4' : 'size-3'} fill="none" aria-hidden="true">
                     <path
                       d="m4.5 4.5 7 7m0-7-7 7"
                       stroke="currentColor"
@@ -188,7 +185,7 @@ export function TahapMini({
                     />
                   </svg>
                 ) : lewat || (kini && index === terakhir) ? (
-                  <svg viewBox="0 0 16 16" className={raksasa ? 'size-5' : besar ? 'size-4' : 'size-3'} fill="none" aria-hidden="true">
+                  <svg viewBox="0 0 16 16" className={besar ? 'size-4' : 'size-3'} fill="none" aria-hidden="true">
                     <path
                       d="m3.5 8.5 3 3 6-7"
                       stroke="currentColor"
@@ -205,7 +202,7 @@ export function TahapMini({
             <span
               className={cn(
                 'max-w-full truncate px-0.5',
-                raksasa ? 'mt-3 -mx-1 text-[12px] min-[1280px]:text-[14px]' : besar ? 'mt-2 -mx-1 text-[11px] sm:text-[11.5px] min-[1280px]:text-[13px]' : 'mt-1.5 text-[11px] sm:text-xs',
+                besar ? 'mt-2 -mx-1 text-[11px] sm:text-[11.5px] min-[1280px]:text-[13px]' : 'mt-1.5 text-[11px] sm:text-xs',
                 gagal
                   ? 'font-bold text-red-700'
                   : kini
@@ -231,7 +228,16 @@ export function TahapMini({
  * penolakan dipotong), lalu lima tahap kecil berikon. Kartu memudar naik sekali saat pertama terlihat,
  * lalu label, ikon, garis, dan bulatan tahap menyusul (kelas `kartu-*` di index.css).
  */
-export function ProposalCard({ proposal, turDukung }: { proposal: Proposal; turDukung?: string }) {
+export function ProposalCard({
+  proposal,
+  turDukung,
+  daftar = false,
+}: {
+  proposal: Proposal;
+  turDukung?: string;
+  /** Tampilan daftar: satu baris per usulan, bukan kartu. */
+  daftar?: boolean;
+}) {
   const { user } = useAuth();
   const [ref, tampak] = useMasukTerlihat<HTMLElement>(0.15);
   const [keluar, setKeluar] = useState(false);
@@ -239,8 +245,78 @@ export function ProposalCard({ proposal, turDukung }: { proposal: Proposal; turD
   const punyaAksi = milikku && (bisaDiubah(proposal) || bisaDihapus(proposal));
   const keadaan = keadaanUsulan(proposal);
   const jumlahKomentar = useCommentCountsQuery().data?.[proposal.id] ?? 0;
-  const fotoPengerjaan = useFotoPerUsulan().get(proposal.id) ?? [];
-  const tanpaFoto = fotoPengerjaan.length === 0;
+
+  if (daftar) {
+    return (
+      <article
+        ref={ref}
+        data-keluar={keluar || undefined}
+        className={cn(
+          'kartu-usulan group relative flex min-w-0 items-center gap-3 rounded-2xl border-[1.5px] border-edge bg-surface p-3 shadow-[0_3px_0_var(--edge)] hover:-translate-y-0.5 sm:gap-4 sm:p-4',
+          tampak && 'kartu-tampak',
+        )}
+      >
+        <div className="flex-none max-sm:[&>span]:size-9 max-sm:[&>span]:rounded-[10px]">
+          <CategoryTile kategori={proposal.kategori} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="line-clamp-2 text-[14px] leading-snug font-bold text-ink transition-colors duration-150 [overflow-wrap:break-word] group-hover:text-warga sm:text-[16px]">
+            <Link
+              to={`/usulan/${proposal.id}`}
+              className="after:absolute after:inset-0 after:rounded-2xl after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-warga"
+            >
+              {proposal.judul}
+            </Link>
+          </h3>
+          <p className="mt-0.5 truncate text-[12px] text-muted">
+            {proposal.kategori}
+            <span className="max-sm:hidden"> · oleh {proposal.pengusul_nama}</span>
+          </p>
+          <p className={cn('mt-1 flex items-center gap-1.5 text-[12px] font-bold', keadaan.warnaTeks)}>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2.2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="size-3.5 flex-none"
+            >
+              <path d={keadaan.ikon} />
+            </svg>
+            {keadaan.label}
+          </p>
+        </div>
+        <div className="hidden w-[230px] flex-none lg:block xl:w-[280px]">
+          <TahapMini tahap={keadaan.tahap} ditolak={keadaan.ditolak} />
+        </div>
+        <dl className="hidden w-24 flex-none text-right text-sm md:block">
+          <dt className="text-[12px] text-muted">Estimasi</dt>
+          <dd className="font-bold">{formatRupiahRingkas(proposal.estimasi_biaya)}</dd>
+        </dl>
+        <div className="relative z-10 flex flex-none items-center gap-1.5">
+          {proposal.moderasi === 'Disetujui' ? (
+            <>
+              <UpvoteButton proposalId={proposal.id} jumlah={proposal.jumlah_suara} tur={turDukung} />
+              <Link
+                to={`/usulan/${proposal.id}#komentar`}
+                aria-label={`${jumlahKomentar} komentar`}
+                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-surface px-2.5 text-[13px] font-semibold text-ink transition-[scale,background-color] duration-150 ease-out hover:bg-active active:scale-[0.95] max-sm:hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga"
+              >
+                <Icon name="usulan" size={16} />
+                <span className="rounded-md bg-pasir px-1.5 text-[12px] font-bold tabular-nums">
+                  {jumlahKomentar}
+                </span>
+              </Link>
+            </>
+          ) : (
+            punyaAksi && <AksiPemilik proposal={proposal} onKeluar={setKeluar} />
+          )}
+        </div>
+      </article>
+    );
+  }
 
   return (
     <article
@@ -300,13 +376,9 @@ export function ProposalCard({ proposal, turDukung }: { proposal: Proposal; turD
         </span>
       </div>
 
-      <div className={cn('mt-3 hidden', tanpaFoto ? 'sm:flex sm:flex-1 sm:items-center' : 'sm:block')}>
-        <div className="w-full">
-          <TahapMini tahap={keadaan.tahap} ditolak={keadaan.ditolak} besar={tanpaFoto ? 'raksasa' : true} />
-        </div>
+      <div className="mt-3 hidden sm:block">
+        <TahapMini tahap={keadaan.tahap} ditolak={keadaan.ditolak} besar />
       </div>
-
-      <FotoMini photos={fotoPengerjaan} />
 
       <div className="mt-auto">
         <dl className="mt-3.5 hidden grid-cols-2 gap-3 border-t border-rule pt-3 text-sm sm:grid">
