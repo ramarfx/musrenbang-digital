@@ -129,7 +129,7 @@ export default function UsulanSaya() {
             />
           </section>
 
-          <div className="grid gap-2.5 min-[350px]:grid-cols-2 md:gap-5">
+          <div className="grid auto-rows-fr gap-2.5 min-[350px]:grid-cols-2 md:gap-5">
             {[...milikku]
               .sort((a, b) => new Date(b.dibuat_pada).getTime() - new Date(a.dibuat_pada).getTime())
               .map((proposal) => (
