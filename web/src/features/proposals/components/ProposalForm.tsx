@@ -163,153 +163,159 @@ export function ProposalForm({ proposal, onSaved, onCancel }: ProposalFormProps 
 
   return (
     <form onSubmit={onSubmit} className="space-y-6" noValidate>
-      <Card tur="isi" className="space-y-4">
-        <Field
-          label="Judul usulan"
-          htmlFor="judul"
-          error={form.formState.errors.judul?.message}
-          hint="Tulis programnya, bukan kerusakannya. Misalnya Pembangunan drainase Jalan X, bukan Jalan berlubang."
-          required
-        >
-          <Input
-            id="judul"
-            placeholder="cth. Pembangunan trotoar dan penerangan Jl. Melati"
-            invalid={Boolean(form.formState.errors.judul)}
-            {...form.register('judul')}
-          />
-        </Field>
-
-        <Field
-          label="Deskripsi"
-          htmlFor="deskripsi"
-          error={form.formState.errors.deskripsi?.message}
-          hint={`Jelaskan program yang diusulkan, lokasinya, dan manfaatnya bagi warga. Minimal ${TEXT_LIMITS.deskripsiMin} karakter.`}
-          required
-        >
-          <Textarea
-            id="deskripsi"
-            rows={5}
-            placeholder="Program apa yang diusulkan, siapa yang terbantu, dan apa manfaatnya?"
-            invalid={Boolean(form.formState.errors.deskripsi)}
-            {...form.register('deskripsi')}
-          />
-        </Field>
-
-        <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+        <Card tur="isi" className="space-y-4">
           <Field
-            label="Kategori"
-            htmlFor="kategori"
-            error={form.formState.errors.kategori?.message}
+            label="Judul usulan"
+            htmlFor="judul"
+            error={form.formState.errors.judul?.message}
+            hint="Tulis programnya, bukan kerusakannya. Misalnya Pembangunan drainase Jalan X, bukan Jalan berlubang."
             required
           >
-            <Select
-              id="kategori"
-              invalid={Boolean(form.formState.errors.kategori)}
-              {...form.register('kategori')}
+            <Input
+              id="judul"
+              placeholder="cth. Pembangunan trotoar dan penerangan Jl. Melati"
+              invalid={Boolean(form.formState.errors.judul)}
+              {...form.register('judul')}
+            />
+          </Field>
+
+          <Field
+            label="Deskripsi"
+            htmlFor="deskripsi"
+            error={form.formState.errors.deskripsi?.message}
+            hint={`Jelaskan program yang diusulkan, lokasinya, dan manfaatnya bagi warga. Minimal ${TEXT_LIMITS.deskripsiMin} karakter.`}
+            required
+          >
+            <Textarea
+              id="deskripsi"
+              rows={5}
+              placeholder="Program apa yang diusulkan, siapa yang terbantu, dan apa manfaatnya?"
+              invalid={Boolean(form.formState.errors.deskripsi)}
+              {...form.register('deskripsi')}
+            />
+          </Field>
+
+          <div className="grid gap-4">
+            <Field
+              label="Kategori"
+              htmlFor="kategori"
+              error={form.formState.errors.kategori?.message}
+              required
             >
-              {categoriesQuery.data.map((category) => (
-                <option key={category.id} value={category.nama}>
-                  {category.nama}
-                </option>
-              ))}
-            </Select>
-          </Field>
+              <Select
+                id="kategori"
+                invalid={Boolean(form.formState.errors.kategori)}
+                {...form.register('kategori')}
+              >
+                {categoriesQuery.data.map((category) => (
+                  <option key={category.id} value={category.nama}>
+                    {category.nama}
+                  </option>
+                ))}
+              </Select>
+            </Field>
 
-          <Field
-            label="Estimasi biaya (rupiah)"
-            htmlFor="estimasi"
-            error={form.formState.errors.estimasi_biaya?.message}
-            hint={
-              import.meta.env.VITE_MUSRENAI_ENABLED === 'true'
-                ? 'Perkiraan kasar saja, tanpa titik atau koma. Tombol Perkirakan mengirim judul dan deskripsi ke Google Gemini, jadi jangan tulis data pribadi.'
-                : 'Perkiraan kasar saja, tanpa titik atau koma. Harus lebih dari nol.'
-            }
-            required
-          >
-            <div className="relative">
-              <Input
-                id="estimasi"
-                type="text"
-                inputMode="numeric"
-                placeholder="cth. 450000000"
-                invalid={Boolean(form.formState.errors.estimasi_biaya)}
-                className={import.meta.env.VITE_MUSRENAI_ENABLED === 'true' ? 'pr-28' : undefined}
-                {...form.register('estimasi_biaya')}
-              />
-              <SaranBiaya
-                ambil={() => ({
-                  judul: form.getValues('judul'),
-                  deskripsi: form.getValues('deskripsi'),
-                  kategori: form.getValues('kategori'),
-                })}
-                onPakai={(angka) =>
-                  form.setValue('estimasi_biaya', String(angka), { shouldValidate: true })
-                }
-              />
-            </div>
-          </Field>
-        </div>
-
-        <Field label="Lokasi (teks)" htmlFor="lokasi" error={form.formState.errors.lokasi?.message}>
-          <Input
-            id="lokasi"
-            placeholder="cth. Jl. Raya Bogor, Kramat Jati"
-            invalid={Boolean(form.formState.errors.lokasi)}
-            {...form.register('lokasi')}
-          />
-        </Field>
-      </Card>
-
-      <Card tur="titik">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="font-semibold text-stone-900">Titik di peta (opsional)</h2>
-            <p className="text-sm text-stone-500">
-              Cari daerahnya, pakai lokasimu sekarang, atau klik peta untuk menandai titiknya. Titik
-              membantu warga lain menemukan usulanmu, dan alamatnya dicari otomatis lewat
-              OpenStreetMap, jadi koordinat titik terkirim ke layanan itu.
-            </p>
-          </div>
-        </div>
-        <div className="mt-3">
-          <LocationPicker
-            latitude={latitude}
-            longitude={longitude}
-            kategori={form.watch('kategori')}
-            onHapus={() => {
-              form.setValue('latitude', null);
-              form.setValue('longitude', null);
-            }}
-            onChange={(lat, lng, nama) => {
-              form.setValue('latitude', lat, { shouldValidate: true });
-              form.setValue('longitude', lng, { shouldValidate: true });
-              if (nama) {
-                isiLokasi(nama);
-                titik.tetapkan(nama);
-              } else {
-                titik.minta(lat, lng, isiLokasi);
+            <Field
+              label="Estimasi biaya (rupiah)"
+              htmlFor="estimasi"
+              error={form.formState.errors.estimasi_biaya?.message}
+              hint={
+                import.meta.env.VITE_MUSRENAI_ENABLED === 'true'
+                  ? 'Perkiraan kasar saja, tanpa titik atau koma. Tombol Perkirakan mengirim judul dan deskripsi ke Google Gemini, jadi jangan tulis data pribadi.'
+                  : 'Perkiraan kasar saja, tanpa titik atau koma. Harus lebih dari nol.'
               }
-            }}
-          />
-        </div>
-        {latitude !== null && longitude !== null && (
-          <div className="mt-3 space-y-1 text-sm">
-            <KeteranganWilayah wilayah={wilayahDariTitik(latitude, longitude)} />
-            <p className="text-stone-600 [overflow-wrap:anywhere]">
-              {titik.mencari
-                ? 'Mencari alamat titik...'
-                : titik.alamat
-                  ? `Alamat titik: ${titik.alamat}`
-                  : titik.gagal
-                    ? 'Alamat titik belum bisa dicari. Isi kolom lokasi sendiri.'
-                    : `Koordinat: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`}
-            </p>
+              required
+            >
+              <div className="relative">
+                <Input
+                  id="estimasi"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="cth. 450000000"
+                  invalid={Boolean(form.formState.errors.estimasi_biaya)}
+                  className={import.meta.env.VITE_MUSRENAI_ENABLED === 'true' ? 'pr-28' : undefined}
+                  {...form.register('estimasi_biaya')}
+                />
+                <SaranBiaya
+                  ambil={() => ({
+                    judul: form.getValues('judul'),
+                    deskripsi: form.getValues('deskripsi'),
+                    kategori: form.getValues('kategori'),
+                  })}
+                  onPakai={(angka) =>
+                    form.setValue('estimasi_biaya', String(angka), { shouldValidate: true })
+                  }
+                />
+              </div>
+            </Field>
           </div>
-        )}
-        {form.formState.errors.latitude?.message && (
-          <p className="mt-2 text-sm text-red-700">{form.formState.errors.latitude.message}</p>
-        )}
-      </Card>
+        </Card>
+
+        <Card tur="titik" className="space-y-4">
+          <Field
+            label="Lokasi (teks)"
+            htmlFor="lokasi"
+            error={form.formState.errors.lokasi?.message}
+          >
+            <Input
+              id="lokasi"
+              placeholder="cth. Jl. Raya Bogor, Kramat Jati"
+              invalid={Boolean(form.formState.errors.lokasi)}
+              {...form.register('lokasi')}
+            />
+          </Field>
+
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="font-semibold text-stone-900">Titik di peta (opsional)</h2>
+              <p className="text-sm text-stone-500">
+                Cari daerahnya, pakai lokasimu sekarang, atau klik peta untuk menandai titiknya.
+                Titik membantu warga lain menemukan usulanmu, dan alamatnya dicari otomatis lewat
+                OpenStreetMap, jadi koordinat titik terkirim ke layanan itu.
+              </p>
+            </div>
+          </div>
+          <div className="mt-3">
+            <LocationPicker
+              latitude={latitude}
+              longitude={longitude}
+              kategori={form.watch('kategori')}
+              onHapus={() => {
+                form.setValue('latitude', null);
+                form.setValue('longitude', null);
+              }}
+              onChange={(lat, lng, nama) => {
+                form.setValue('latitude', lat, { shouldValidate: true });
+                form.setValue('longitude', lng, { shouldValidate: true });
+                if (nama) {
+                  isiLokasi(nama);
+                  titik.tetapkan(nama);
+                } else {
+                  titik.minta(lat, lng, isiLokasi);
+                }
+              }}
+            />
+          </div>
+          {latitude !== null && longitude !== null && (
+            <div className="mt-3 space-y-1 text-sm">
+              <KeteranganWilayah wilayah={wilayahDariTitik(latitude, longitude)} />
+              <p className="text-stone-600 [overflow-wrap:anywhere]">
+                {titik.mencari
+                  ? 'Mencari alamat titik...'
+                  : titik.alamat
+                    ? `Alamat titik: ${titik.alamat}`
+                    : titik.gagal
+                      ? 'Alamat titik belum bisa dicari. Isi kolom lokasi sendiri.'
+                      : `Koordinat: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`}
+              </p>
+            </div>
+          )}
+          {form.formState.errors.latitude?.message && (
+            <p className="mt-2 text-sm text-red-700">{form.formState.errors.latitude.message}</p>
+          )}
+        </Card>
+      </div>
 
       {mutation.error && (
         <ErrorState
