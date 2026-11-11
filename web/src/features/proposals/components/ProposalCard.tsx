@@ -93,7 +93,16 @@ function TandaTayang({ moderasi }: { moderasi: Proposal['moderasi'] }) {
  * Tinta dicentang = dilalui, stabilo bercincin = sekarang (berdetak terus sampai tahap
  * Selesai), garis pudar = belum. Ditolak: bulatan pertama merah dengan silang.
  */
-export function TahapMini({ tahap, ditolak }: { tahap: number; ditolak?: boolean }) {
+export function TahapMini({
+  tahap,
+  ditolak,
+  besar = false,
+}: {
+  tahap: number;
+  ditolak?: boolean;
+  /** Ukuran lebih besar, dipakai di kartu usulan supaya tahapnya terbaca sekilas. */
+  besar?: boolean;
+}) {
   const terakhir = PROPOSAL_STATUSES.length - 1;
   return (
     <ol className="grid grid-cols-5" aria-label="Tahap usulan">
@@ -118,7 +127,8 @@ export function TahapMini({ tahap, ditolak }: { tahap: number; ditolak?: boolean
               aria-hidden="true"
               style={{ '--urutan': index } as CSSProperties}
               className={cn(
-                'kartu-ikon mb-1.5 size-[18px]',
+                'kartu-ikon',
+                besar ? 'mb-2 size-6' : 'mb-1.5 size-[18px]',
                 gagal
                   ? 'text-red-700'
                   : kini
@@ -134,7 +144,10 @@ export function TahapMini({ tahap, ditolak }: { tahap: number; ditolak?: boolean
               {index < terakhir && (
                 <span
                   aria-hidden="true"
-                  className="absolute top-1/2 left-1/2 h-0.5 w-full -translate-y-1/2 overflow-hidden rounded-full bg-track"
+                  className={cn(
+                    'absolute top-1/2 left-1/2 w-full -translate-y-1/2 overflow-hidden rounded-full bg-track',
+                    besar ? 'h-[3px]' : 'h-0.5',
+                  )}
                 >
                   {lewat && (
                     <span
@@ -147,7 +160,8 @@ export function TahapMini({ tahap, ditolak }: { tahap: number; ditolak?: boolean
               <span
                 style={{ '--urutan': index } as CSSProperties}
                 className={cn(
-                  'relative z-10 grid size-[22px] place-items-center rounded-full text-[11px] font-bold',
+                  'relative z-10 grid place-items-center rounded-full font-bold',
+                  besar ? 'size-8 text-sm' : 'size-[22px] text-[11px]',
                   lewat && 'kartu-titik bg-ink text-on-ink',
                   kini &&
                     !gagal &&
@@ -164,7 +178,7 @@ export function TahapMini({ tahap, ditolak }: { tahap: number; ditolak?: boolean
                   />
                 )}
                 {gagal ? (
-                  <svg viewBox="0 0 16 16" className="size-3" fill="none" aria-hidden="true">
+                  <svg viewBox="0 0 16 16" className={besar ? 'size-4' : 'size-3'} fill="none" aria-hidden="true">
                     <path
                       d="m4.5 4.5 7 7m0-7-7 7"
                       stroke="currentColor"
@@ -173,7 +187,7 @@ export function TahapMini({ tahap, ditolak }: { tahap: number; ditolak?: boolean
                     />
                   </svg>
                 ) : lewat || (kini && index === terakhir) ? (
-                  <svg viewBox="0 0 16 16" className="size-3" fill="none" aria-hidden="true">
+                  <svg viewBox="0 0 16 16" className={besar ? 'size-4' : 'size-3'} fill="none" aria-hidden="true">
                     <path
                       d="m3.5 8.5 3 3 6-7"
                       stroke="currentColor"
@@ -189,7 +203,8 @@ export function TahapMini({ tahap, ditolak }: { tahap: number; ditolak?: boolean
             </span>
             <span
               className={cn(
-                'mt-1.5 max-w-full truncate px-0.5 text-[11px] sm:text-xs',
+                'max-w-full truncate px-0.5',
+                besar ? 'mt-2 -mx-1 text-[11px] sm:text-[11.5px] min-[1280px]:text-[13px]' : 'mt-1.5 text-[11px] sm:text-xs',
                 gagal
                   ? 'font-bold text-red-700'
                   : kini
@@ -284,7 +299,7 @@ export function ProposalCard({ proposal, turDukung }: { proposal: Proposal; turD
       </div>
 
       <div className="mt-3 hidden sm:block">
-        <TahapMini tahap={keadaan.tahap} ditolak={keadaan.ditolak} />
+        <TahapMini tahap={keadaan.tahap} ditolak={keadaan.ditolak} besar />
       </div>
 
       <FotoMini photos={fotoPengerjaan} />
