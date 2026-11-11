@@ -1,8 +1,10 @@
 # Musrenbang Digital
 
-Platform partisipasi warga untuk Musrenbang: peta usulan, voting, komentar, simulator anggaran virtual, dan perbandingan Gap Warga-APBD. Proyek WIA MIA 2026.
+Platform partisipasi warga untuk Musrenbang: peta usulan, voting, komentar, Prioritasku (simulator tiga langkah), perbandingan Warga vs APBD, foto bukti pengerjaan, dan catatan dana pengerjaan. Proyek WIA MIA 2026.
 
-Aplikasi ini adalah monolith: satu frontend React + Vite, satu backend Supabase (Postgres + Auth + PostgREST), dan tiga Edge Function Deno untuk asisten AI. Tidak ada server API buatan sendiri. Aturan data ditegakkan di database lewat Row Level Security, constraint, view, dan RPC; frontend hanya memanggil Supabase langsung dengan `supabase-js`. Edge Function memanggil penyedia AI yang OpenAI-compatible dan tidak menerima data pribadi.
+Situs live: https://musrenbang-digital.pages.dev
+
+Aplikasi ini adalah monolith: satu frontend React + Vite, satu backend Supabase (Postgres + Auth + PostgREST + Storage), dan tiga Edge Function Deno untuk asisten AI. Tidak ada server API buatan sendiri. Aturan data ditegakkan di database lewat Row Level Security, constraint, view, dan RPC; frontend hanya memanggil Supabase langsung dengan `supabase-js`. Edge Function memanggil penyedia AI yang OpenAI-compatible dan tidak menerima data pribadi.
 
 Dokumen rancangan lengkap ada di [`ARSITEKTUR.md`](./ARSITEKTUR.md). Agar dokumen ini tidak bertabrakan dengan dokumen lain, aturan proyek sehari-hari ada di [`AGENTS.md`](./AGENTS.md).
 
@@ -14,7 +16,7 @@ Dokumen rancangan lengkap ada di [`ARSITEKTUR.md`](./ARSITEKTUR.md). Agar dokume
 | Data client   | TanStack Query (server state dan cache)                                        |
 | Form          | React Hook Form + `@hookform/resolvers` + Zod                                  |
 | Peta/grafik   | Leaflet + React Leaflet, MapLibre GL, Recharts, Chart.js                       |
-| Backend       | Supabase: Postgres, Auth, PostgREST, RLS, view, RPC                            |
+| Backend       | Supabase: Postgres, Auth, PostgREST, Storage, RLS, view, RPC                            |
 | Edge Function | Deno: `musrenai-chat`, `admin-ai-triage`, `musrenai-cost-hint`                 |
 | Kontrak       | `@musrenbang/shared`, skema Zod, konstanta domain, tipe database, helper gap   |
 | Toolchain     | Bun (install, script, test), Oxlint, Oxfmt, `tsc --noEmit`, Deno, Supabase CLI |
@@ -28,6 +30,9 @@ Dokumen rancangan lengkap ada di [`ARSITEKTUR.md`](./ARSITEKTUR.md). Agar dokume
 │       ├── app/              # provider global + router
 │       ├── components/       # layout, peta, UI dasar, tutorial
 │       ├── features/         # per fitur: api.ts, queries.ts, components/
+│       │                     # admin, allocations, apbd, auth, categories,
+│       │                     # comments, config, gap, musrenai, photos,
+│       │                     # proposals, ranking, spending, stats
 │       ├── routes/           # halaman (lazy-loaded), termasuk routes/admin/
 │       ├── lib/              # Supabase client, query keys, env, format, error helper
 │       └── styles/
@@ -38,7 +43,7 @@ Dokumen rancangan lengkap ada di [`ARSITEKTUR.md`](./ARSITEKTUR.md). Agar dokume
 │       ├── types/database.ts # tipe Database untuk supabase-js (manual, update bersamaan dengan migrasi)
 │       └── constants.ts      # status, peran, kategori, batas teks
 ├── supabase/
-│   ├── migrations/           # 24 migrasi skema, RLS, view, RPC (jalankan berurutan)
+│   ├── migrations/           # 26 migrasi skema, RLS, view, RPC, Storage (jalankan berurutan)
 │   ├── functions/            # Edge Function MusrenAI + _shared/ai.ts dan _shared/pii.ts
 │   ├── seed/                 # CSV APBD + 20 usulan contoh
 │   ├── tests/                # assertion SQL
@@ -65,7 +70,7 @@ bun install
 
 ### 2. Siapkan database Supabase
 
-Buat proyek baru di dashboard Supabase, lalu jalankan 24 migrasi **berurutan** dari SQL Editor, atau pakai `supabase link` lalu `supabase db push` bila proyek sudah terhubung. Jalur SQL Editor paling sederhana untuk demo.
+Buat proyek baru di dashboard Supabase, lalu jalankan 26 migrasi **berurutan** dari SQL Editor, atau pakai `supabase link` lalu `supabase db push` bila proyek sudah terhubung. Jalur SQL Editor paling sederhana untuk demo.
 
 Urutan file di `supabase/migrations/`:
 
@@ -93,8 +98,10 @@ Urutan file di `supabase/migrations/`:
 22. `20261107162657_foreign_key_indexes.sql`, indeks foreign key
 23. `20261107162700_citizen_write_rate_limits.sql`, batas tulis warga
 24. `20261108090922_aspiration_overview.sql`, `v_aspiration_overview`
+25. `20261110090000_proposal_photos.sql`, bucket Storage `foto-pengerjaan` dan tabel foto (maks 12 foto per usulan, hanya admin, hanya saat Dikerjakan/Selesai)
+26. `20261110180000_proposal_spending.sql`, tabel `proposal_spending` tambah-saja (hanya admin, hanya saat Masuk APBD/Dikerjakan/Selesai; koreksi lewat entri negatif)
 
-Pada 8 November 2026, 24 migrasi sudah terpasang pada proyek development `dogyibbzwfslspflsidm`. Konfirmasi dengan migration list sebelum operasi remote; jangan berasumsi migrasi yang lebih baru otomatis terpasang.
+Pada 8 November 2026, 24 migrasi sudah terpasang pada proyek development `dogyibbzwfslspflsidm`. Dua migrasi 10 November (foto dan pengeluaran) ditambahkan setelah tanggal itu; konfirmasi lewat migration list sebelum memakai kedua fitur itu di remote. Jangan berasumsi migrasi yang lebih baru otomatis terpasang.
 
 Migration `foundation_security` memberi moderasi `Menunggu` pada seluruh usulan lama. Data tidak dihapus, tetapi belum tampil publik sebelum admin menyetujuinya. Seed usulan juga memakai default ini; jangan menyetujui data lama secara otomatis.
 
@@ -188,17 +195,17 @@ Urutan sebelum commit: `bun run format`, lalu `bun run check`. GitHub Actions (w
 
 | Route                    | Isi                                                                                                                                   |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `/`                      | Landing: penjelasan singkat, empat langkah, dan aturan transparansi                                                                   |
+| `/`                      | Landing: penjelasan singkat, empat langkah, aturan transparansi, dan bingkai Terbuka untuk dicek        |
 | `/login`                 | Masuk / daftar (email atau Google)                                                                                                    |
-| `/beranda`               | Peta usulan + daftar usulan yang disetujui, filter kategori/status                                                                    |
+| `/beranda`               | Peta usulan + daftar usulan yang disetujui, filter kategori/status; ada tur panduan bagian pilihan warga dan porsi APBD                |
 | `/usulan`                | Daftar usulan warga dengan pencarian                                                                                                  |
 | `/bandingkan`            | Perbandingan pilihan warga dan APBD: potret tiga bidang teratas, lalu rincian per bidang; hanya data APBD terverifikasi yang dihitung |
 | `/apbd`                  | Porsi tiap bidang dari APBD terverifikasi, dengan angka dan sumber lengkap di balik tombol                                            |
-| `/simulator`             | Urutkan prioritas program dan lihat alokasi anggaran virtual (butuh login)                                                            |
+| `/simulator`             | Prioritasku tiga langkah: pilih minimal 3 bidang, bagi 10 koin, lihat bedanya dengan APBD; tombol bantuan di tiap langkah; sekitar 2 menit (butuh login) |
 | `/hasilmu`               | Ringkasan hasil alokasi dan usulan milik warga (butuh login)                                                                          |
 | `/usulan/baru`           | Form usulan dengan pilih titik di peta dan saran biaya AI (butuh login)                                                               |
-| `/usulan-saya`           | Usulan milikmu, termasuk yang menunggu atau ditolak (butuh login)                                                                     |
-| `/usulan/:id`            | Detail usulan, upvote, komentar, linimasa status bercatatan                                                                           |
+| `/usulan-saya`           | Usulan milikmu, termasuk yang menunggu atau ditolak (butuh login); filter sudah/belum disetujui, usulan belum tayang berbingkai putus-putus |
+| `/usulan/:id`            | Detail usulan, upvote, komentar, linimasa status bercatatan; foto bukti dan catatan dana pengerjaan saat Dikerjakan/Selesai           |
 | `/profil`                | Identitas akun, ubah nama, ringkasan usulan, keluar (butuh login)                                                                     |
 | `/metodologi`            | Cara perbandingan dihitung dan batas datanya                                                                                          |
 | `/musrenai`              | Redirect ke `/beranda` (route lama, tanpa halaman sendiri)                                                                            |
@@ -232,7 +239,7 @@ Jangan mencetak nilai secret; bandingkan SHA-256 dari dashboard. Jangan mengirim
 4. **Validasi berlapis.** Form divalidasi Zod; payload divalidasi ulang sebelum dikirim; respons Supabase diparse dengan Zod sebelum masuk state React; database tetap punya `CHECK`, RLS, dan RPC untuk invariant lintas baris.
 5. **Fitur disusun per folder.** Setiap fitur di `web/src/features/<fitur>` berisi `api.ts` (panggilan Supabase), `queries.ts` (hook TanStack Query), dan `components/`. Komponen tidak memanggil Supabase langsung, kecuali listener auth di `AuthProvider` dan helper bersama di `lib/api.ts`. Halaman di `routes/` hanya merangkai fitur.
 6. **Query key terpusat.** Semua key ada di `web/src/lib/query-keys.ts` supaya invalidasi cache konsisten setelah vote, komentar, alokasi, atau perubahan status.
-7. **Status usulan hanya berubah lewat RPC** agar riwayat status selalu tercatat. Frontend memanggil `change_proposal_status_with_note` (butuh catatan); remote development sudah menyediakannya karena 24 migrasi sudah terpasang.
+7. **Status usulan hanya berubah lewat RPC** agar riwayat status selalu tercatat. Frontend memanggil `change_proposal_status_with_note` (butuh catatan); RPC ini ada sejak migrasi keempat dan sudah terpasang di remote development.
 
 ## Validasi dan error
 
@@ -241,9 +248,17 @@ Jangan mencetak nilai secret; bandingkan SHA-256 dari dashboard. Jangan mengirim
 - `scripts/seed.ts` memvalidasi env dan setiap baris CSV/JSON; seed berhenti dengan daftar field yang salah alih-alih menulis data setengah jadi.
 - Setiap `core.ts` Edge Function memvalidasi balasan penyedia dengan Zod di server; log hanya tahap dan kode tetap, tanpa isi usulan.
 
-## Progress saat ini
+## Progress saat ini (11 November 2026)
 
-Musrenbang Digital sudah punya landing page terpisah dari dashboard, lengkap dengan mode terang/gelap dan animasi, serta halaman peta usulan, voting, komentar, simulator anggaran virtual, dan perbandingan Gap Warga dengan APBD. Backend berjalan di Supabase (Postgres, Auth, RLS, view, dan RPC) tanpa server API sendiri. Autentikasi mendukung daftar dan masuk lewat email maupun Google, dengan peran warga dan admin. Alur usulan sudah lengkap dari pengajuan lewat peta, moderasi admin, sampai linimasa status. Panel admin sudah terpisah dari halaman warga: ringkasan aspirasi dari `v_aspiration_overview`, antrean yang dipilah MusrenAI jadi Aman dan Perlu dicek, pagination, dan rincian usulan. Kode MusrenAI (chat warga, triage admin, saran biaya) sudah ada dan teruji lokal; aktivasi di remote lewat flag dan secret yang dicatat di `supabase/MUSRENAI_*.md`. 24 migrasi sudah terpasang pada proyek development.
+Situs sudah live di https://musrenbang-digital.pages.dev. Pada penilaian mentor 7 November 2026, proyek ini mendapat 41/45; dari tiga saran mentor, kesiapan menghadapi lonjakan trafik sudah ditindaklanjuti dengan batas laju tulis warga, kuota AI, load test, dan predemo check.
+
+Fitur yang sudah berjalan: landing terpisah dengan mode terang/gelap dan bingkai Terbuka untuk dicek; peta usulan, voting, dan komentar; Prioritasku (simulator tiga langkah: pilih minimal 3 bidang, bagi 10 koin, lihat bedanya dengan APBD, sekitar 2 menit); perbandingan Warga vs APBD dengan selisih terbesar di bagian atas; halaman APBD dengan angka dan sumber lengkap per bidang; pengajuan usulan lewat peta dengan saran biaya MusrenAI; linimasa status lima tahap bercatatan; foto bukti pengerjaan (maks 12 foto) dan catatan dana pengerjaan pada tahap Dikerjakan; panel admin terpisah (ringkasan aspirasi, antrean yang dipilah MusrenAI jadi Aman dan Perlu dicek, pagination, rincian usulan, usulan mirip); tur panduan di beranda dan tombol bantuan di tiap langkah simulator; filter usulan-saya (sudah/belum disetujui).
+
+Backend berjalan di Supabase tanpa server API sendiri: Postgres, Auth (email dan Google), RLS, view, RPC, dan Storage untuk foto pengerjaan. Tiga Edge Function MusrenAI aktif dengan kuota provider bersama (10 percobaan per menit, 300 per hari). 26 migrasi ada di repo; 24 di antaranya terpasang di proyek development per 8 November 2026 (konfirmasi dua migrasi 10 November lewat migration list).
+
+Data yang dipakai situs live adalah APBD 2025 (Perda DKI Jakarta No. 9/2024): 10 dari 10 bidang terverifikasi, total terpetakan Rp57,2 triliun. Data seed CSV adalah data riset APBD 2026 yang belum terverifikasi (8 dari 10 bidang, semua berstatus perlu_lampiran, tidak masuk `v_gap`); jangan campur keduanya, dan jangan jalankan seed di proyek development.
+
+Yang masih terbuka: uji dengan warga sungguhan (minimal 5 warga dari keempat persona) belum dilakukan, jadi data partisipan di situs masih berasal dari akun demo; data APBD 2026 belum lengkap (bidang Keamanan dan Penerangan serta Teknologi dan Layanan Digital kosong di CSV seed).
 
 ## Pengujian backend lokal dengan RAM terbatas
 
@@ -276,7 +291,7 @@ pwsh -NoProfile -File scripts/test-integration.ps1
 
 Runner ini membuat proyek lokal `musrenbang-integration` di `.tmp/integration-local` dari `supabase/integration/config.toml`. API memakai port 55421, PostgreSQL 55422, dan Mailpit 55424. Hanya database, Auth, PostgREST, Kong, serta Mailpit dijalankan. Tidak ada fallback remote. Semua URL database dibatasi ke alamat integration lokal.
 
-24 migration diterapkan persisten pada database lokal dan dicatat oleh Supabase CLI. Berbeda dari tes SQL, request HTTP dan dua koneksi concurrency memakai transaksi masing-masing. Database tetap tersedia sepanjang tes, kemudian container dihentikan dengan backup lokal. Gunakan `-KeepRunning` jika perlu inspeksi setelah tes. Untuk menghentikannya secara manual:
+26 migration diterapkan persisten pada database lokal dan dicatat oleh Supabase CLI. Berbeda dari tes SQL, request HTTP dan dua koneksi concurrency memakai transaksi masing-masing. Database tetap tersedia sepanjang tes, kemudian container dihentikan dengan backup lokal. Gunakan `-KeepRunning` jika perlu inspeksi setelah tes. Untuk menghentikannya secara manual:
 
 ```powershell
 bunx --bun supabase --workdir .tmp/integration-local stop --project-id musrenbang-integration
@@ -300,11 +315,13 @@ Runner lain yang tersedia (lihat `scripts/*.ps1` dan `scripts/*.ts` untuk kontek
 
 ## Persiapan remote development
 
-`supabase/config.toml` adalah konteks CLI migration development dengan PostgreSQL 17 dan seed nonaktif. Konfigurasi integration tetap terpisah. Project ref remote ditetapkan melalui `supabase link`; `project_id` pada TOML bukan ref remote. Target yang diperbolehkan hanya `dogyibbzwfslspflsidm`, yang per 8 November 2026 sudah memuat 24 migration.
+`supabase/config.toml` adalah konteks CLI migration development dengan PostgreSQL 17 dan seed nonaktif. Konfigurasi integration tetap terpisah. Project ref remote ditetapkan melalui `supabase link`; `project_id` pada TOML bukan ref remote. Target yang diperbolehkan hanya `dogyibbzwfslspflsidm`, yang per 8 November 2026 sudah memuat 24 migration. Dua migration 10 November (foto dan pengeluaran) belum tentu terpasang; konfirmasi lewat migration list sebelum mengandalkan kedua fitur itu di remote.
 
 Metada link CLI tersimpan di `supabase/.temp/` yang diabaikan Git, jadi ref harus diperiksa sebelum operasi CLI apa pun. Prosedur dan checklist pascadeployment ada di [`supabase/DEPLOYMENT.md`](supabase/DEPLOYMENT.md).
 
 ## Deploy
+
+Situs live: https://musrenbang-digital.pages.dev
 
 Yang di-deploy hanyalah frontend statis hasil `bun run build` (folder `web/dist`) lewat `bun run deploy` ke Cloudflare Pages, plus proyek Supabase itu sendiri. CI tidak melakukan deploy.
 
