@@ -165,7 +165,7 @@ export function LocationPicker({
   return (
     <div className="space-y-2.5">
       <div role="search" className="flex flex-wrap items-center gap-2">
-      <div className="flex min-w-0 flex-1 basis-56 gap-2 sm:max-w-sm">
+      <div className="flex min-w-0 max-w-72 flex-1 basis-56 gap-2">
         <Input
           type="search"
           aria-label="Cari daerah, jalan, atau tempat"
