@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
+import { TurHalaman, type LangkahTur } from '@/components/tutorial/TurHalaman';
 import { Card } from '@/components/ui/Card';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -35,6 +36,61 @@ import {
 import { useSaveAllocationsMutation, useUserAllocationsQuery } from '../queries';
 
 type Langkah = 0 | 1 | 2;
+
+const TUR_PRIORITAS: readonly LangkahTur[] = [
+  {
+    target: 'sim-bidang',
+    judul: 'Pilih bidang yang penting',
+    isi: 'Ketuk bidang yang paling mendesak di lingkunganmu. Nomornya mengikuti urutan ketukanmu, jadi yang pertama kamu ketuk paling prioritas.',
+  },
+  {
+    target: 'sim-hitung',
+    judul: 'Minimal tiga bidang',
+    isi: 'Pilih minimal 3, boleh lebih. Deretan koin di sini terisi seiring pilihanmu.',
+  },
+  {
+    target: 'sim-lanjut',
+    judul: 'Lanjut bagi koin',
+    isi: 'Tombol ini menyala setelah pilihanmu cukup. Pilihanmu belum dikirim ke mana-mana.',
+  },
+];
+
+const TUR_KOIN: readonly LangkahTur[] = [
+  {
+    target: 'sim-koin',
+    judul: 'Bagi 10 koin',
+    isi: 'Tekan + untuk menaruh koin di bidang, dan - untuk menariknya. Satu koin sama dengan 10% pilihanmu.',
+  },
+  {
+    target: 'sim-sisa',
+    judul: 'Pantau sisa koin',
+    isi: 'Semua 10 koin harus terbagi. Mau memindahkan koin? Kurangi satu bidang dulu, lalu tambahkan di bidang lain.',
+  },
+  {
+    target: 'sim-lihat',
+    judul: 'Lihat hasilnya',
+    isi: 'Setelah koin habis terbagi, tombol ini membuka perbandingan dengan APBD.',
+  },
+];
+
+const TUR_HASIL: readonly LangkahTur[] = [
+  {
+    target: 'sim-banding',
+    judul: 'Kamu dibanding APBD',
+    isi: 'Batang hijau adalah porsimu, batang satunya porsi APBD. Selisihnya menunjukkan di mana keinginanmu paling jauh dari anggaran.',
+  },
+  {
+    target: 'sim-catatan',
+    judul: 'Dari mana angkanya?',
+    isi: 'Porsi APBD hanya dihitung dari kategori yang sudah terverifikasi. Metodologi menjelaskan caranya.',
+  },
+  {
+    target: 'sim-kirim',
+    judul: 'Kirim atau ubah',
+    isi: 'Ubah koin kalau mau mengatur ulang. Kirim pilihanku menyimpannya, dan hasilnya dipakai di halaman Bandingkan.',
+  },
+];
+
 
 const NAMA_LANGKAH = ['Pilih prioritas', 'Bagi koin', 'Lihat hasil'] as const;
 
@@ -275,6 +331,7 @@ export function SimulatorAlur() {
 
       {langkah === 0 && (
         <Card className="space-y-5">
+          <TurHalaman langkah={TUR_PRIORITAS} />
           <div>
             <h2 className="text-xl font-bold tracking-[-0.01em] sm:text-2xl">
               Dari semua ini, mana yang paling penting?
@@ -286,14 +343,17 @@ export function SimulatorAlur() {
             </p>
           </div>
 
-          <div className="flex items-center justify-between gap-3 rounded-xl bg-active px-4 py-3">
+          <div
+            data-tur="sim-hitung"
+            className="flex items-center justify-between gap-3 rounded-xl bg-active px-4 py-3"
+          >
             <b className="text-[15px]">
               Sudah dipilih: {pilihan.length} (minimal {BATAS_PILIHAN})
             </b>
             <DeretKoin isi={pilihan.length} total={BATAS_MAKS_PILIHAN} />
           </div>
 
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <ul data-tur="sim-bidang" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {categories.map((kategori) => {
               const urutan = pilihan.indexOf(kategori);
               const dipilih = urutan >= 0;
@@ -343,6 +403,7 @@ export function SimulatorAlur() {
           </p>
           <Button
             type="button"
+            data-tur="sim-lanjut"
             className="h-[52px] w-full text-[15px]"
             disabled={!cukup}
             onClick={keLangkahKoin}
@@ -354,6 +415,7 @@ export function SimulatorAlur() {
 
       {langkah === 1 && (
         <Card className="space-y-5">
+          <TurHalaman langkah={TUR_KOIN} />
           <div>
             <h2 className="text-xl font-bold tracking-[-0.01em] sm:text-2xl">Bagi 10 koinmu</h2>
             <p className="mt-1.5 max-w-[60ch] text-[15px] text-muted">
@@ -362,14 +424,17 @@ export function SimulatorAlur() {
             </p>
           </div>
 
-          <div className="flex items-center justify-between gap-3 rounded-xl bg-active px-4 py-3">
+          <div
+            data-tur="sim-sisa"
+            className="flex items-center justify-between gap-3 rounded-xl bg-active px-4 py-3"
+          >
             <b className="text-[15px]" role="status" aria-live="polite">
               Sisa {sisa} koin
             </b>
             <DeretKoin isi={JUMLAH_KOIN - sisa} />
           </div>
 
-          <ul>
+          <ul data-tur="sim-koin">
             {pilihan.map((kategori) => {
               const nilai = koin[kategori] ?? 0;
               return (
@@ -433,6 +498,7 @@ export function SimulatorAlur() {
             </Button>
             <Button
               type="button"
+              data-tur="sim-lihat"
               className="h-[52px] flex-1 text-[15px]"
               disabled={sisa !== 0}
               onClick={() => setLangkah(2)}
@@ -445,6 +511,7 @@ export function SimulatorAlur() {
 
       {langkah === 2 && (
         <Card className="space-y-5">
+          <TurHalaman langkah={TUR_HASIL} />
           <div>
             <h2 className="text-xl font-bold tracking-[-0.01em] sm:text-2xl">
               Pilihanmu dibanding APBD
@@ -456,7 +523,7 @@ export function SimulatorAlur() {
             </p>
           </div>
 
-          <ul>
+          <ul data-tur="sim-banding">
             {hasil.map((item) => {
               const arah = item.selisih === null ? null : arahSelisih(item.selisih);
               return (
@@ -498,7 +565,7 @@ export function SimulatorAlur() {
             })}
           </ul>
 
-          <p className="text-xs text-muted">
+          <p data-tur="sim-catatan" className="text-xs text-muted">
             Porsimu dihitung dari 10 koin di bidang-bidang pilihamu, bidang lain nol. Porsi APBD
             hanya dari kategori yang terverifikasi.{' '}
             <Link to="/metodologi" className="font-semibold text-warga underline">
@@ -516,7 +583,7 @@ export function SimulatorAlur() {
               .
             </p>
           )}
-          <div className="flex flex-wrap gap-3">
+          <div data-tur="sim-kirim" className="flex flex-wrap gap-3">
             <Button
               type="button"
               variant="outline"
