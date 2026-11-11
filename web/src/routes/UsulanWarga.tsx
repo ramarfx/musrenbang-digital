@@ -239,7 +239,7 @@ export default function UsulanWarga() {
 
         {filtered.length > 0 && (
           <>
-            <div className="grid gap-2.5 min-[350px]:grid-cols-2 md:gap-5">
+            <div className="grid auto-rows-fr gap-2.5 min-[350px]:grid-cols-2 md:gap-5">
               {tampilHalaman.map((proposal) => (
                 <ProposalCard key={proposal.id} proposal={proposal} turDukung="dukung" />
               ))}
