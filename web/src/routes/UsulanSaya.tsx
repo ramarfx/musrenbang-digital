@@ -64,8 +64,14 @@ export default function UsulanSaya() {
   const { user } = useAuth();
   const proposalsQuery = useProposalsQuery();
   const [tampilan, setTampilan] = useState<TampilanDaftar>('kartu');
+  const [saring, setSaring] = useState<'semua' | 'tayang' | 'belum'>('semua');
   const milikku = (proposalsQuery.data ?? []).filter(
     (proposal) => user !== null && proposal.pengusul_id === user.id,
+  );
+  const tayang = milikku.filter((proposal) => proposal.moderasi === 'Disetujui').length;
+  const tampil = milikku.filter(
+    (proposal) =>
+      saring === 'semua' || (saring === 'tayang') === (proposal.moderasi === 'Disetujui'),
   );
   const menunggu = milikku.filter((proposal) => proposal.moderasi === 'Menunggu').length;
   const ditolak = milikku.filter((proposal) => proposal.moderasi === 'Ditolak').length;
@@ -133,9 +139,47 @@ export default function UsulanSaya() {
             />
           </section>
 
-          <div className="flex justify-end">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div role="group" aria-label="Saring usulan" className="flex flex-wrap gap-2">
+              {(
+                [
+                  ['semua', 'Semua', milikku.length],
+                  ['tayang', 'Sudah disetujui', tayang],
+                  ['belum', 'Belum disetujui', milikku.length - tayang],
+                ] as const
+              ).map(([nilai, label, jumlah]) => (
+                <button
+                  key={nilai}
+                  type="button"
+                  aria-pressed={saring === nilai}
+                  onClick={() => setSaring(nilai)}
+                  className={cn(
+                    'inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-[13px] font-semibold transition-[scale,background-color,border-color,color] duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga',
+                    saring === nilai
+                      ? 'border-ink bg-ink text-on-ink'
+                      : 'border-border bg-surface text-ink hover:bg-active',
+                    nilai === 'belum' && saring !== nilai && 'border-dashed',
+                  )}
+                >
+                  {label}
+                  <span
+                    className={cn(
+                      'rounded-md px-1.5 text-[12px] font-medium tabular-nums',
+                      saring === nilai ? 'bg-on-ink/20 text-on-ink' : 'bg-pasir text-ink',
+                    )}
+                  >
+                    {jumlah}
+                  </span>
+                </button>
+              ))}
+            </div>
             <TombolTampilan nilai={tampilan} onUbah={setTampilan} />
           </div>
+          {tampil.length === 0 && (
+            <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted">
+              Tidak ada usulan di kategori ini.
+            </p>
+          )}
           <div
             className={cn(
               'grid gap-2.5',
@@ -144,7 +188,7 @@ export default function UsulanSaya() {
                 : 'grid-cols-1 sm:gap-3',
             )}
           >
-            {[...milikku]
+            {[...tampil]
               .sort((a, b) => new Date(b.dibuat_pada).getTime() - new Date(a.dibuat_pada).getTime())
               .map((proposal) => (
                 <ProposalCard key={proposal.id} proposal={proposal} daftar={tampilan === 'daftar'} />
