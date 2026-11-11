@@ -195,14 +195,12 @@ export function LocationPicker({
           type="button"
           onClick={lokasiSaya}
           disabled={mencariPosisi}
-          className={cn(tombolIkon, 'group/lokasi w-auto gap-2 px-3.5 text-sm font-semibold')}
+          className={cn(tombolIkon, 'w-auto gap-2 px-3.5 text-sm font-semibold')}
         >
           {mencariPosisi ? (
             <Spinner label="Membaca lokasi" />
           ) : (
-            <span className="transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover/lokasi:rotate-90 motion-reduce:transition-none">
-              <Icon name="sasaran" size={20} />
-            </span>
+            <Icon name="lokasi" size={20} />
           )}
           Gunakan lokasi saya
         </button>
