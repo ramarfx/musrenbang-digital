@@ -12,11 +12,14 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { ProposalCard } from '@/features/proposals/components/ProposalCard';
 import { TopProposals } from '@/features/proposals/components/TopProposals';
 import { ProposalFilters } from '@/features/proposals/components/ProposalFilters';
+import { cn } from '@/lib/cn';
 import { useCategoriesQuery } from '@/features/categories/queries';
 import { useProposalsQuery } from '@/features/proposals/queries';
 
 /** Jumlah kartu usulan per halaman daftar. */
 const KARTU_PER_HALAMAN = 6;
+/** Tampilan daftar lebih ringkas per usulan, jadi muat lebih banyak. */
+const BARIS_PER_HALAMAN = 10;
 
 /** Semua usulan warga yang sudah disetujui: terpopuler, peta, lalu daftar dengan filter. */
 const TUR_USULAN: readonly LangkahTur[] = [
@@ -49,6 +52,8 @@ export default function UsulanWarga() {
   const [kategori, setKategori] = useState('semua');
   const [urutan, setUrutan] = useState<'terbaru' | 'terpopuler'>('terbaru');
   const [halaman, setHalaman] = useState(1);
+  const [tampilan, setTampilan] = useState<'kartu' | 'daftar'>('kartu');
+  const perHalaman = tampilan === 'kartu' ? KARTU_PER_HALAMAN : BARIS_PER_HALAMAN;
   const daftarRef = useRef<HTMLElement>(null);
   const categoriesQuery = useCategoriesQuery();
 
@@ -110,12 +115,12 @@ export default function UsulanWarga() {
   // Daftar dibagi per halaman supaya tidak memanjang ke bawah. Filter baru selalu mulai dari halaman 1.
   useEffect(() => {
     setHalaman(1);
-  }, [search, status, kategori, urutan]);
-  const totalHalaman = Math.max(1, Math.ceil(filtered.length / KARTU_PER_HALAMAN));
+  }, [search, status, kategori, urutan, tampilan]);
+  const totalHalaman = Math.max(1, Math.ceil(filtered.length / perHalaman));
   const halamanAktif = Math.min(halaman, totalHalaman);
   const tampilHalaman = filtered.slice(
-    (halamanAktif - 1) * KARTU_PER_HALAMAN,
-    halamanAktif * KARTU_PER_HALAMAN,
+    (halamanAktif - 1) * perHalaman,
+    halamanAktif * perHalaman,
   );
   const gantiHalaman = (tujuan: number) => {
     setHalaman(tujuan);
@@ -175,7 +180,46 @@ export default function UsulanWarga() {
       </section>
 
       <section ref={daftarRef} className="scroll-mt-4 space-y-4">
-        <h2 className="text-xl font-bold">Daftar usulan</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-xl font-bold">Daftar usulan</h2>
+          <div
+            role="group"
+            aria-label="Tampilan daftar"
+            className="flex rounded-xl border border-border bg-surface p-0.5"
+          >
+            {(
+              [
+                ['kartu', 'Kartu', 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z'],
+                ['daftar', 'Daftar', 'M4 6h16M4 12h16M4 18h16'],
+              ] as const
+            ).map(([nilai, label, ikon]) => (
+              <button
+                key={nilai}
+                type="button"
+                aria-pressed={tampilan === nilai}
+                onClick={() => setTampilan(nilai)}
+                className={cn(
+                  'inline-flex h-8 items-center gap-1.5 rounded-[10px] px-3 text-[13px] font-semibold transition-[scale,background-color,color] duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warga',
+                  tampilan === nilai ? 'bg-ink text-on-ink' : 'text-muted hover:text-ink',
+                )}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  className="size-4"
+                >
+                  <path d={ikon} />
+                </svg>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div data-tur="saring">
         <ProposalFilters
@@ -239,9 +283,21 @@ export default function UsulanWarga() {
 
         {filtered.length > 0 && (
           <>
-            <div className="grid auto-rows-fr gap-2.5 min-[350px]:grid-cols-2 md:gap-5">
+            <div
+              className={cn(
+                'grid gap-2.5',
+                tampilan === 'kartu'
+                  ? 'auto-rows-fr min-[350px]:grid-cols-2 md:gap-5'
+                  : 'grid-cols-1 sm:gap-3',
+              )}
+            >
               {tampilHalaman.map((proposal) => (
-                <ProposalCard key={proposal.id} proposal={proposal} turDukung="dukung" />
+                <ProposalCard
+                  key={proposal.id}
+                  proposal={proposal}
+                  turDukung="dukung"
+                  daftar={tampilan === 'daftar'}
+                />
               ))}
             </div>
             <Pagination
