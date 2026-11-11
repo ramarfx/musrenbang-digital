@@ -49,19 +49,6 @@ function JudulBagian({ id, judul, children }: { id: string; judul: string; child
   );
 }
 
-/** Contoh untuk bagian "Usulan, bukan laporan": program terencana lawan kerusakan mendesak. */
-const CONTOH_COCOK = [
-  'Pembangunan drainase di sepanjang Jalan X',
-  'Tambahan lampu jalan untuk satu RW',
-  'Pelatihan usaha kecil di kelurahan',
-] as const;
-
-const CONTOH_BUKAN = [
-  'Lubang jalan yang berbahaya hari ini',
-  'Lampu jalan yang mati malam ini',
-  'Pohon tumbang yang menutup jalan',
-] as const;
-
 type Fitur = {
   judul: string;
   isi: string;
@@ -433,41 +420,6 @@ export default function Landing() {
         </section>
 
         <section
-          aria-labelledby="judul-batas"
-          className="mx-auto max-w-[1160px] px-4 pt-12 sm:px-6 sm:pt-20"
-        >
-          <JudulBagian id="judul-batas" judul="Usulan, bukan laporan">
-            Di sini warga mengusulkan program untuk anggaran tahun depan. Yang mendesak hari ini,
-            laporkan lewat kanal pengaduan resmi pemerintah.
-          </JudulBagian>
-          <div className="mt-5 grid grid-cols-2 gap-x-3 gap-y-6 sm:mt-8 sm:gap-x-12 md:gap-y-8">
-            <div>
-              <h3 className="text-[15px] font-bold sm:text-[19px]">
-                <span className="stabilo">Cocok diusulkan</span>
-              </h3>
-              <ul className="mt-3 divide-y divide-rule border-y border-rule text-[13px] leading-snug sm:mt-4 sm:text-[16px]">
-                {CONTOH_COCOK.map((contoh) => (
-                  <li key={contoh} className="py-2.5 sm:py-3">
-                    {contoh}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-[15px] font-bold sm:text-[19px]">Bukan untuk di sini</h3>
-              <ul className="mt-3 divide-y divide-rule border-y border-rule text-[13px] leading-snug text-muted sm:mt-4 sm:text-[16px]">
-                {CONTOH_BUKAN.map((contoh) => (
-                  <li key={contoh} className="py-2.5 sm:py-3">
-                    {contoh}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-          <p className="mt-3 text-[13px] text-muted">Semua contoh di atas hanya ilustrasi.</p>
-        </section>
-
-        <section
           aria-labelledby="judul-ajakan"
           className="mx-auto max-w-[1160px] px-4 pt-12 sm:px-6 sm:pt-20"
         >
@@ -513,7 +465,7 @@ export default function Landing() {
           <div
             ref={transparansiRef}
             className={cn(
-              'masuk-stagger trek-sembunyi mt-6 flex snap-x snap-mandatory gap-2.5 overflow-x-auto sm:kartu-cap sm:mt-10 sm:grid sm:overflow-visible sm:rounded-[28px] sm:bg-surface md:grid-cols-3',
+              'masuk-stagger trek-sembunyi mt-6 flex snap-x snap-mandatory gap-2.5 overflow-x-auto sm:kartu-cap sm:mt-10 sm:grid sm:gap-0 sm:overflow-hidden sm:rounded-[28px] sm:bg-surface md:grid-cols-3',
               transparansiTampak && 'masuk-tampak',
             )}
           >
