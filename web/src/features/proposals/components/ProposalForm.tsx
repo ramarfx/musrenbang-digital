@@ -163,7 +163,7 @@ export function ProposalForm({ proposal, onSaved, onCancel }: ProposalFormProps 
 
   return (
     <form onSubmit={onSubmit} className="space-y-6" noValidate>
-      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+      <div className="grid gap-6 lg:grid-cols-2 lg:items-stretch">
         <Card tur="isi" className="space-y-4">
           <Field
             label="Judul usulan"
@@ -270,9 +270,8 @@ export function ProposalForm({ proposal, onSaved, onCancel }: ProposalFormProps 
             <div>
               <h2 className="font-semibold text-stone-900">Titik di peta (opsional)</h2>
               <p className="text-sm text-stone-500">
-                Cari daerahnya, pakai lokasimu sekarang, atau klik peta untuk menandai titiknya.
-                Titik membantu warga lain menemukan usulanmu, dan alamatnya dicari otomatis lewat
-                OpenStreetMap, jadi koordinat titik terkirim ke layanan itu.
+                Cari daerahnya atau klik peta. Alamatnya dicari lewat OpenStreetMap, jadi titiknya
+                terkirim ke layanan itu.
               </p>
             </div>
           </div>
