@@ -244,6 +244,8 @@ export function ProposalCard({
   const milikku = user !== null && proposal.pengusul_id === user.id;
   const punyaAksi = milikku && (bisaDiubah(proposal) || bisaDihapus(proposal));
   const keadaan = keadaanUsulan(proposal);
+  // Usulan milikku yang belum tayang: bingkai putus-putus di alas pudar, tanpa bayangan tebal.
+  const belumTayang = proposal.moderasi !== 'Disetujui';
   const jumlahKomentar = useCommentCountsQuery().data?.[proposal.id] ?? 0;
 
   if (daftar) {
@@ -252,7 +254,10 @@ export function ProposalCard({
         ref={ref}
         data-keluar={keluar || undefined}
         className={cn(
-          'kartu-usulan group relative flex min-w-0 items-center gap-3 rounded-2xl border-[1.5px] border-edge bg-surface p-3 shadow-[0_3px_0_var(--edge)] hover:-translate-y-0.5 sm:gap-4 sm:p-4',
+          'kartu-usulan group relative flex min-w-0 items-center gap-3 rounded-2xl border-[1.5px] border-edge p-3 hover:-translate-y-0.5 sm:gap-4 sm:p-4',
+          belumTayang
+            ? 'border-dashed bg-ground'
+            : 'bg-surface shadow-[0_3px_0_var(--edge)]',
           tampak && 'kartu-tampak',
         )}
       >
@@ -323,7 +328,10 @@ export function ProposalCard({
       ref={ref}
       data-keluar={keluar || undefined}
       className={cn(
-        'kartu-usulan group relative flex h-full min-w-0 flex-col rounded-[18px] border-[1.5px] border-edge bg-surface p-3 shadow-[0_3px_0_var(--edge)] hover:-translate-y-0.5 sm:rounded-3xl sm:p-5 sm:shadow-[0_4px_0_var(--edge)]',
+        'kartu-usulan group relative flex h-full min-w-0 flex-col rounded-[18px] border-[1.5px] border-edge p-3 hover:-translate-y-0.5 sm:rounded-3xl sm:p-5',
+        belumTayang
+          ? 'border-dashed bg-ground'
+          : 'bg-surface shadow-[0_3px_0_var(--edge)] sm:shadow-[0_4px_0_var(--edge)]',
         tampak && 'kartu-tampak',
       )}
     >
