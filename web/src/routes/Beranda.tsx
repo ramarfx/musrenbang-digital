@@ -43,6 +43,11 @@ const TUR_BERANDA: readonly LangkahTur[] = [
     judul: 'Usulan yang paling didukung',
     isi: 'Lihat usulan terpopuler dan dukung langsung dari sini dengan satu klik.',
   },
+  {
+    target: 'gap',
+    judul: 'Pilihan warga dan porsi APBD',
+    isi: 'Batang hijau adalah pilihan warga dari simulator, batang gelap porsi APBD. Label di bawahnya menandai bidang yang perlu ditambah atau kurang jadi prioritas.',
+  },
 ];
 
 /**
@@ -568,7 +573,7 @@ function AspirasiPilihanWarga() {
   );
 
   return (
-    <Card>
+    <Card tur="gap">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="text-base font-bold">Pilihan warga{adaApbd ? ' dan porsi APBD' : ''}</h2>
         <Link to="/bandingkan" className="text-sm font-semibold text-warga underline">
